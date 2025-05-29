@@ -122,18 +122,17 @@ export default function Home() {
     setFileContent('');
     setFileName('');
     document.getElementById('fileInput').value = '';
-  };
-  return (
+  }; return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       <div style={{
-        background: 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
-        padding: '20px 0',
+        background: 'rgba(0, 0, 0, 0.3)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        padding: '25px 0',
         position: 'sticky',
         top: 0,
         zIndex: 100
@@ -141,75 +140,96 @@ export default function Home() {
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
           <h1 style={{
             margin: 0,
-            fontSize: '28px',
-            fontWeight: '700',
-            color: 'white',
+            fontSize: '32px',
+            fontWeight: '800',
+            background: 'linear-gradient(135deg, #00d4ff 0%, #ff00ff 50%, #ffff00 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
             textAlign: 'center',
-            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            textShadow: '0 4px 8px rgba(0,0,0,0.5)',
+            letterSpacing: '1px'
           }}>
-            ✨ AI HTML Validator & Extractor
+            ⚡ AI HTML Validator & Extractor
           </h1>
           <p style={{
-            margin: '8px 0 0 0',
+            margin: '12px 0 0 0',
             textAlign: 'center',
-            color: 'rgba(255, 255, 255, 0.8)',
-            fontSize: '16px'
+            color: 'rgba(255, 255, 255, 0.9)',
+            fontSize: '18px',
+            fontWeight: '500'
           }}>
             Intelligent HTML validation with real-time feedback
           </p>
         </div>
       </div>
 
-      {/* Main Content */}
       <div style={{
         maxWidth: '1000px',
         margin: '0 auto',
         padding: '40px 20px'
       }}>
-        {/* Upload Section */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: '20px',
-          padding: '30px',
-          marginBottom: '30px',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.3)'
+          background: 'linear-gradient(145deg, #1e1e2e 0%, #2a2a3e 100%)',
+          borderRadius: '25px',
+          padding: '35px',
+          marginBottom: '35px',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 0, 255, 0.1) 0%, transparent 50%)',
+            pointerEvents: 'none'
+          }}></div>
+
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            marginBottom: '20px'
+            marginBottom: '25px',
+            position: 'relative',
+            zIndex: 1
           }}>
             <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: 'linear-gradient(45deg, #667eea, #764ba2)',
+              width: '50px',
+              height: '50px',
+              borderRadius: '15px',
+              background: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginRight: '15px'
+              marginRight: '20px',
+              boxShadow: '0 8px 16px rgba(0, 212, 255, 0.3)'
             }}>
-              <span style={{ color: 'white', fontSize: '18px' }}>📁</span>
+              <span style={{ color: 'white', fontSize: '24px' }}>📁</span>
             </div>
             <h2 style={{
               margin: 0,
-              fontSize: '20px',
-              fontWeight: '600',
-              color: '#2d3748'
+              fontSize: '24px',
+              fontWeight: '700',
+              color: '#ffffff',
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
             }}>
               Upload HTML File
             </h2>
           </div>
 
           <div style={{
-            border: '2px dashed #cbd5e0',
-            borderRadius: '15px',
-            padding: '30px',
+            border: '2px dashed rgba(0, 212, 255, 0.3)',
+            borderRadius: '20px',
+            padding: '40px',
             textAlign: 'center',
-            background: '#f7fafc',
+            background: 'rgba(0, 0, 0, 0.2)',
             transition: 'all 0.3s ease',
-            position: 'relative'
+            position: 'relative',
+            zIndex: 1,
+            backdropFilter: 'blur(10px)'
           }}>
             <input
               id="fileInput"
@@ -227,94 +247,126 @@ export default function Home() {
                 cursor: isLoading ? 'not-allowed' : 'pointer'
               }}
             />
-            <div style={{ fontSize: '48px', marginBottom: '15px' }}>
+            <div style={{
+              fontSize: '60px',
+              marginBottom: '20px',
+              filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))'
+            }}>
               {isLoading ? '⏳' : '☁️'}
             </div>
             <p style={{
-              margin: '0 0 10px 0',
-              fontSize: '16px',
-              fontWeight: '600',
-              color: '#4a5568'
+              margin: '0 0 15px 0',
+              fontSize: '20px',
+              fontWeight: '700',
+              color: '#ffffff',
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
             }}>
               {isLoading ? 'Processing your file...' : 'Click to upload or drag & drop'}
             </p>
             <p style={{
               margin: 0,
-              fontSize: '14px',
-              color: '#718096'
+              fontSize: '16px',
+              color: 'rgba(255, 255, 255, 0.7)',
+              fontWeight: '500'
             }}>
               Only .html files are supported
             </p>
           </div>
-
           {fileName && (
             <div style={{
-              marginTop: '20px',
-              padding: '15px',
-              background: 'linear-gradient(45deg, #48bb78, #38a169)',
-              borderRadius: '10px',
+              marginTop: '25px',
+              padding: '20px',
+              background: 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
+              borderRadius: '15px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
+              boxShadow: '0 10px 20px rgba(0, 255, 136, 0.2)',
+              position: 'relative',
+              zIndex: 1
             }}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <span style={{ fontSize: '20px', marginRight: '10px' }}>✅</span>
-                <span style={{ color: 'white', fontWeight: '500' }}>
+                <span style={{
+                  fontSize: '24px',
+                  marginRight: '15px',
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                }}>✅</span>
+                <span style={{
+                  color: '#000000',
+                  fontWeight: '700',
+                  fontSize: '16px',
+                  textShadow: '0 1px 2px rgba(255,255,255,0.1)'
+                }}>
                   {fileName}
                 </span>
               </div>
               <button
                 onClick={clearContent}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  color: 'white',
+                  background: 'rgba(0, 0, 0, 0.2)',
+                  color: '#000000',
                   border: 'none',
-                  borderRadius: '8px',
-                  padding: '8px 16px',
+                  borderRadius: '12px',
+                  padding: '12px 20px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease'
+                  fontWeight: '700',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
                 }}
-                onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
-                onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+                onMouseOver={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.3)'}
+                onMouseOut={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.2)'}
               >
                 🗑️ Clear
               </button>
             </div>
           )}
         </div>
-
-        {/* Content Display Section */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: '20px',
-          padding: '30px',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.3)'
+          background: 'linear-gradient(145deg, #1e1e2e 0%, #2a2a3e 100%)',
+          borderRadius: '25px',
+          padding: '35px',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'radial-gradient(circle at 80% 20%, rgba(255, 0, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 20% 80%, rgba(255, 255, 0, 0.1) 0%, transparent 50%)',
+            pointerEvents: 'none'
+          }}></div>
+
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            marginBottom: '20px'
+            marginBottom: '25px',
+            position: 'relative',
+            zIndex: 1
           }}>
             <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: 'linear-gradient(45deg, #ed8936, #dd6b20)',
+              width: '50px',
+              height: '50px',
+              borderRadius: '15px',
+              background: 'linear-gradient(135deg, #ff00ff 0%, #cc0099 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginRight: '15px'
+              marginRight: '20px',
+              boxShadow: '0 8px 16px rgba(255, 0, 255, 0.3)'
             }}>
-              <span style={{ color: 'white', fontSize: '18px' }}>📝</span>
+              <span style={{ color: 'white', fontSize: '24px' }}>📝</span>
             </div>
             <h2 style={{
               margin: 0,
-              fontSize: '20px',
-              fontWeight: '600',
-              color: '#2d3748'
+              fontSize: '24px',
+              fontWeight: '700',
+              color: '#ffffff',
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
             }}>
               Validated HTML Content
             </h2>
@@ -322,33 +374,42 @@ export default function Home() {
 
           <div style={{
             position: 'relative',
-            borderRadius: '15px',
+            borderRadius: '20px',
             overflow: 'hidden',
-            border: '1px solid #e2e8f0'
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 10px 20px rgba(0, 0, 0, 0.3)',
+            zIndex: 1
           }}>
             <div style={{
-              background: '#2d3748',
-              padding: '15px 20px',
+              background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)',
+              padding: '20px 25px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '8px', marginRight: '15px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff5f56' }}></div>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e' }}></div>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27ca3f' }}></div>
+                <div style={{ display: 'flex', gap: '10px', marginRight: '20px' }}>
+                  <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ff5f56', boxShadow: '0 2px 4px rgba(255, 95, 86, 0.4)' }}></div>
+                  <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ffbd2e', boxShadow: '0 2px 4px rgba(255, 189, 46, 0.4)' }}></div>
+                  <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#27ca3f', boxShadow: '0 2px 4px rgba(39, 202, 63, 0.4)' }}></div>
                 </div>
-                <span style={{ color: '#a0aec0', fontSize: '14px' }}>
+                <span style={{
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  fontSize: '16px',
+                  fontWeight: '600'
+                }}>
                   {fileName || 'No file selected'}
                 </span>
               </div>
               <span style={{
-                color: '#68d391',
-                fontSize: '12px',
-                background: 'rgba(104, 211, 145, 0.1)',
-                padding: '4px 8px',
-                borderRadius: '6px'
+                color: '#00ff88',
+                fontSize: '14px',
+                background: 'rgba(0, 255, 136, 0.1)',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontWeight: '700',
+                border: '1px solid rgba(0, 255, 136, 0.2)'
               }}>
                 HTML
               </span>
@@ -363,29 +424,41 @@ export default function Home() {
 ⚡ Real-time validation with detailed error reports"
               style={{
                 width: '100%',
-                height: '400px',
-                padding: '20px',
+                height: '450px',
+                padding: '25px',
                 border: 'none',
                 outline: 'none',
-                fontSize: '14px',
-                fontFamily: '"Fira Code", "Monaco", "Cascadia Code", monospace',
-                lineHeight: '1.6',
-                background: '#1a202c',
-                color: '#e2e8f0',
-                resize: 'vertical'
+                fontSize: '15px',
+                fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
+                lineHeight: '1.7',
+                background: 'linear-gradient(135deg, #0a0a0a 0%, #111111 100%)',
+                color: '#f0f0f0',
+                resize: 'vertical',
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
               }}
             />
           </div>
         </div>
-
-        {/* Footer */}
         <div style={{
           textAlign: 'center',
-          marginTop: '40px',
-          color: 'rgba(255, 255, 255, 0.7)'
+          marginTop: '50px',
+          padding: '25px',
+          background: 'rgba(0, 0, 0, 0.3)',
+          borderRadius: '20px',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
-          <p style={{ margin: 0, fontSize: '14px' }}>
-            ✨ Powered by HTMLHint • Built with ❤️ by Hassan
+          <p style={{
+            margin: 0,
+            fontSize: '16px',
+            background: 'linear-gradient(135deg, #00d4ff 0%, #ff00ff 50%, #ffff00 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            fontWeight: '700'
+          }}>
+            ⚡ Powered by HTMLHint • Built with ❤️ by Hassan
           </p>
         </div>
       </div>
