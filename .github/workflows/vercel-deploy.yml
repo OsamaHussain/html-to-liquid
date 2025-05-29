@@ -1,14 +1,22 @@
-name: Trigger Vercel Deploy
+name: Conditional Vercel Deploy
 
 on:
   push:
     branches:
-      - master  # or any branch you want to monitor
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Trigger Vercel Deploy Hook
-        run: curl -X POST ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+      - name: Check Actor and Trigger Deploy (if not owner)
+        if: github.actor != 'OsamaHussain'
+        run: |
+          echo "Push by ${{ github.actor }}, triggering deploy..."
+          curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
+
+      - name: Skip Deploy (if owner)
+        if: github.actor == 'OsamaHussain'
+        run: |
+          echo "Push by repository owner (${{ github.actor }}), skipping deploy."
