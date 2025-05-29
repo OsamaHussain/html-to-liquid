@@ -1,10 +1,14 @@
 "use client";
 import { useState } from "react";
 import { HTMLHint } from "htmlhint";
+import ErrorPopup from "../components/ErrorPopup";
 
 export default function Home() {
   const [fileContent, setFileContent] = useState("");
-  const [fileName, setFileName] = useState(""); const [isLoading, setIsLoading] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showErrorPopup, setShowErrorPopup] = useState(false);
+  const [validationErrors, setValidationErrors] = useState("");
   const validateAndExtractHtml = (text) => {
     try {
       const htmlTagRegex = /<[^>]+>/g;
@@ -77,10 +81,9 @@ export default function Home() {
       return;
     }
     const allowedExtensions = ['.html'];
-    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-
-    if (!allowedExtensions.includes(fileExtension)) {
-      alert('Please select only .html files');
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.')); if (!allowedExtensions.includes(fileExtension)) {
+      setValidationErrors('Please select only .html files. Only HTML files are supported for validation.');
+      setShowErrorPopup(true);
       event.target.value = '';
       return;
     }
@@ -91,10 +94,9 @@ export default function Home() {
     try {
       const reader = new FileReader(); reader.onload = (e) => {
         const rawText = e.target.result;
-        const result = validateAndExtractHtml(rawText);
-
-        if (!result.isValid) {
-          alert(result.error);
+        const result = validateAndExtractHtml(rawText); if (!result.isValid) {
+          setValidationErrors(result.error);
+          setShowErrorPopup(true);
           setFileContent('');
           setFileName('');
           event.target.value = '';
@@ -104,17 +106,19 @@ export default function Home() {
 
         setFileContent(result.content);
         setIsLoading(false);
-      };
-      reader.onerror = () => {
-        alert('Error reading file');
+      }; reader.onerror = () => {
+        setValidationErrors('Error reading file. Please try again.');
+        setShowErrorPopup(true);
         setIsLoading(false);
       };
       reader.readAsText(file);
     } catch (error) {
-      alert('Error reading file: ' + error.message);
+      setValidationErrors('Error reading file: ' + error.message);
+      setShowErrorPopup(true);
       setFileContent('');
       setFileName('');
-      event.target.value = ''; setIsLoading(false);
+      event.target.value = '';
+      setIsLoading(false);
     }
   };
 
@@ -459,9 +463,15 @@ export default function Home() {
             fontWeight: '700'
           }}>
             ⚡ Powered by HTMLHint • Built with ❤️ by Hassan
-          </p>
-        </div>
+          </p>        </div>
       </div>
+
+      <ErrorPopup
+        errors={validationErrors}
+        isVisible={showErrorPopup}
+        onClose={() => setShowErrorPopup(false)}
+        fileName={fileName}
+      />
     </div>
   );
 }
