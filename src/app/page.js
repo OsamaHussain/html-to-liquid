@@ -9,6 +9,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [showErrorPopup, setShowErrorPopup] = useState(false);
   const [validationErrors, setValidationErrors] = useState("");
+  const [liquidContent, setLiquidContent] = useState("");
+  const [conversionMetadata, setConversionMetadata] = useState(null);
+  const [isConverting, setIsConverting] = useState(false);
+  const [conversionError, setConversionError] = useState("");
   const validateAndExtractHtml = (text) => {
     try {
       const htmlTagRegex = /<[^>]+>/g;
@@ -121,11 +125,77 @@ export default function Home() {
       setIsLoading(false);
     }
   };
-
   const clearContent = () => {
     setFileContent('');
     setFileName('');
+    setLiquidContent('');
+    setConversionMetadata(null);
+    setConversionError('');
     document.getElementById('fileInput').value = '';
+  };
+
+  const convertToLiquid = async () => {
+    if (!fileContent) {
+      setConversionError('No HTML content to convert');
+      return;
+    }
+
+    setIsConverting(true);
+    setConversionError('');
+
+    try {
+      const response = await fetch('/api/convert-html', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          htmlContent: fileContent,
+          fileName: fileName,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Conversion failed');
+      }
+
+      setLiquidContent(data.liquidContent);
+      setConversionMetadata(data.metadata);
+    } catch (error) {
+      setConversionError(error.message);
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
+  const downloadLiquidFile = () => {
+    if (!liquidContent) return;
+
+    const blob = new Blob([liquidContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadMetadataJson = () => {
+    if (!conversionMetadata) return;
+
+    const blob = new Blob([JSON.stringify(conversionMetadata, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName ? fileName.replace('.html', '_metadata.json') : 'conversion_metadata.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }; return (
     <div style={{
       minHeight: '100vh',
@@ -154,7 +224,7 @@ export default function Home() {
             textShadow: '0 4px 8px rgba(0,0,0,0.5)',
             letterSpacing: '1px'
           }}>
-            ⚡ AI HTML Validator & Extractor
+            ⚡ AI HTML to Liquid Converter
           </h1>
           <p style={{
             margin: '12px 0 0 0',
@@ -163,7 +233,7 @@ export default function Home() {
             fontSize: '18px',
             fontWeight: '500'
           }}>
-            Intelligent HTML validation with real-time feedback
+            Intelligent HTML validation with AI-powered Liquid conversion
           </p>
         </div>
       </div>
@@ -444,26 +514,271 @@ export default function Home() {
             />
           </div>
         </div>
-        <div style={{
-          textAlign: 'center',
-          marginTop: '50px',
-          padding: '25px',
-          background: 'rgba(0, 0, 0, 0.3)',
-          borderRadius: '20px',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)'
-        }}>
-          <p style={{
-            margin: 0,
-            fontSize: '16px',
-            background: 'linear-gradient(135deg, #00d4ff 0%, #ff00ff 50%, #ffff00 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            fontWeight: '700'
+
+        {fileContent && (
+          <div style={{
+            background: 'linear-gradient(145deg, #1e1e2e 0%, #2a2a3e 100%)',
+            borderRadius: '25px',
+            padding: '35px',
+            marginTop: '35px',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            position: 'relative',
+            overflow: 'hidden'
           }}>
-            ⚡ Powered by HTMLHint • Built with ❤️ by Hassan
-          </p>        </div>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'radial-gradient(circle at 50% 50%, rgba(0, 255, 136, 0.1) 0%, transparent 50%), radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%)',
+              pointerEvents: 'none'
+            }}></div>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '25px',
+              position: 'relative',
+              zIndex: 1
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '15px',
+                  background: 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: '20px',
+                  boxShadow: '0 8px 16px rgba(0, 255, 136, 0.3)'
+                }}>
+                  <span style={{ color: 'white', fontSize: '24px' }}>🚀</span>
+                </div>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: '#ffffff',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                }}>
+                  Convert to Liquid Template
+                </h2>
+              </div>
+
+              <button
+                onClick={convertToLiquid}
+                disabled={isConverting || !fileContent}
+                style={{
+                  background: isConverting
+                    ? 'linear-gradient(135deg, #666 0%, #888 100%)'
+                    : 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
+                  color: isConverting ? '#ccc' : '#000000',
+                  border: 'none',
+                  borderRadius: '15px',
+                  padding: '15px 30px',
+                  cursor: isConverting ? 'not-allowed' : 'pointer',
+                  fontSize: '16px',
+                  fontWeight: '700',
+                  transition: 'all 0.3s ease',
+                  boxShadow: isConverting
+                    ? '0 4px 8px rgba(0,0,0,0.2)'
+                    : '0 8px 16px rgba(0, 255, 136, 0.3)',
+                  transform: isConverting ? 'scale(0.98)' : 'scale(1)',
+                  opacity: isConverting ? 0.7 : 1
+                }}
+                onMouseOver={(e) => {
+                  if (!isConverting) {
+                    e.target.style.transform = 'scale(1.05)';
+                    e.target.style.boxShadow = '0 12px 24px rgba(0, 255, 136, 0.4)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!isConverting) {
+                    e.target.style.transform = 'scale(1)';
+                    e.target.style.boxShadow = '0 8px 16px rgba(0, 255, 136, 0.3)';
+                  }
+                }}
+              >
+                {isConverting ? '⏳ Converting...' : '🚀 Convert to Liquid'}
+              </button>
+            </div>
+
+            {conversionError && (
+              <div style={{
+                background: 'linear-gradient(135deg, #ff4444 0%, #cc3333 100%)',
+                color: 'white',
+                padding: '15px 20px',
+                borderRadius: '12px',
+                marginBottom: '20px',
+                fontSize: '14px',
+                fontWeight: '600',
+                boxShadow: '0 4px 8px rgba(255, 68, 68, 0.3)',
+                position: 'relative',
+                zIndex: 1
+              }}>
+                ❌ {conversionError}
+              </div>
+            )}
+
+            {liquidContent && (
+              <div style={{
+                position: 'relative',
+                borderRadius: '20px',
+                overflow: 'hidden',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                boxShadow: '0 10px 20px rgba(0, 0, 0, 0.3)',
+                zIndex: 1,
+                marginBottom: '25px'
+              }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)',
+                  padding: '20px 25px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '10px', marginRight: '20px' }}>
+                      <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ff5f56', boxShadow: '0 2px 4px rgba(255, 95, 86, 0.4)' }}></div>
+                      <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ffbd2e', boxShadow: '0 2px 4px rgba(255, 189, 46, 0.4)' }}></div>
+                      <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#27ca3f', boxShadow: '0 2px 4px rgba(39, 202, 63, 0.4)' }}></div>
+                    </div>
+                    <span style={{
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      fontSize: '16px',
+                      fontWeight: '600'
+                    }}>
+                      {fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <span style={{
+                      color: '#00ff88',
+                      fontSize: '14px',
+                      background: 'rgba(0, 255, 136, 0.1)',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      fontWeight: '700',
+                      border: '1px solid rgba(0, 255, 136, 0.2)'
+                    }}>
+                      LIQUID
+                    </span>
+                    <button
+                      onClick={downloadLiquidFile}
+                      style={{
+                        background: 'rgba(0, 212, 255, 0.2)',
+                        color: '#00d4ff',
+                        border: '1px solid rgba(0, 212, 255, 0.3)',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseOver={(e) => {
+                        e.target.style.background = 'rgba(0, 212, 255, 0.3)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.target.style.background = 'rgba(0, 212, 255, 0.2)';
+                      }}
+                    >
+                      💾 Download
+                    </button>
+                  </div>
+                </div>
+                <textarea
+                  value={liquidContent}
+                  readOnly
+                  style={{
+                    width: '100%',
+                    height: '400px',
+                    padding: '25px',
+                    border: 'none',
+                    outline: 'none',
+                    fontSize: '15px',
+                    fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
+                    lineHeight: '1.7',
+                    background: 'linear-gradient(135deg, #0a0a0a 0%, #111111 100%)',
+                    color: '#f0f0f0',
+                    resize: 'vertical',
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
+                  }}
+                />
+              </div>
+            )}
+
+            {conversionMetadata && (
+              <div style={{
+                background: 'rgba(0, 0, 0, 0.3)',
+                borderRadius: '15px',
+                padding: '20px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                position: 'relative',
+                zIndex: 1
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '15px'
+                }}>
+                  <h3 style={{
+                    margin: 0,
+                    fontSize: '18px',
+                    fontWeight: '700',
+                    color: '#ffffff'
+                  }}>
+                    📊 Conversion Metadata
+                  </h3>
+                  <button
+                    onClick={downloadMetadataJson}
+                    style={{
+                      background: 'rgba(255, 0, 255, 0.2)',
+                      color: '#ff00ff',
+                      border: '1px solid rgba(255, 0, 255, 0.3)',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.background = 'rgba(255, 0, 255, 0.3)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.background = 'rgba(255, 0, 255, 0.2)';
+                    }}
+                  >
+                    💾 Download JSON
+                  </button>
+                </div>
+                <pre style={{
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  color: '#f0f0f0',
+                  padding: '15px',
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
+                  lineHeight: '1.6',
+                  margin: 0,
+                  overflow: 'auto',
+                  maxHeight: '300px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                  {JSON.stringify(conversionMetadata, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <ErrorPopup
