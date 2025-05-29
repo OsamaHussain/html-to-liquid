@@ -13,6 +13,7 @@ export default function Home() {
   const [conversionMetadata, setConversionMetadata] = useState(null);
   const [isConverting, setIsConverting] = useState(false);
   const [conversionError, setConversionError] = useState("");
+  const [inputSource, setInputSource] = useState("");
   const validateAndExtractHtml = (text) => {
     try {
       const htmlTagRegex = /<[^>]+>/g;
@@ -106,9 +107,8 @@ export default function Home() {
           event.target.value = '';
           setIsLoading(false);
           return;
-        }
-
-        setFileContent(result.content);
+        } setFileContent(result.content);
+        setInputSource("file");
         setIsLoading(false);
       }; reader.onerror = () => {
         setValidationErrors('Error reading file. Please try again.');
@@ -125,18 +125,35 @@ export default function Home() {
       setIsLoading(false);
     }
   };
+  const handleManualInput = (text) => {
+    setConversionError('');
+    setLiquidContent('');
+    setConversionMetadata(null);
+
+    setFileContent(text);
+    setInputSource(text.trim() ? "manual" : "");
+  };
+
   const clearContent = () => {
     setFileContent('');
     setFileName('');
     setLiquidContent('');
     setConversionMetadata(null);
     setConversionError('');
+    setInputSource('');
     document.getElementById('fileInput').value = '';
   };
-
   const convertToLiquid = async () => {
     if (!fileContent) {
       setConversionError('No HTML content to convert');
+      return;
+    }
+
+    const result = validateAndExtractHtml(fileContent);
+    if (!result.isValid) {
+      setValidationErrors(result.error);
+      setShowErrorPopup(true);
+      setConversionError('Please fix HTML validation errors before converting');
       return;
     }
 
@@ -151,7 +168,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           htmlContent: fileContent,
-          fileName: fileName,
+          fileName: fileName || (inputSource === "manual" ? "manual-input.html" : "uploaded-file.html"),
         }),
       });
 
@@ -396,6 +413,7 @@ export default function Home() {
             </div>
           )}
         </div>
+
         <div style={{
           background: 'linear-gradient(145deg, #1e1e2e 0%, #2a2a3e 100%)',
           borderRadius: '25px',
@@ -437,12 +455,11 @@ export default function Home() {
             </div>
             <h2 style={{
               margin: 0,
-              fontSize: '24px',
-              fontWeight: '700',
+              fontSize: '24px', fontWeight: '700',
               color: '#ffffff',
               textShadow: '0 2px 4px rgba(0,0,0,0.3)'
             }}>
-              Validated HTML Content
+              HTML Editor & Validator
             </h2>
           </div>
           <div style={{
@@ -491,12 +508,7 @@ export default function Home() {
             </div>
             <textarea
               value={fileContent}
-              readOnly
-              placeholder="🤖 Your validated HTML content will appear here...
-
-✨ Upload an HTML file to see the magic happen!
-🔍 I'll validate it for errors and display clean content
-⚡ Real-time validation with detailed error reports"
+              onChange={(e) => handleManualInput(e.target.value)} placeholder="🤖 Unified HTML Editor - Upload file above OR paste/type content here!"
               style={{
                 width: '100%',
                 height: '450px',
