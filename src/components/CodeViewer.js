@@ -116,7 +116,6 @@ export default function CodeViewer({
                     )}
                 </div>
             </div>
-
             {fileType === 'JSON' ? (
                 <pre style={{
                     background: 'linear-gradient(135deg, #0a0a0a 0%, #111111 100%)',
@@ -133,7 +132,7 @@ export default function CodeViewer({
                     scrollbarWidth: 'thin',
                     scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
                 }}>
-                    {JSON.stringify(content, null, 2)}
+                    {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
                 </pre>
             ) : (
                 <textarea
