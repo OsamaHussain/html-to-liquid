@@ -132,7 +132,7 @@ export default function ConversionSection({
                     content={conversionMetadata.shopifyIntegration.customTemplate.content}
                     fileName={conversionMetadata.shopifyIntegration.customTemplate.filename}
                     fileType="JSON"
-                    title={`${conversionMetadata.shopifyIntegration.customTemplate.filename} (Shopify Page Template)`}
+                    title="Shopify Page Template"
                     onDownload={downloadCustomTemplate}
                 />
             )}
