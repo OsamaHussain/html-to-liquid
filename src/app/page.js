@@ -683,6 +683,43 @@ export default function Home() {
                     LIQUID
                   </span>
                   <button
+                    onClick={(e) => {
+                      navigator.clipboard.writeText(liquidContent);
+                      e.target.textContent = '✅ Copied!';
+                      e.target.style.background = 'rgba(0, 255, 136, 0.3)';
+                      e.target.style.color = '#00ff88';
+                      setTimeout(() => {
+                        e.target.textContent = '📋 Copy';
+                        e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                        e.target.style.color = '#ffffff';
+                      }, 2000);
+                    }}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      color: '#ffffff',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      transition: 'all 0.2s ease',
+                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+                    }}
+                    onMouseOver={(e) => {
+                      if (e.target.textContent === '📋 Copy') {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                      }
+                    }}
+                    onMouseOut={(e) => {
+                      if (e.target.textContent === '📋 Copy') {
+                        e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                      }
+                    }}
+                  >
+                    📋 Copy
+                  </button>
+                  <button
                     onClick={downloadLiquidFile}
                     style={{
                       background: 'rgba(255, 255, 255, 0.2)',
@@ -775,6 +812,43 @@ export default function Home() {
                     }}>
                       JSON
                     </span>
+                    <button
+                      onClick={(e) => {
+                        navigator.clipboard.writeText(JSON.stringify(conversionMetadata, null, 2));
+                        e.target.textContent = '✅ Copied!';
+                        e.target.style.background = 'rgba(0, 255, 136, 0.3)';
+                        e.target.style.color = '#00ff88';
+                        setTimeout(() => {
+                          e.target.textContent = '📋 Copy';
+                          e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                          e.target.style.color = '#ffffff';
+                        }, 2000);
+                      }}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        color: '#ffffff',
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        transition: 'all 0.2s ease',
+                        textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+                      }}
+                      onMouseOver={(e) => {
+                        if (e.target.textContent === '📋 Copy') {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (e.target.textContent === '📋 Copy') {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                        }
+                      }}
+                    >
+                      📋 Copy
+                    </button>
                     <button
                       onClick={downloadMetadataJson}
                       style={{
