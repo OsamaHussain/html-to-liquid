@@ -7,8 +7,8 @@ export default function ConversionSection({
     liquidContent,
     conversionMetadata,
     convertToLiquid,
-    downloadLiquidFile,
-    downloadMetadataJson
+    downloadCustomTemplate,
+    downloadLiquidFile
 }) {
     if (!fileContent) return null;
 
@@ -102,9 +102,7 @@ export default function ConversionSection({
                 >
                     {isConverting ? '⏳ Converting...' : '🚀 Convert to Liquid'}
                 </button>
-            </div>
-
-            {conversionError && (
+            </div>            {conversionError && (
                 <div style={{
                     background: 'linear-gradient(135deg, #ff4444 0%, #cc3333 100%)',
                     color: 'white',
@@ -119,25 +117,23 @@ export default function ConversionSection({
                 }}>
                     ❌ {conversionError}
                 </div>
-            )}
-
-            {liquidContent && (
+            )}            {liquidContent && (
                 <CodeViewer
                     content={liquidContent}
-                    fileName={fileName}
-                    fileType="LIQUID"
-                    title={fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid'}
+                    fileName={fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid'}
+                    fileType="Liquid"
+                    title="Converted Liquid Template"
                     onDownload={downloadLiquidFile}
                 />
             )}
 
-            {conversionMetadata && (
+            {conversionMetadata?.shopifyIntegration?.customTemplate && (
                 <CodeViewer
-                    content={conversionMetadata}
-                    fileName={fileName}
+                    content={conversionMetadata.shopifyIntegration.customTemplate.content}
+                    fileName={conversionMetadata.shopifyIntegration.customTemplate.filename}
                     fileType="JSON"
-                    title="metadata.json"
-                    onDownload={downloadMetadataJson}
+                    title={`${conversionMetadata.shopifyIntegration.customTemplate.filename} (Shopify Page Template)`}
+                    onDownload={downloadCustomTemplate}
                 />
             )}
         </div>

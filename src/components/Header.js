@@ -54,21 +54,20 @@ export default function Header() {
                         zIndex: 1
                     }}></div>
                 </div>
-                <div>
-                    <h1 className="gradient-text" style={{
-                        margin: 0,
-                        fontSize: '28px',
-                        fontWeight: '800',
-                        letterSpacing: '0.5px'
-                    }}>
-                        HTML to Liquid Converter
-                    </h1>
+                <div>                    <h1 className="gradient-text" style={{
+                    margin: 0,
+                    fontSize: '28px',
+                    fontWeight: '800',
+                    letterSpacing: '0.5px'
+                }}>
+                    Shopify Liquid Template Generator
+                </h1>
                     <p className="shimmer-text" style={{
                         margin: '5px 0 0 0',
                         fontSize: '14px',
                         fontWeight: '500'
                     }}>
-                        AI-Powered Template Conversion
+                        Complete Sections with Schema & Custom Templates
                     </p>
                 </div>
             </div>

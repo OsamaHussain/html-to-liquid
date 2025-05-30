@@ -149,7 +149,6 @@ export default function Home() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-
   const downloadMetadataJson = () => {
     if (!conversionMetadata) return;
 
@@ -158,6 +157,23 @@ export default function Home() {
     const a = document.createElement('a');
     a.href = url;
     a.download = fileName ? fileName.replace('.html', '_metadata.json') : 'conversion_metadata.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadCustomTemplate = () => {
+    if (!conversionMetadata?.shopifyIntegration?.customTemplate) return;
+
+    const templateContent = conversionMetadata.shopifyIntegration.customTemplate.content;
+    const templateFilename = conversionMetadata.shopifyIntegration.customTemplate.filename;
+
+    const blob = new Blob([templateContent], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = templateFilename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -187,9 +203,7 @@ export default function Home() {
           fileContent={fileContent}
           fileName={fileName}
           handleManualInput={handleManualInput}
-        />
-
-        <ConversionSection
+        />        <ConversionSection
           fileContent={fileContent}
           fileName={fileName}
           isConverting={isConverting}
@@ -197,8 +211,8 @@ export default function Home() {
           liquidContent={liquidContent}
           conversionMetadata={conversionMetadata}
           convertToLiquid={convertToLiquid}
+          downloadCustomTemplate={downloadCustomTemplate}
           downloadLiquidFile={downloadLiquidFile}
-          downloadMetadataJson={downloadMetadataJson}
         />
       </div>
 
