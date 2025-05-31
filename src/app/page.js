@@ -13,8 +13,9 @@ export default function Home() {
   const [fileName, setFileName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showErrorPopup, setShowErrorPopup] = useState(false);
-  const [validationErrors, setValidationErrors] = useState("");
-  const [liquidContent, setLiquidContent] = useState("");
+  const [validationErrors, setValidationErrors] = useState(""); const [liquidContent, setLiquidContent] = useState("");
+  const [jsonTemplate, setJsonTemplate] = useState("");
+  const [fileNames, setFileNames] = useState({});
   const [conversionMetadata, setConversionMetadata] = useState(null);
   const [isConverting, setIsConverting] = useState(false);
   const [conversionError, setConversionError] = useState("");
@@ -73,10 +74,10 @@ export default function Home() {
       event.target.value = '';
       setIsLoading(false);
     }
-  };
-  const handleManualInput = (text) => {
+  }; const handleManualInput = (text) => {
     setConversionError('');
     setLiquidContent('');
+    setJsonTemplate('');
     setConversionMetadata(null);
 
     setFileContent(text);
@@ -87,6 +88,7 @@ export default function Home() {
     setFileContent('');
     setFileName('');
     setLiquidContent('');
+    setJsonTemplate('');
     setConversionMetadata(null);
     setConversionError('');
     setInputSource('');
@@ -125,9 +127,9 @@ export default function Home() {
 
       if (!response.ok) {
         throw new Error(data.error || 'Conversion failed');
-      }
-
-      setLiquidContent(data.liquidContent);
+      } setLiquidContent(data.liquidContent);
+      setJsonTemplate(data.jsonTemplate);
+      setFileNames(data.metadata);
       setConversionMetadata(data.metadata);
     } catch (error) {
       setConversionError(error.message);
@@ -135,7 +137,6 @@ export default function Home() {
       setIsConverting(false);
     }
   };
-
   const downloadLiquidFile = () => {
     if (!liquidContent) return;
 
@@ -143,37 +144,20 @@ export default function Home() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid';
+    a.download = fileNames?.liquidFileName || (fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid');
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-  const downloadMetadataJson = () => {
-    if (!conversionMetadata) return;
+  const downloadJsonFile = () => {
+    if (!jsonTemplate) return;
 
-    const blob = new Blob([JSON.stringify(conversionMetadata, null, 2)], { type: 'application/json' });
+    const blob = new Blob([jsonTemplate], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = fileName ? fileName.replace('.html', '_metadata.json') : 'conversion_metadata.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const downloadCustomTemplate = () => {
-    if (!conversionMetadata?.shopifyIntegration?.customTemplate) return;
-
-    const templateContent = conversionMetadata.shopifyIntegration.customTemplate.content;
-    const templateFilename = conversionMetadata.shopifyIntegration.customTemplate.filename;
-
-    const blob = new Blob([templateContent], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = templateFilename;
+    a.download = fileNames?.jsonFileName || (fileName ? `page.${fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : 'page.custom.json');
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -209,10 +193,11 @@ export default function Home() {
           isConverting={isConverting}
           conversionError={conversionError}
           liquidContent={liquidContent}
-          conversionMetadata={conversionMetadata}
+          jsonTemplate={jsonTemplate}
+          fileNames={fileNames}
           convertToLiquid={convertToLiquid}
-          downloadCustomTemplate={downloadCustomTemplate}
           downloadLiquidFile={downloadLiquidFile}
+          downloadJsonFile={downloadJsonFile}
         />
       </div>
 

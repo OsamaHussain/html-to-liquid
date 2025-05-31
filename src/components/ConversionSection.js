@@ -5,10 +5,11 @@ export default function ConversionSection({
     isConverting,
     conversionError,
     liquidContent,
-    conversionMetadata,
+    jsonTemplate,
+    fileNames,
     convertToLiquid,
-    downloadCustomTemplate,
-    downloadLiquidFile
+    downloadLiquidFile,
+    downloadJsonFile
 }) {
     if (!fileContent) return null;
 
@@ -120,20 +121,20 @@ export default function ConversionSection({
             )}            {liquidContent && (
                 <CodeViewer
                     content={liquidContent}
-                    fileName={fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid'}
+                    fileName={fileNames?.liquidFileName || (fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid')}
                     fileType="Liquid"
                     title="Converted Liquid Template"
                     onDownload={downloadLiquidFile}
                 />
             )}
 
-            {conversionMetadata?.shopifyIntegration?.customTemplate && (
+            {jsonTemplate && (
                 <CodeViewer
-                    content={conversionMetadata.shopifyIntegration.customTemplate.content}
-                    fileName={conversionMetadata.shopifyIntegration.customTemplate.filename}
+                    content={jsonTemplate}
+                    fileName={fileNames?.jsonFileName || (fileName ? `page.${fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : 'page.custom.json')}
                     fileType="JSON"
                     title="Shopify Page Template"
-                    onDownload={downloadCustomTemplate}
+                    onDownload={downloadJsonFile}
                 />
             )}
         </div>

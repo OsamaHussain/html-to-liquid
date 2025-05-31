@@ -60,7 +60,7 @@ ${htmlContent}
 Provide ONLY the complete Liquid section code with schema - no explanations or markdown.`;
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-4-turbo-preview",
+            model: "gpt-4o",
             messages: [
                 {
                     role: "system",
@@ -75,72 +75,50 @@ Provide ONLY the complete Liquid section code with schema - no explanations or m
             temperature: 0.3,
         });
 
-        const liquidContent = completion.choices[0]?.message?.content;
-
-        if (!liquidContent) {
+        const liquidContent = completion.choices[0]?.message?.content; if (!liquidContent) {
             return NextResponse.json(
                 { error: 'Failed to generate Liquid content' },
                 { status: 500 }
             );
-        } const metadata = {
-            conversion: {
-                timestamp: new Date().toISOString(),
-                originalFileName: fileName || 'unknown.html',
-                liquidFileName: fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid',
-                status: 'success',
-                apiModel: 'gpt-4-turbo-preview'
-            },
-            statistics: {
-                originalHtmlLength: htmlContent.length,
-                liquidContentLength: liquidContent.length,
-                compressionRatio: (liquidContent.length / htmlContent.length).toFixed(2)
-            },
-            features: {
-                hasLiquidVariables: liquidContent.includes('{{'),
-                hasLiquidTags: liquidContent.includes('{%'),
-                hasConditionals: liquidContent.includes('{% if'),
-                hasLoops: liquidContent.includes('{% for'),
-                hasFilters: liquidContent.includes('|'),
-                hasComments: liquidContent.includes('{%- comment'),
-                hasSchema: liquidContent.includes('{% schema %}'),
-                hasBlocks: liquidContent.includes('section.blocks'),
-                hasSettings: liquidContent.includes('section.settings')
-            }, shopifyIntegration: {
-                sectionFile: {
-                    path: `sections/${fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid'}`,
-                    description: "Upload this file to your theme's sections folder"
+        }
+
+        const jsonPrompt = `Create a Shopify page template JSON file for this liquid section:
+
+LIQUID FILE:
+${liquidContent}
+
+REQUIREMENTS:
+- Create a complete JSON template file that makes this section editable in Shopify Theme Editor
+- Use proper Shopify template structure
+- Include the section with appropriate settings
+- Make it ready for assignment to pages in Shopify admin
+
+Return ONLY the JSON code - no explanations.`;
+
+        const jsonCompletion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "system",
+                    content: "You are a Shopify theme expert. Create proper JSON template files for Shopify pages."
                 },
-                customTemplate: {
-                    filename: fileName ? `page.${fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : 'page.custom.json',
-                    path: 'templates/',
-                    content: JSON.stringify({
-                        "sections": {
-                            "main": {
-                                "type": fileName ? fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-') : 'converted',
-                                "settings": {}
-                            }
-                        },
-                        "order": ["main"]
-                    }, null, 2),
-                    description: "Create this JSON template file if you want to assign this section to a specific page"
+                {
+                    role: "user",
+                    content: jsonPrompt
                 }
-            },
-            recommendations: [
-                "Upload the .liquid file to your theme's sections/ folder",
-                "Create a custom JSON template if this is for a specific page",
-                "Test all settings in Shopify's Theme Editor",
-                "Verify responsive behavior across devices",
-                "Check that all images and links work with your content",
-                "Consider adding more blocks if you need additional content sections",
-                "Test with empty/null values to ensure graceful handling"
-            ]
-        };
+            ],
+            max_tokens: 1000,
+            temperature: 0.1,
+        }); const jsonTemplate = jsonCompletion.choices[0]?.message?.content;
 
         return NextResponse.json({
             success: true,
             liquidContent,
-            metadata,
-            message: 'HTML successfully converted to Liquid template'
+            jsonTemplate,
+            metadata: {
+                liquidFileName: fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid',
+                jsonFileName: fileName ? `page.${fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : 'page.custom.json'
+            }
         });
 
     } catch (error) {
