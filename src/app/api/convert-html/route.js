@@ -20,7 +20,8 @@ export async function POST(request) {
             return NextResponse.json(
                 { error: 'OpenAI API key is not configured' },
                 { status: 500 }
-            );        }
+            );
+        }
 
         const prompt = `Convert the following HTML code to a proper Shopify Liquid template file. Follow these requirements:
 
@@ -60,70 +61,154 @@ ${htmlContent}
             return NextResponse.json(
                 { error: 'Failed to generate Liquid content' },
                 { status: 500 }
-            );        }        const jsonPrompt = `Create a proper Shopify page template JSON file for the following converted Liquid template. This JSON file will be used in the templates folder and must follow Shopify's page template structure.
+            );
+        }        // Get the section type before creating the prompt
+        const liquidFileName = fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid';
+        const sectionType = liquidFileName.replace('.liquid', ''); const jsonPrompt = `Create a proper Shopify page template JSON file for the following converted Liquid template. This JSON file will be used in the templates folder and must follow Shopify's page template structure.
 
-IMPORTANT: The liquid template will be saved as a single section file, so you must use the correct section type name.
+CRITICAL: The liquid template will be saved as "${liquidFileName}" so you MUST use section type "${sectionType}" - NO OTHER SECTION TYPE IS ALLOWED.
+
+Original HTML Content:
+\`\`\`html
+${htmlContent}
+\`\`\`
 
 Converted Liquid Template:
 \`\`\`liquid
 ${liquidContent}
 \`\`\`
 
+IMPORTANT: Extract the ACTUAL content from the original HTML and use it as default values in the JSON template settings. Do NOT use generic placeholders.
+
+BLOCKS DETECTION: If the HTML contains repeating elements (like multiple cards, testimonials, products, features, team members, etc.), create BLOCKS for them. If the liquid template uses {% for block in section.blocks %}, then you MUST create blocks in the JSON.
+
 Requirements for the JSON template:
 
 1. Must include "sections" object with section references
 2. Must include "order" array listing the sections in order  
-3. Use ONLY the section type name that matches the liquid file name (without .liquid extension)
-4. If the liquid file will be named "converted.liquid", use type "converted"
-5. If the liquid file will be named "custom-page.liquid", use type "custom-page"
-6. Each section should have settings that correspond to ALL liquid variables used in the template
-7. Follow this exact structure:
+3. Use EXACTLY the section type "${sectionType}" - this is the ONLY allowed section type
+4. Extract REAL content from the original HTML for settings values
+5. If HTML has repeating elements, create blocks structure like this:
 
 {
   "sections": {
     "main": {
-      "type": "converted",
+      "type": "${sectionType}",
+      "blocks": {
+        "block-1": {
+          "type": "item",
+          "settings": {
+            "title": "Actual title from first item in HTML",
+            "description": "Actual description from first item in HTML"
+          }
+        },
+        "block-2": {
+          "type": "item", 
+          "settings": {
+            "title": "Actual title from second item in HTML",
+            "description": "Actual description from second item in HTML"
+          }
+        }
+      },
+      "block_order": ["block-1", "block-2"],
       "settings": {
-        // All settings that match liquid variables from the template
+        "main_title": "Overall section title from HTML"
       }
     }
   },
   "order": ["main"]
 }
 
-8. Make sure EVERY {{ section.settings.variable_name }} from the liquid template has a corresponding setting
-9. Use appropriate setting types: text, textarea, richtext, image_picker, color, font_picker, number, checkbox, select, url, range
-10. Include default values for all settings
-11. CRITICAL: Only use section type names that will actually exist as liquid files
-12. Use "converted" as the section type since that's the default liquid file name
+6. If NO repeating elements, use simple settings structure:
 
-Return only the valid JSON template code with proper structure:`;
+{
+  "sections": {
+    "main": {
+      "type": "${sectionType}",
+      "settings": {
+        "title": "Actual title from HTML",
+        "description": "Actual description from HTML"
+      }
+    }
+  },
+  "order": ["main"]
+}
+
+7. Make sure EVERY {{ section.settings.variable_name }} from the liquid template has a corresponding setting
+8. Make sure EVERY {{ block.settings.variable_name }} from the liquid template has a corresponding block setting
+9. Use the ACTUAL text content, headings, paragraphs, button texts, image names from the original HTML
+10. For images, extract the actual filename from src attributes
+11. For text content, use the real text from HTML elements, not "Sample text" or "Default title"
+12. For colors, extract actual color values from style attributes or classes if present
+13. For links, use the actual href values from the HTML
+14. The settings should contain the real data so the website displays the original content
+15. NEVER use section types like "hero", "features", "manual-input", etc. - ONLY use "${sectionType}"
+16. CRITICAL: The website should look exactly like the original HTML when this template is applied
+17. COUNT the repeating elements in HTML and create that many blocks with actual content
+
+Return only the valid JSON template code with REAL content from the HTML as default values:`;
+        `\`\`liquid
+${liquidContent}
+\`\`\`
+
+IMPORTANT: Extract the ACTUAL content from the original HTML and use it as default values in the JSON template settings. Do NOT use generic placeholders.
+
+Requirements for the JSON template:
+
+1. Must include "sections" object with section references
+2. Must include "order" array listing the sections in order  
+3. Use EXACTLY the section type "${sectionType}" - this is the ONLY allowed section type
+4. Extract REAL content from the original HTML for settings values
+5. Follow this EXACT structure (DO NOT change the section type):
+
+{
+  "sections": {
+    "main": {
+      "type": "${sectionType}",
+      "settings": {
+        "title": "Actual title from HTML",
+        "description": "Actual description from HTML",
+        "image": "actual-image-filename.jpg",
+        "button_text": "Actual button text from HTML"
+      }
+    }
+  },
+  "order": ["main"]
+}
+
+6. Make sure EVERY {{ section.settings.variable_name }} from the liquid template has a corresponding setting
+7. Use the ACTUAL text content, headings, paragraphs, button texts, image names from the original HTML
+8. For images, extract the actual filename from src attributes
+9. For text content, use the real text from HTML elements, not "Sample text" or "Default title"
+10. For colors, extract actual color values from style attributes or classes if present
+11. For links, use the actual href values from the HTML
+12. The settings should contain the real data so the website displays the original content
+13. NEVER use section types like "hero", "features", "manual-input", etc. - ONLY use "${sectionType}"
+14. CRITICAL: The website should look exactly like the original HTML when this template is applied
+
+Return only the valid JSON template code with REAL content from the HTML as default values:`;
 
         const jsonCompletion = await openai.chat.completions.create({
             model: "gpt-4o",
-            messages: [                {
-                    role: "system",
-                    content: "You are a Shopify theme expert who creates proper page template JSON files. These JSON files go in the templates folder and define which sections appear on a page and their settings. You must follow the exact Shopify page template JSON structure with 'sections' and 'order' keys."
-                },
-                {
-                    role: "user",
-                    content: jsonPrompt
-                }
+            messages: [{
+                role: "system",
+                content: "You are a Shopify theme expert who creates proper page template JSON files. These JSON files go in the templates folder and define which sections appear on a page and their settings. You must follow the exact Shopify page template JSON structure with 'sections' and 'order' keys. IMPORTANT: Extract actual content from HTML and use it as default values in the JSON settings so the website displays the original content. CRITICAL: If the HTML has repeating elements (cards, features, testimonials, etc.), you MUST create blocks structure with 'blocks' and 'block_order' arrays."
+            },
+            {
+                role: "user",
+                content: jsonPrompt
+            }
             ],
             max_tokens: 1000,
             temperature: 0.1,
-        });        const jsonTemplate = jsonCompletion.choices[0]?.message?.content;
+        }); const jsonTemplate = jsonCompletion.choices[0]?.message?.content;
 
-        // Get the liquid file name without extension to ensure section type matches
-        const liquidFileName = fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid';
-        const sectionType = liquidFileName.replace('.liquid', '');
-        
         // Replace any incorrect section types in the JSON with the correct one
         let correctedJsonTemplate = jsonTemplate;
         if (correctedJsonTemplate) {
             // Replace common incorrect section types with the correct one
             correctedJsonTemplate = correctedJsonTemplate.replace(
-                /"type":\s*"[^"]*"/g, 
+                /"type":\s*"[^"]*"/g,
                 `"type": "${sectionType}"`
             );
         }
