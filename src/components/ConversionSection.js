@@ -55,15 +55,14 @@ export default function ConversionSection({
                         boxShadow: '0 8px 16px rgba(0, 255, 136, 0.3)'
                     }}>
                         <span style={{ color: 'white', fontSize: '24px' }}>🚀</span>
-                    </div>
-                    <h2 style={{
+                    </div>                    <h2 style={{
                         margin: 0,
                         fontSize: '24px',
                         fontWeight: '700',
                         color: '#ffffff',
                         textShadow: '0 2px 4px rgba(0,0,0,0.3)'
                     }}>
-                        Convert to Liquid Template
+                        HTML to Liquid + JSON Converter
                     </h2>
                 </div>
 
@@ -99,9 +98,8 @@ export default function ConversionSection({
                             e.target.style.transform = 'scale(1)';
                             e.target.style.boxShadow = '0 8px 16px rgba(0, 255, 136, 0.3)';
                         }
-                    }}
-                >
-                    {isConverting ? '⏳ Converting...' : '🚀 Convert to Liquid'}
+                    }}                >
+                    {isConverting ? '⏳ Converting to Liquid + JSON...' : '🚀 Convert to Liquid + JSON'}
                 </button>
             </div>            {conversionError && (
                 <div style={{
