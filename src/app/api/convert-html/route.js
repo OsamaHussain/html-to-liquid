@@ -21,20 +21,21 @@ export async function POST(request) {
                 { error: 'OpenAI API key is not configured' },
                 { status: 500 }
             );
-        }
-
-        const prompt = `Convert the following HTML code to a proper Shopify Liquid template file. Follow these requirements:
+        }        const prompt = `Convert the following HTML code to a proper Shopify Liquid template file. Follow these requirements:
 
 1. Replace static text with Liquid variables where appropriate (e.g., {{ section.settings.title }}, {{ section.settings.description }})
 2. Convert images to use Liquid filters (e.g., {{ 'image.jpg' | asset_url }})
-3. Add proper Shopify section schema for customizable elements
+3. Add proper Shopify section schema for customizable elements at the bottom of the file
 4. Use Shopify best practices for liquid syntax
 5. Make text content editable through section settings
 6. Convert any hardcoded colors, fonts, or styles to be customizable
 7. Add proper liquid loops for repeatable content if needed
 8. Include responsive design considerations
 9. Follow Shopify's liquid template structure and naming conventions
-10. Only return the liquid template code, no explanations
+10. For links (href attributes), convert them to Liquid variables (e.g., {{ section.settings.link_url }} or {{ block.settings.link_url }})
+11. Include a complete {% schema %} section at the end with all settings and blocks
+12. In schema, use "/" as default value for all link_url fields
+13. Only return the liquid template code with schema, no explanations
 
 HTML to convert:
 \`\`\`html
@@ -43,10 +44,9 @@ ${htmlContent}
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
-            messages: [
-                {
+            messages: [                {
                     role: "system",
-                    content: "You are an expert Shopify Liquid template developer with deep knowledge of Shopify theme development, liquid syntax, and section schemas. Convert HTML to production-ready Liquid templates with proper customization options."
+                    content: "You are an expert Shopify Liquid template developer with deep knowledge of Shopify theme development, liquid syntax, and section schemas. Convert HTML to production-ready Liquid templates with proper customization options. ALWAYS include a complete {% schema %} section at the end of the liquid template with all necessary settings, blocks, and presets. For link_url fields in schema, always use '/' as the default value."
                 },
                 {
                     role: "user",
@@ -99,14 +99,16 @@ Requirements for the JSON template:
           "type": "item",
           "settings": {
             "title": "Actual title from first item in HTML",
-            "description": "Actual description from first item in HTML"
+            "description": "Actual description from first item in HTML",
+            "link_url": "/"
           }
         },
         "block-2": {
           "type": "item", 
           "settings": {
             "title": "Actual title from second item in HTML",
-            "description": "Actual description from second item in HTML"
+            "description": "Actual description from second item in HTML",
+            "link_url": "/"
           }
         }
       },
@@ -127,7 +129,8 @@ Requirements for the JSON template:
       "type": "${sectionType}",
       "settings": {
         "title": "Actual title from HTML",
-        "description": "Actual description from HTML"
+        "description": "Actual description from HTML",
+        "link_url": "/"
       }
     }
   },
@@ -140,7 +143,7 @@ Requirements for the JSON template:
 10. For images, extract the actual filename from src attributes
 11. For text content, use the real text from HTML elements, not "Sample text" or "Default title"
 12. For colors, extract actual color values from style attributes or classes if present
-13. For links, use the actual href values from the HTML
+13. For links, if HTML has href attributes use "/" as default value, but make them editable through settings
 14. The settings should contain the real data so the website displays the original content
 15. NEVER use section types like "hero", "features", "manual-input", etc. - ONLY use "${sectionType}"
 16. CRITICAL: The website should look exactly like the original HTML when this template is applied
@@ -169,22 +172,25 @@ Requirements for the JSON template:
         "title": "Actual title from HTML",
         "description": "Actual description from HTML",
         "image": "actual-image-filename.jpg",
-        "button_text": "Actual button text from HTML"
+        "button_text": "Actual button text from HTML",
+        "link_url": "/"
       }
     }
   },
   "order": ["main"]
 }
 
-6. Make sure EVERY {{ section.settings.variable_name }} from the liquid template has a corresponding setting
-7. Use the ACTUAL text content, headings, paragraphs, button texts, image names from the original HTML
-8. For images, extract the actual filename from src attributes
-9. For text content, use the real text from HTML elements, not "Sample text" or "Default title"
-10. For colors, extract actual color values from style attributes or classes if present
-11. For links, use the actual href values from the HTML
-12. The settings should contain the real data so the website displays the original content
-13. NEVER use section types like "hero", "features", "manual-input", etc. - ONLY use "${sectionType}"
-14. CRITICAL: The website should look exactly like the original HTML when this template is applied
+7. Make sure EVERY {{ section.settings.variable_name }} from the liquid template has a corresponding setting
+8. Make sure EVERY {{ block.settings.variable_name }} from the liquid template has a corresponding block setting
+9. Use the ACTUAL text content, headings, paragraphs, button texts, image names from the original HTML
+10. For images, extract the actual filename from src attributes
+11. For text content, use the real text from HTML elements, not "Sample text" or "Default title"
+12. For colors, extract actual color values from style attributes or classes if present
+13. For links, if HTML has href attributes use "/" as default value, but make them editable through settings
+14. The settings should contain the real data so the website displays the original content
+15. NEVER use section types like "hero", "features", "manual-input", etc. - ONLY use "${sectionType}"
+16. CRITICAL: The website should look exactly like the original HTML when this template is applied
+17. COUNT the repeating elements in HTML and create that many blocks with actual content
 
 Return only the valid JSON template code with REAL content from the HTML as default values:`;
 
