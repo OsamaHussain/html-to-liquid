@@ -1,10 +1,11 @@
-export default function Header() {
+export default function Header({ onHowItWorksClick }) {
     return (
         <div style={{
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: '40px 20px 20px 20px'
+            padding: '40px 20px 20px 20px',
+            position: 'relative'
         }}>
             <div className="animated-logo-container" style={{
                 display: 'flex',
@@ -54,14 +55,15 @@ export default function Header() {
                         zIndex: 1
                     }}></div>
                 </div>
-                <div>                    <h1 className="gradient-text" style={{
-                    margin: 0,
-                    fontSize: '28px',
-                    fontWeight: '800',
-                    letterSpacing: '0.5px'
-                }}>
-                    Shopify Liquid Template Generator
-                </h1>
+                <div>
+                    <h1 className="gradient-text" style={{
+                        margin: 0,
+                        fontSize: '28px',
+                        fontWeight: '800',
+                        letterSpacing: '0.5px'
+                    }}>
+                        Shopify Liquid Template Generator
+                    </h1>
                     <p className="shimmer-text" style={{
                         margin: '5px 0 0 0',
                         fontSize: '14px',
@@ -71,6 +73,39 @@ export default function Header() {
                     </p>
                 </div>
             </div>
+
+            <button
+                onClick={onHowItWorksClick}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    right: '20px',
+                    background: 'linear-gradient(135deg, #00d4ff 0%, #ff00ff 100%)',
+                    border: 'none',
+                    borderRadius: '25px',
+                    padding: '12px 20px',
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 15px rgba(0, 212, 255, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-2px) scale(1.05)';
+                    e.target.style.boxShadow = '0 6px 20px rgba(0, 212, 255, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0) scale(1)';
+                    e.target.style.boxShadow = '0 4px 15px rgba(0, 212, 255, 0.3)';
+                }}
+            >
+                <span>❓</span>
+                How It Works
+            </button>
         </div>
     );
 }

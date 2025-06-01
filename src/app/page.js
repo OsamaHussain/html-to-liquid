@@ -6,6 +6,7 @@ import FileUploadSection from "../components/FileUploadSection";
 import HtmlEditor from "../components/HtmlEditor";
 import ConversionSection from "../components/ConversionSection";
 import GlobalStyles from "../components/GlobalStyles";
+import HowItWorksPopup from "../components/HowItWorksPopup";
 import { validateAndExtractHtml } from "../utils/htmlValidation";
 
 export default function Home() {
@@ -16,10 +17,11 @@ export default function Home() {
   const [validationErrors, setValidationErrors] = useState(""); const [liquidContent, setLiquidContent] = useState("");
   const [jsonTemplate, setJsonTemplate] = useState("");
   const [fileNames, setFileNames] = useState({});
-  const [conversionMetadata, setConversionMetadata] = useState(null);
-  const [isConverting, setIsConverting] = useState(false);
-  const [conversionError, setConversionError] = useState("");
-  const [inputSource, setInputSource] = useState(""); const handleFileUpload = async (event) => {
+  const [conversionMetadata, setConversionMetadata] = useState(null); const [isConverting, setIsConverting] = useState(false); const [conversionError, setConversionError] = useState("");
+  const [inputSource, setInputSource] = useState("");
+  const [showHowItWorksPopup, setShowHowItWorksPopup] = useState(false);
+
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
 
     if (!file) {
@@ -159,17 +161,22 @@ export default function Home() {
     a.href = url;
     a.download = fileNames?.jsonFileName || (fileName ? `page.${fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : 'page.custom.json');
     document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }; return (
+  };
+
+  const handleHowItWorksClick = () => {
+    setShowHowItWorksPopup(true);
+  };
+
+  return (
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       <GlobalStyles />
-      <Header />
+      <Header onHowItWorksClick={handleHowItWorksClick} />
 
       <div style={{
         maxWidth: '1000px',
@@ -187,7 +194,8 @@ export default function Home() {
           fileContent={fileContent}
           fileName={fileName}
           handleManualInput={handleManualInput}
-        />        <ConversionSection
+        />
+        <ConversionSection
           fileContent={fileContent}
           fileName={fileName}
           isConverting={isConverting}
@@ -200,12 +208,16 @@ export default function Home() {
           downloadJsonFile={downloadJsonFile}
         />
       </div>
-
       <ErrorPopup
         errors={validationErrors}
         isVisible={showErrorPopup}
         onClose={() => setShowErrorPopup(false)}
         fileName={fileName}
+      />
+
+      <HowItWorksPopup
+        isOpen={showHowItWorksPopup}
+        onClose={() => setShowHowItWorksPopup(false)}
       />
     </div>
   );
