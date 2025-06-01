@@ -3,6 +3,15 @@ export default function HtmlEditor({
     fileName,
     handleManualInput
 }) {
+    let lineNumbersRef = null;
+
+    const handleScroll = (e) => {
+        const textareaElement = e.target;
+        if (lineNumbersRef) {
+            lineNumbersRef.scrollTop = textareaElement.scrollTop;
+        }
+    };
+
     return (
         <div style={{
             background: 'linear-gradient(145deg, #1e1e2e 0%, #2a2a3e 100%)',
@@ -98,26 +107,65 @@ export default function HtmlEditor({
                         HTML
                     </span>
                 </div>
-                <textarea
-                    value={fileContent}
-                    onChange={(e) => handleManualInput(e.target.value)}
-                    placeholder="🤖 Unified HTML Editor - Upload file above OR paste/type content here!"
-                    style={{
-                        width: '100%',
-                        height: '450px',
-                        padding: '25px',
-                        border: 'none',
-                        outline: 'none',
-                        fontSize: '15px',
-                        fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
-                        lineHeight: '1.7',
-                        background: 'linear-gradient(135deg, #0a0a0a 0%, #111111 100%)',
-                        color: '#f0f0f0',
-                        resize: 'vertical',
-                        scrollbarWidth: 'thin',
-                        scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
-                    }}
-                />
+                <div style={{
+                    display: 'flex',
+                    background: 'linear-gradient(135deg, #0a0a0a 0%, #111111 100%)',
+                    position: 'relative'
+                }}>
+                    <div
+                        ref={(el) => lineNumbersRef = el}
+                        className="line-numbers"
+                        style={{
+                            background: 'rgba(255, 255, 255, 0.08)',
+                            borderRight: '2px solid rgba(255, 255, 255, 0.15)',
+                            padding: '25px 15px',
+                            color: '#888',
+                            fontSize: '15px',
+                            fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
+                            lineHeight: '1.7',
+                            userSelect: 'none',
+                            minWidth: '60px',
+                            textAlign: 'right',
+                            overflow: 'hidden',
+                            maxHeight: '450px',
+                            pointerEvents: 'none'
+                        }}>
+                        {fileContent && fileContent
+                            .split('\n')
+                            .map((_, index) => (
+                                <div key={index} style={{
+                                    height: '25.5px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-end'
+                                }}>
+                                    {index + 1}
+                                </div>
+                            ))
+                        }
+                    </div>
+                    <textarea
+                        value={fileContent}
+                        onChange={(e) => handleManualInput(e.target.value)}
+                        onScroll={handleScroll}
+                        placeholder="🤖 Unified HTML Editor - Upload file above OR paste/type content here!"
+                        style={{
+                            flex: 1,
+                            height: '450px',
+                            padding: '25px',
+                            border: 'none',
+                            outline: 'none',
+                            fontSize: '15px',
+                            fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
+                            lineHeight: '1.7',
+                            background: 'transparent',
+                            color: '#f0f0f0',
+                            resize: 'vertical',
+                            scrollbarWidth: 'thin',
+                            scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
+                        }}
+                    />
+                </div>
             </div>
         </div>
     );

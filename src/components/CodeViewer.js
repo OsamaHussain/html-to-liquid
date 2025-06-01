@@ -6,6 +6,15 @@ export default function CodeViewer({
     onDownload,
     readOnly = true
 }) {
+    let lineNumbersRef = null;
+
+    const handleScroll = (e) => {
+        const codeElement = e.target;
+        if (lineNumbersRef) {
+            lineNumbersRef.scrollTop = codeElement.scrollTop;
+        }
+    };
+
     return (
         <div style={{
             position: 'relative',
@@ -116,45 +125,90 @@ export default function CodeViewer({
                     )}
                 </div>
             </div>
-            {fileType === 'JSON' ? (
-                <pre style={{
-                    background: 'linear-gradient(135deg, #0a0a0a 0%, #111111 100%)',
-                    color: '#f0f0f0',
-                    padding: '25px',
-                    fontSize: '13px',
-                    fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
-                    lineHeight: '1.6',
-                    margin: 0,
-                    overflow: 'auto',
-                    maxHeight: '300px',
-                    border: 'none',
-                    outline: 'none',
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
-                }}>
-                    {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
-                </pre>
-            ) : (
-                <textarea
-                    value={content}
-                    readOnly={readOnly}
+            <div style={{
+                display: 'flex',
+                background: 'linear-gradient(135deg, #0a0a0a 0%, #111111 100%)',
+                position: 'relative',
+                maxHeight: fileType === 'JSON' ? '300px' : '400px',
+                overflow: 'hidden'
+            }}>
+                <div
+                    ref={(el) => lineNumbersRef = el}
+                    className="line-numbers"
                     style={{
-                        width: '100%',
-                        height: '400px',
-                        padding: '25px',
-                        border: 'none',
-                        outline: 'none',
-                        fontSize: '15px',
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        borderRight: '2px solid rgba(255, 255, 255, 0.15)',
+                        padding: '25px 15px',
+                        color: '#888',
+                        fontSize: fileType === 'JSON' ? '13px' : '15px',
                         fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
-                        lineHeight: '1.7',
-                        background: 'linear-gradient(135deg, #0a0a0a 0%, #111111 100%)',
-                        color: '#f0f0f0',
-                        resize: 'vertical',
-                        scrollbarWidth: 'thin',
-                        scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
-                    }}
-                />
-            )}
+                        lineHeight: fileType === 'JSON' ? '1.6' : '1.7',
+                        userSelect: 'none',
+                        minWidth: '60px',
+                        textAlign: 'right',
+                        overflow: 'hidden',
+                        maxHeight: fileType === 'JSON' ? '300px' : '400px',
+                        pointerEvents: 'none'
+                    }}>
+                    {content && (typeof content === 'string' ? content : JSON.stringify(content, null, 2))
+                        .split('\n')
+                        .map((_, index) => (
+                            <div key={index} style={{
+                                height: fileType === 'JSON' ? '20.8px' : '25.5px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'flex-end'
+                            }}>
+                                {index + 1}
+                            </div>
+                        ))
+                    }
+                </div>
+                <div
+                    onScroll={fileType === 'JSON' ? handleScroll : undefined}
+                    style={{ flex: 1, overflow: 'auto', maxHeight: fileType === 'JSON' ? '300px' : '400px' }}>
+                    {fileType === 'JSON' ? (
+                        <pre
+                            style={{
+                                color: '#f0f0f0',
+                                padding: '25px',
+                                fontSize: '13px',
+                                fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
+                                lineHeight: '1.6',
+                                margin: 0,
+                                border: 'none',
+                                outline: 'none',
+                                background: 'transparent',
+                                scrollbarWidth: 'thin',
+                                scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent',
+                                minHeight: '100%',
+                                overflow: 'visible'
+                            }}>
+                            {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
+                        </pre>
+                    ) : (<textarea
+                        value={content}
+                        readOnly={readOnly}
+                        onScroll={handleScroll}
+                        style={{
+                            width: '100%',
+                            height: '400px',
+                            padding: '25px',
+                            border: 'none',
+                            outline: 'none',
+                            fontSize: '15px',
+                            fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
+                            lineHeight: '1.7',
+                            background: 'transparent',
+                            color: '#f0f0f0',
+                            resize: 'none',
+                            scrollbarWidth: 'thin',
+                            scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
+                        }}
+                    />
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
