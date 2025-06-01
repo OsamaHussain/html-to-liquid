@@ -196,6 +196,12 @@ JSON STRUCTURE:
       "block_order": ["header-link-1", "header-link-2", "block-1"],
       "settings": {
         "setting_id": "ACTUAL_CONTENT_FROM_HTML",
+        "heading_size": "h1",
+        "color_scheme": "scheme-1",
+        "padding_top": 36,
+        "padding_bottom": 36,
+        "margin_top": 0,
+        "margin_bottom": 0,
         "footer_link_1_url": "/", 
         "footer_link_1_text": "Contact",
         "footer_link_2_url": "/",
@@ -228,10 +234,19 @@ Requirements for the JSON template:
 {
   "sections": {
     "main": {
-      "type": "${sectionType}",      "settings": {        "title": "Actual title from HTML",
+      "type": "${sectionType}",      
+      "settings": {        
+        "title": "Actual title from HTML",
         "description": "Actual description from HTML",
-        "image": "actual-image-filename.jpg",        "button_text": "Actual button text from HTML",
+        "image": "actual-image-filename.jpg",        
+        "button_text": "Actual button text from HTML",
         "button_url": "/",
+        "heading_size": "h1",
+        "color_scheme": "scheme-1",
+        "padding_top": 36,
+        "padding_bottom": 36,
+        "margin_top": 0,
+        "margin_bottom": 0,
         "header_link_1_text": "Home",
         "header_link_1_url": "/",
         "header_link_2_text": "Shop", 
@@ -256,24 +271,37 @@ Requirements for the JSON template:
 10. For images, extract the actual filename from src attributes
 11. For text content, use the real text from HTML elements, not "Sample text" or "Default title"
 12. For colors, extract actual color values from style attributes or classes if present
-13. For ALL anchor tags, create TWO settings: one for href (url type) and one for text (text type)
-14. Extract actual href values and link text from HTML anchor tags
-15. Make navigation links, footer links, buttons, and ALL clickable elements editable
+13. ALWAYS include standard Shopify section settings:
+    - "heading_size": "h1" (for heading size control)
+    - "color_scheme": "scheme-1" (for color scheme selection)
+    - "padding_top": 36 (top padding in pixels)
+    - "padding_bottom": 36 (bottom padding in pixels)
+    - "margin_top": 0 (top margin)
+    - "margin_bottom": 0 (bottom margin)
+14. For ALL anchor tags, create TWO settings: one for href (url type) and one for text (text type)
+15. Extract actual href values and link text from HTML anchor tags
+16. Make navigation links, footer links, buttons, and ALL clickable elements editable
 16. SCAN EVERY <a> tag in HTML and create corresponding Liquid variables and schema settings
 17. Examples of anchor tag conversions:
     - <a href="/shop">Shop Now</a> → <a href="{{ section.settings.shop_link_url }}">{{ section.settings.shop_link_text }}</a>
     - <a href="/contact">Contact</a> → <a href="{{ section.settings.contact_link_url }}">{{ section.settings.contact_link_text }}</a>
     - Multiple similar links: Use numbered settings like link_1_url, link_1_text, link_2_url, link_2_text
 18. The settings should contain the real data so the website displays the original content
-15. NEVER use section types like "hero", "features", "manual-input", etc. - ONLY use "${sectionType}"
-16. CRITICAL: The website should look exactly like the original HTML when this template is applied
-17. COUNT the repeating elements in HTML and create that many blocks with actual content
+19. NEVER use section types like "hero", "features", "manual-input", etc. - ONLY use "${sectionType}"
+20. CRITICAL: The website should look exactly like the original HTML when this template is applied
+21. COUNT the repeating elements in HTML and create that many blocks with actual content
+22. ALWAYS INCLUDE these standard section styling options in every JSON template:
+    - "heading_size": "h1" (allows admin to control heading sizes)
+    - "color_scheme": "scheme-1" (allows admin to select color schemes)
+    - "padding_top": 36 (top padding control)
+    - "padding_bottom": 36 (bottom padding control)
+    - "margin_top": 0 (top margin control)
+    - "margin_bottom": 0 (bottom margin control)
 
 Return only the valid JSON template code with REAL content from the HTML as default values:`; const jsonCompletion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [{
-        role: "system",
-        content: `You are a Shopify expert who creates page template JSON files. CRITICAL RULES:
+        role: "system", content: `You are a Shopify expert who creates page template JSON files. CRITICAL RULES:
 1. Section type must be "${sectionType}" 
 2. Block types in JSON must EXACTLY match block types defined in the Liquid schema
 3. Parse the Liquid schema first to identify valid block types
@@ -284,17 +312,24 @@ Return only the valid JSON template code with REAL content from the HTML as defa
 8. Return valid JSON only, no markdown formatting
 9. Ensure ALL section settings and block settings match the Liquid schema exactly
 10. Create the exact number of blocks as there are repeating elements in the HTML
-11. MANDATORY ANCHOR TAG HANDLING: You MUST scan the Liquid schema for ALL anchor tag settings and populate them:
+11. ALWAYS include these standard Shopify styling settings in EVERY section:
+    - "heading_size": "h1" (for heading size control)
+    - "color_scheme": "scheme-1" (for color scheme selection) 
+    - "padding_top": 36 (top padding in pixels)
+    - "padding_bottom": 36 (bottom padding in pixels)
+    - "margin_top": 0 (top margin)
+    - "margin_bottom": 0 (bottom margin)
+12. MANDATORY ANCHOR TAG HANDLING: You MUST scan the Liquid schema for ALL anchor tag settings and populate them:
     - Find every setting ending with "_url" and "_text" in the schema
     - Extract actual href values and link text from the original HTML
     - Create settings for navigation links, footer links, buttons, social links, etc.
     - For header/navigation: Create numbered settings like "header_link_1_url", "header_link_1_text", "header_link_2_url", "header_link_2_text", etc.
     - Each header anchor tag gets its own unique numbered setting pair
     - Example: If schema has "header_link_1_url" and "header_link_1_text", populate both with real HTML data
-12. Count ALL <a> tags in HTML and ensure each has corresponding URL and text settings in JSON
-13. Use actual href values (convert localhost URLs to relative paths like "/")
-14. Use actual link text from HTML anchor tags
-15. HEADER LINKS: If there are multiple anchor tags in header/nav section, create "header_link" blocks for each one - this allows admin to dynamically add/remove header navigation links`
+13. Count ALL <a> tags in HTML and ensure each has corresponding URL and text settings in JSON
+14. Use actual href values (convert localhost URLs to relative paths like "/")
+15. Use actual link text from HTML anchor tags
+16. HEADER LINKS: If there are multiple anchor tags in header/nav section, create "header_link" blocks for each one - this allows admin to dynamically add/remove header navigation links`
       },
       {
         role: "user",
@@ -309,11 +344,24 @@ Return only the valid JSON template code with REAL content from the HTML as defa
       correctedJsonTemplate = correctedJsonTemplate.replace(/^```json\s*/, '').replace(/\s*```$/, '');
 
       try {
-        const jsonData = JSON.parse(correctedJsonTemplate);
-
-        if (jsonData.sections && jsonData.sections.main) {
+        const jsonData = JSON.parse(correctedJsonTemplate); if (jsonData.sections && jsonData.sections.main) {
           jsonData.sections.main.type = sectionType;
           if (jsonData.sections.main.settings) {
+            const defaultStyleSettings = {
+              "heading_size": "h1",
+              "color_scheme": "scheme-1",
+              "padding_top": 36,
+              "padding_bottom": 36,
+              "margin_top": 0,
+              "margin_bottom": 0
+            };
+
+            Object.keys(defaultStyleSettings).forEach(key => {
+              if (!jsonData.sections.main.settings.hasOwnProperty(key)) {
+                jsonData.sections.main.settings[key] = defaultStyleSettings[key];
+              }
+            });
+
             Object.keys(jsonData.sections.main.settings).forEach(key => {
               const setting = jsonData.sections.main.settings[key];
               if (typeof setting === 'object' && setting.type === 'image_picker' && setting.default) {
