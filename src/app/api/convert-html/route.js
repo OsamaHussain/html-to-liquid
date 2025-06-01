@@ -48,13 +48,21 @@ export async function POST(request) {
 9. COMPLETE CONVERSION: Convert ALL sections including Shop, Education Center, Newsletter, and Footer
 10. CREATE COMPREHENSIVE BLOCKS: Include blocks for products, testimonials, education guides, sustainability slides, transformation slides
 11. MANDATORY ANCHOR TAG CONVERSION: Every single <a> tag MUST become editable:
-    - Navigation links: <a href="{{ section.settings.nav_link_1_url }}">{{ section.settings.nav_link_1_text }}</a>
-    - Footer links: <a href="{{ section.settings.footer_link_url }}">{{ section.settings.footer_link_text }}</a>
+    - Header/Navigation links: Use BLOCKS for dynamic header links (can add/remove from admin)
+    - Footer links: <a href="{{ section.settings.footer_link_1_url }}">{{ section.settings.footer_link_1_text }}</a>
+    - Multiple footer links: footer_link_2_url, footer_link_2_text, footer_link_3_url, footer_link_3_text, etc.
     - Button links: <a href="{{ section.settings.button_url }}">{{ section.settings.button_text }}</a>
     - Block links: <a href="{{ block.settings.link_url }}">{{ block.settings.link_text }}</a>
-    - Social links: <a href="{{ section.settings.social_link_url }}">{{ section.settings.social_link_text }}</a>
-    - ALL other anchor tags: Create unique settings like link_1_url, link_1_text, link_2_url, link_2_text, etc.
-12. SCHEMA MUST INCLUDE: For every anchor tag converted, add TWO settings in schema:
+    - Social links: <a href="{{ section.settings.social_link_1_url }}">{{ section.settings.social_link_1_text }}</a>
+    - Multiple social links: social_link_2_url, social_link_2_text, social_link_3_url, social_link_3_text, etc.
+    - ALL other anchor tags: Create unique numbered settings for EACH anchor tag
+12. DYNAMIC HEADER NAVIGATION HANDLING: For header/navigation anchor tags:
+    - Convert header anchor tags to BLOCKS using {% for block in section.blocks %}
+    - Create "header_link" block type for each navigation link
+    - Each header link becomes a separate block with link_url and link_text settings
+    - This allows admin to add/remove header links dynamically
+    - Header navigation example: {% for block in section.blocks %}{% if block.type == 'header_link' %}<a href="{{ block.settings.link_url }}">{{ block.settings.link_text }}</a>{% endif %}{% endfor %}
+13. SCHEMA MUST INCLUDE: For every anchor tag converted, add TWO settings in schema:
     - { "type": "url", "id": "link_name_url", "label": "Link URL", "default": "/" }
     - { "type": "text", "id": "link_name_text", "label": "Link Text", "default": "actual_link_text" }
 
@@ -137,11 +145,17 @@ ANCHOR TAG ANALYSIS - CRITICAL STEP:
 2. For EACH anchor tag, create TWO settings in JSON:
    - One for the URL (ending with _url): Extract actual href value
    - One for the text (ending with _text): Extract actual link text
-3. Examples of anchor tag settings to include:
-   - "nav_link_1_url": "actual_href_from_html", "nav_link_1_text": "actual_text_from_html"
-   - "footer_link_url": "/contact", "footer_link_text": "Contact Us"
-   - "button_url": "/shop", "button_text": "Shop Now"
-   - "social_link_url": "https://instagram.com", "social_link_text": "Follow Us"
+3. HEADER/NAVIGATION ANCHOR TAGS: If there are multiple anchor tags in header/nav:
+   - Create BLOCKS for header links (allows admin to add/remove dynamically)
+   - Each header anchor tag becomes a "header_link" block
+   - Extract actual href and text from each individual header anchor tag
+   - This makes header navigation fully editable and expandable
+4. Examples of anchor tag settings to include:
+   - HEADER BLOCKS: Create "header_link" blocks for each navigation link
+   - "footer_link_1_url": "/", "footer_link_1_text": "Contact Us"
+   - "footer_link_2_url": "/", "footer_link_2_text": "Privacy Policy"
+   - "button_url": "/", "button_text": "Shop Now"
+   - "social_link_1_url": "/", "social_link_1_text": "Follow Us"
    - Create unique numbered settings for multiple similar links
 
 ANALYSIS STEPS:
@@ -158,21 +172,34 @@ JSON STRUCTURE:
     "main": {
       "type": "${sectionType}",
       "blocks": {
+        "header-link-1": {
+          "type": "header_link",
+          "settings": {
+            "link_url": "/",
+            "link_text": "Home"
+          }
+        },
+        "header-link-2": {
+          "type": "header_link", 
+          "settings": {
+            "link_url": "/",
+            "link_text": "Shop"
+          }
+        },
         "block-1": {
           "type": "EXACT_TYPE_FROM_SCHEMA",
           "settings": {
-            "setting_id": "ACTUAL_CONTENT_FROM_HTML",
-            "link_url": "ACTUAL_HREF_FROM_HTML",
-            "link_text": "ACTUAL_LINK_TEXT_FROM_HTML"
+            "setting_id": "ACTUAL_CONTENT_FROM_HTML"
           }
         }
       },
-      "block_order": ["block-1", "block-2"],
+      "block_order": ["header-link-1", "header-link-2", "block-1"],
       "settings": {
-        "setting_id": "ACTUAL_CONTENT_FROM_HTML",        "nav_link_1_url": "/",
-        "nav_link_1_text": "Shop",
-        "footer_link_url": "/", 
-        "footer_link_text": "Contact",
+        "setting_id": "ACTUAL_CONTENT_FROM_HTML",
+        "footer_link_1_url": "/", 
+        "footer_link_1_text": "Contact",
+        "footer_link_2_url": "/",
+        "footer_link_2_text": "Privacy",
         "button_url": "/",
         "button_text": "Shop Now"
       }
@@ -203,16 +230,20 @@ Requirements for the JSON template:
     "main": {
       "type": "${sectionType}",      "settings": {        "title": "Actual title from HTML",
         "description": "Actual description from HTML",
-        "image": "actual-image-filename.jpg",
-        "button_text": "Actual button text from HTML",        "button_url": "/",
-        "nav_link_1_text": "Shop",
-        "nav_link_1_url": "/",
-        "nav_link_2_text": "About", 
-        "nav_link_2_url": "/",
-        "footer_link_text": "Contact",
-        "footer_link_url": "/",
-        "social_link_text": "Follow Us",
-        "social_link_url": "/"
+        "image": "actual-image-filename.jpg",        "button_text": "Actual button text from HTML",
+        "button_url": "/",
+        "header_link_1_text": "Home",
+        "header_link_1_url": "/",
+        "header_link_2_text": "Shop", 
+        "header_link_2_url": "/",
+        "header_link_3_text": "About",
+        "header_link_3_url": "/",
+        "footer_link_1_text": "Contact",
+        "footer_link_1_url": "/",
+        "footer_link_2_text": "Privacy",
+        "footer_link_2_url": "/",
+        "social_link_1_text": "Follow Us",
+        "social_link_1_url": "/"
       }
     }
   },
@@ -257,10 +288,13 @@ Return only the valid JSON template code with REAL content from the HTML as defa
     - Find every setting ending with "_url" and "_text" in the schema
     - Extract actual href values and link text from the original HTML
     - Create settings for navigation links, footer links, buttons, social links, etc.
-    - Example: If schema has "nav_link_1_url" and "nav_link_1_text", populate both with real HTML data
+    - For header/navigation: Create numbered settings like "header_link_1_url", "header_link_1_text", "header_link_2_url", "header_link_2_text", etc.
+    - Each header anchor tag gets its own unique numbered setting pair
+    - Example: If schema has "header_link_1_url" and "header_link_1_text", populate both with real HTML data
 12. Count ALL <a> tags in HTML and ensure each has corresponding URL and text settings in JSON
 13. Use actual href values (convert localhost URLs to relative paths like "/")
-14. Use actual link text from HTML anchor tags`
+14. Use actual link text from HTML anchor tags
+15. HEADER LINKS: If there are multiple anchor tags in header/nav section, create "header_link" blocks for each one - this allows admin to dynamically add/remove header navigation links`
       },
       {
         role: "user",
@@ -314,9 +348,10 @@ Return only the valid JSON template code with REAL content from the HTML as defa
 
           if (jsonData.sections.main.blocks) {
             Object.keys(jsonData.sections.main.blocks).forEach(blockKey => {
-              const block = jsonData.sections.main.blocks[blockKey];
-              if (!validBlockTypes.has(block.type)) {
-                if (blockKey.includes('product') && validBlockTypes.has('product')) {
+              const block = jsonData.sections.main.blocks[blockKey]; if (!validBlockTypes.has(block.type)) {
+                if (blockKey.includes('header-link') && validBlockTypes.has('header_link')) {
+                  block.type = 'header_link';
+                } else if (blockKey.includes('product') && validBlockTypes.has('product')) {
                   block.type = 'product';
                 } else if (blockKey.includes('testimonial') && validBlockTypes.has('testimonial')) {
                   block.type = 'testimonial';
