@@ -94,8 +94,21 @@ Return ONLY the liquid template with complete schema section. Include ALL CSS ex
         { error: 'Failed to generate Liquid content' },
         { status: 500 }
       );
+    } let cleanedLiquidContent = liquidContent;
+
+    cleanedLiquidContent = cleanedLiquidContent.replace(/^```liquid\s*/, '').replace(/\s*```$/, '');
+
+    if (cleanedLiquidContent.includes('This Liquid template preserves')) {
+      const explanationIndex = cleanedLiquidContent.indexOf('This Liquid template preserves');
+      cleanedLiquidContent = cleanedLiquidContent.substring(0, explanationIndex).trim();
     }
-    let cleanedLiquidContent = liquidContent;
+    cleanedLiquidContent = cleanedLiquidContent.replace(/\n\nThis Liquid template[\s\S]*$/i, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/\n\nThe above[\s\S]*$/i, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/\n\nNote:[\s\S]*$/i, '');
+
+    cleanedLiquidContent = cleanedLiquidContent.replace(/```\s*$/g, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/^```.*?\n/g, '');
+    cleanedLiquidContent = cleanedLiquidContent.trim();
 
     if (!cleanedLiquidContent.includes('{% endschema %}')) {
       console.warn('Liquid conversion appears incomplete - missing endschema tag');
@@ -342,6 +355,9 @@ Return only the valid JSON template code with REAL content from the HTML as defa
     let correctedJsonTemplate = jsonTemplate;
     if (correctedJsonTemplate) {
       correctedJsonTemplate = correctedJsonTemplate.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      correctedJsonTemplate = correctedJsonTemplate.replace(/```\s*$/g, '');
+      correctedJsonTemplate = correctedJsonTemplate.replace(/^```.*?\n/g, '');
+      correctedJsonTemplate = correctedJsonTemplate.trim();
 
       try {
         const jsonData = JSON.parse(correctedJsonTemplate); if (jsonData.sections && jsonData.sections.main) {
@@ -360,12 +376,13 @@ Return only the valid JSON template code with REAL content from the HTML as defa
               if (!jsonData.sections.main.settings.hasOwnProperty(key)) {
                 jsonData.sections.main.settings[key] = defaultStyleSettings[key];
               }
-            });
-
-            Object.keys(jsonData.sections.main.settings).forEach(key => {
+            }); Object.keys(jsonData.sections.main.settings).forEach(key => {
               const setting = jsonData.sections.main.settings[key];
               if (typeof setting === 'object' && setting.type === 'image_picker' && setting.default) {
                 delete setting.default;
+              }
+              else if (typeof setting === 'string' && key.includes('image') && (setting.startsWith('http') || setting.includes('.'))) {
+                jsonData.sections.main.settings[key] = "";
               }
               else if (typeof setting === 'string' && key.includes('url') && setting.startsWith('http')) {
                 if (setting.includes('localhost') || setting.includes('127.0.0.1')) {
@@ -419,13 +436,12 @@ Return only the valid JSON template code with REAL content from the HTML as defa
                     block.type = firstValidType;
                   }
                 }
-              }
-              if (block.settings) {
+              } if (block.settings) {
                 Object.keys(block.settings).forEach(key => {
                   const setting = block.settings[key];
-                  if (typeof setting === 'string' && key.includes('image') && setting.startsWith('http')) {
-                    const filename = setting.split('/').pop().split('?')[0];
-                    block.settings[key] = filename || 'image.jpg';
+                  if (typeof setting === 'string' && key.includes('image') && (setting.startsWith('http') || setting.includes('.'))) {
+                    // Set hard-coded images to empty string
+                    block.settings[key] = "";
                   } else if (typeof setting === 'object' && setting.type === 'image_picker' && setting.default) {
                     delete setting.default;
                   }
@@ -461,11 +477,9 @@ Return only the valid JSON template code with REAL content from the HTML as defa
         correctedJsonTemplate = correctedJsonTemplate.replace(
           /("type":\s*"image_picker"[\s\S]*?),\s*"default":\s*"[^"]*"/g,
           '$1'
-        );
-
-        correctedJsonTemplate = correctedJsonTemplate.replace(
-          /"([^"]*image[^"]*)":\s*"https?:\/\/[^"]*\/([^"\/\?]+)(\?[^"]*)?"$/gm,
-          '"$1": "$2"'
+        ); correctedJsonTemplate = correctedJsonTemplate.replace(
+          /"([^"]*image[^"]*)":\s*"[^"]*"/gm,
+          '"$1": ""'
         );
       }
     } return NextResponse.json({
