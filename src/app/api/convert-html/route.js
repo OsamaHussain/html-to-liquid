@@ -21,7 +21,11 @@ export async function POST(request) {
         { error: 'OpenAI API key is not configured' },
         { status: 500 }
       );
-    } const prompt = `Convert the following HTML code to a professional Shopify Liquid template file. Follow these STRICT requirements:
+    }
+
+    const isLargeFile = htmlContent.length > 10000 || htmlContent.split('\n').length > 800;
+
+    const prompt = `Convert the following HTML code to a professional Shopify Liquid template file. ${isLargeFile ? 'CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''} Follow these STRICT requirements:
 
 1. PRESERVE ALL ORIGINAL STYLING: Keep ALL CSS classes, inline styles, and visual design EXACTLY as written in HTML
 2. PRESERVE CSS STRUCTURE: Keep the entire <style> section exactly as is - do NOT modify any CSS
@@ -73,28 +77,73 @@ HTML to convert:
 ${htmlContent}
 \`\`\`
 
-Return ONLY the liquid template with complete schema section. Include ALL CSS exactly as written in HTML. MUST include all sections from HTML.`; const completion = await openai.chat.completions.create({
+Return ONLY the liquid template with complete schema section. Include ALL CSS exactly as written in HTML. MUST include all sections from HTML.`;
+
+    const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "You are a Shopify Liquid expert. Convert HTML to Liquid templates while preserving ALL original styling and CSS. Extract real content from HTML and use it as default values in schema. Create blocks for repeating elements. The converted template must look identical to the original HTML when rendered. NEVER use generic placeholders - always use actual content from the HTML. CRITICAL: image_picker fields in schema must NEVER have default values - this is invalid in Shopify. IMPORTANT: You must convert the ENTIRE HTML content - do not truncate or cut off any sections. Complete the full conversion including all sections, testimonials, and footer content. ANCHOR TAGS: Make ALL anchor tags editable - convert both href and text content to Liquid variables with corresponding schema settings. For URL-type settings in schema, always use 'default': '/' as the default value."
+          content: "You are a Shopify Liquid expert. Convert HTML to Liquid templates while preserving ALL original styling and CSS. Extract real content from HTML and use it as default values in schema. Create blocks for repeating elements. The converted template must look identical to the original HTML when rendered. NEVER use generic placeholders - always use actual content from the HTML. CRITICAL: image_picker fields in schema must NEVER have default values - this is invalid in Shopify. IMPORTANT: You must convert the ENTIRE HTML content - do not truncate or cut off any sections. Complete the full conversion including all sections, testimonials, and footer content. ANCHOR TAGS: Make ALL anchor tags editable - convert both href and text content to Liquid variables with corresponding schema settings. For URL-type settings in schema, always use 'default': '/' as the default value. CRITICAL: You must ensure the COMPLETE conversion of large HTML files. Do not stop mid-conversion. Return the full liquid template with complete schema."
         },
         {
           role: "user",
           content: prompt
         }
       ],
-      max_tokens: 8000,
+      max_tokens: 16000,
       temperature: 0.05,
-    }); const liquidContent = completion.choices[0]?.message?.content;
+    });
+
+    let liquidContent = completion.choices[0]?.message?.content;
 
     if (!liquidContent) {
       return NextResponse.json(
         { error: 'Failed to generate Liquid content' },
         { status: 500 }
       );
-    } let cleanedLiquidContent = liquidContent;
+    }
+
+    if (isLargeFile && !liquidContent.includes('{% endschema %}')) {
+      console.warn('Large file conversion appears incomplete, attempting retry with different approach...');
+
+      const retryCompletion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are a Shopify Liquid expert specializing in converting large HTML files. CRITICAL: You must return the COMPLETE liquid template including the full schema section. Never truncate or stop mid-conversion. Ensure the response ends with {% endschema %} tag."
+          },
+          {
+            role: "user",
+            content: `URGENT: Complete the full conversion of this large HTML file to Shopify Liquid. You must include ALL sections and complete the full schema. Do not stop until the entire HTML is converted and the schema is complete with {% endschema %} tag.
+
+HTML Content:
+\`\`\`html
+${htmlContent}
+\`\`\`
+
+Requirements:
+1. Convert ENTIRE HTML - all sections must be included
+2. Complete schema with {% endschema %} at the end
+3. Preserve all CSS and styling exactly
+4. Make all anchor tags editable with Liquid variables
+5. Extract real content for schema default values
+6. Include blocks for repeating elements`
+          }
+        ],
+        max_tokens: 16000,
+        temperature: 0.01,
+      });
+
+      const retryLiquidContent = retryCompletion.choices[0]?.message?.content;
+      if (retryLiquidContent && retryLiquidContent.includes('{% endschema %}')) {
+        console.log('Retry successful - using complete conversion');
+        liquidContent = retryLiquidContent;
+      }
+    }
+
+    let cleanedLiquidContent = liquidContent;
 
     cleanedLiquidContent = cleanedLiquidContent.replace(/^```liquid\s*/, '').replace(/\s*```$/, '');
 
@@ -112,6 +161,18 @@ Return ONLY the liquid template with complete schema section. Include ALL CSS ex
 
     if (!cleanedLiquidContent.includes('{% endschema %}')) {
       console.warn('Liquid conversion appears incomplete - missing endschema tag');
+
+      if (htmlContent.length > 5000) {
+        console.log('Large HTML detected, checking for complete conversion...');
+
+        const htmlLineCount = htmlContent.split('\n').length;
+        const liquidLineCount = cleanedLiquidContent.split('\n').length;
+        const conversionRatio = liquidLineCount / htmlLineCount;
+
+        if (conversionRatio < 0.3) {
+          console.warn(`Conversion ratio seems low: ${conversionRatio.toFixed(2)}`);
+        }
+      }
     }
 
     if (cleanedLiquidContent.includes('{% schema %}')) {
@@ -130,8 +191,11 @@ Return ONLY the liquid template with complete schema section. Include ALL CSS ex
         '"default": "$1",$2'
       );
     }
+
     const liquidFileName = fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid';
-    const sectionType = liquidFileName.replace('.liquid', ''); const jsonPrompt = `Create a Shopify page template JSON that matches the Liquid schema EXACTLY.
+    const sectionType = liquidFileName.replace('.liquid', '');
+
+    const jsonPrompt = `Create a Shopify page template JSON that matches the Liquid schema EXACTLY.
 
 CRITICAL: The JSON template must use ONLY the block types defined in the Liquid schema.
 
@@ -230,88 +294,8 @@ JSON STRUCTURE:
 CRITICAL: Use only block types that exist in the Liquid schema. Extract real content from HTML. Include ALL anchor tag settings.
 
 Return ONLY valid JSON:`;
-    `\`\`liquid
-${liquidContent}
-\`\`\`
 
-IMPORTANT: Extract the ACTUAL content from the original HTML and use it as default values in the JSON template settings. Do NOT use generic placeholders.
-
-Requirements for the JSON template:
-
-1. Must include "sections" object with section references
-2. Must include "order" array listing the sections in order  
-3. Use EXACTLY the section type "${sectionType}" - this is the ONLY allowed section type
-4. Extract REAL content from the original HTML for settings values
-5. Follow this EXACT structure (DO NOT change the section type):
-
-{
-  "sections": {
-    "main": {
-      "type": "${sectionType}",      
-      "settings": {        
-        "title": "Actual title from HTML",
-        "description": "Actual description from HTML",
-        "image": "actual-image-filename.jpg",        
-        "button_text": "Actual button text from HTML",
-        "button_url": "/",
-        "heading_size": "h1",
-        "color_scheme": "scheme-1",
-        "padding_top": 36,
-        "padding_bottom": 36,
-        "margin_top": 0,
-        "margin_bottom": 0,
-        "header_link_1_text": "Home",
-        "header_link_1_url": "/",
-        "header_link_2_text": "Shop", 
-        "header_link_2_url": "/",
-        "header_link_3_text": "About",
-        "header_link_3_url": "/",
-        "footer_link_1_text": "Contact",
-        "footer_link_1_url": "/",
-        "footer_link_2_text": "Privacy",
-        "footer_link_2_url": "/",
-        "social_link_1_text": "Follow Us",
-        "social_link_1_url": "/"
-      }
-    }
-  },
-  "order": ["main"]
-}
-
-7. Make sure EVERY {{ section.settings.variable_name }} from the liquid template has a corresponding setting
-8. Make sure EVERY {{ block.settings.variable_name }} from the liquid template has a corresponding block setting
-9. Use the ACTUAL text content, headings, paragraphs, button texts, image names from the original HTML
-10. For images, extract the actual filename from src attributes
-11. For text content, use the real text from HTML elements, not "Sample text" or "Default title"
-12. For colors, extract actual color values from style attributes or classes if present
-13. ALWAYS include standard Shopify section settings:
-    - "heading_size": "h1" (for heading size control)
-    - "color_scheme": "scheme-1" (for color scheme selection)
-    - "padding_top": 36 (top padding in pixels)
-    - "padding_bottom": 36 (bottom padding in pixels)
-    - "margin_top": 0 (top margin)
-    - "margin_bottom": 0 (bottom margin)
-14. For ALL anchor tags, create TWO settings: one for href (url type) and one for text (text type)
-15. Extract actual href values and link text from HTML anchor tags
-16. Make navigation links, footer links, buttons, and ALL clickable elements editable
-16. SCAN EVERY <a> tag in HTML and create corresponding Liquid variables and schema settings
-17. Examples of anchor tag conversions:
-    - <a href="/shop">Shop Now</a> → <a href="{{ section.settings.shop_link_url }}">{{ section.settings.shop_link_text }}</a>
-    - <a href="/contact">Contact</a> → <a href="{{ section.settings.contact_link_url }}">{{ section.settings.contact_link_text }}</a>
-    - Multiple similar links: Use numbered settings like link_1_url, link_1_text, link_2_url, link_2_text
-18. The settings should contain the real data so the website displays the original content
-19. NEVER use section types like "hero", "features", "manual-input", etc. - ONLY use "${sectionType}"
-20. CRITICAL: The website should look exactly like the original HTML when this template is applied
-21. COUNT the repeating elements in HTML and create that many blocks with actual content
-22. ALWAYS INCLUDE these standard section styling options in every JSON template:
-    - "heading_size": "h1" (allows admin to control heading sizes)
-    - "color_scheme": "scheme-1" (allows admin to select color schemes)
-    - "padding_top": 36 (top padding control)
-    - "padding_bottom": 36 (bottom padding control)
-    - "margin_top": 0 (top margin control)
-    - "margin_bottom": 0 (bottom margin control)
-
-Return only the valid JSON template code with REAL content from the HTML as default values:`; const jsonCompletion = await openai.chat.completions.create({
+    const jsonCompletion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [{
         role: "system", content: `You are a Shopify expert who creates page template JSON files. CRITICAL RULES:
@@ -342,17 +326,21 @@ Return only the valid JSON template code with REAL content from the HTML as defa
 13. Count ALL <a> tags in HTML and ensure each has corresponding URL and text settings in JSON
 14. Use actual href values (convert localhost URLs to relative paths like "/")
 15. Use actual link text from HTML anchor tags
-16. HEADER LINKS: If there are multiple anchor tags in header/nav section, create "header_link" blocks for each one - this allows admin to dynamically add/remove header navigation links`
+16. HEADER LINKS: If there are multiple anchor tags in header/nav section, create "header_link" blocks for each one - this allows admin to dynamically add/remove header navigation links
+17. CRITICAL: You must process the ENTIRE schema and create JSON for ALL settings. Do not truncate or skip any parts for large files.`
       },
       {
         role: "user",
         content: jsonPrompt
       }
       ],
-      max_tokens: 4000,
+      max_tokens: 8000,
       temperature: 0.01,
-    }); const jsonTemplate = jsonCompletion.choices[0]?.message?.content;
+    });
+
+    const jsonTemplate = jsonCompletion.choices[0]?.message?.content;
     let correctedJsonTemplate = jsonTemplate;
+
     if (correctedJsonTemplate) {
       correctedJsonTemplate = correctedJsonTemplate.replace(/^```json\s*/, '').replace(/\s*```$/, '');
       correctedJsonTemplate = correctedJsonTemplate.replace(/```\s*$/g, '');
@@ -360,7 +348,9 @@ Return only the valid JSON template code with REAL content from the HTML as defa
       correctedJsonTemplate = correctedJsonTemplate.trim();
 
       try {
-        const jsonData = JSON.parse(correctedJsonTemplate); if (jsonData.sections && jsonData.sections.main) {
+        const jsonData = JSON.parse(correctedJsonTemplate);
+
+        if (jsonData.sections && jsonData.sections.main) {
           jsonData.sections.main.type = sectionType;
           if (jsonData.sections.main.settings) {
             const defaultStyleSettings = {
@@ -376,7 +366,9 @@ Return only the valid JSON template code with REAL content from the HTML as defa
               if (!jsonData.sections.main.settings.hasOwnProperty(key)) {
                 jsonData.sections.main.settings[key] = defaultStyleSettings[key];
               }
-            }); Object.keys(jsonData.sections.main.settings).forEach(key => {
+            });
+
+            Object.keys(jsonData.sections.main.settings).forEach(key => {
               const setting = jsonData.sections.main.settings[key];
               if (typeof setting === 'object' && setting.type === 'image_picker' && setting.default) {
                 delete setting.default;
@@ -413,7 +405,9 @@ Return only the valid JSON template code with REAL content from the HTML as defa
 
           if (jsonData.sections.main.blocks) {
             Object.keys(jsonData.sections.main.blocks).forEach(blockKey => {
-              const block = jsonData.sections.main.blocks[blockKey]; if (!validBlockTypes.has(block.type)) {
+              const block = jsonData.sections.main.blocks[blockKey];
+
+              if (!validBlockTypes.has(block.type)) {
                 if (blockKey.includes('header-link') && validBlockTypes.has('header_link')) {
                   block.type = 'header_link';
                 } else if (blockKey.includes('product') && validBlockTypes.has('product')) {
@@ -436,11 +430,12 @@ Return only the valid JSON template code with REAL content from the HTML as defa
                     block.type = firstValidType;
                   }
                 }
-              } if (block.settings) {
+              }
+
+              if (block.settings) {
                 Object.keys(block.settings).forEach(key => {
                   const setting = block.settings[key];
                   if (typeof setting === 'string' && key.includes('image') && (setting.startsWith('http') || setting.includes('.'))) {
-                    // Set hard-coded images to empty string
                     block.settings[key] = "";
                   } else if (typeof setting === 'object' && setting.type === 'image_picker' && setting.default) {
                     delete setting.default;
@@ -477,19 +472,26 @@ Return only the valid JSON template code with REAL content from the HTML as defa
         correctedJsonTemplate = correctedJsonTemplate.replace(
           /("type":\s*"image_picker"[\s\S]*?),\s*"default":\s*"[^"]*"/g,
           '$1'
-        ); correctedJsonTemplate = correctedJsonTemplate.replace(
+        );
+
+        correctedJsonTemplate = correctedJsonTemplate.replace(
           /"([^"]*image[^"]*)":\s*"[^"]*"/gm,
           '"$1": ""'
         );
       }
-    } return NextResponse.json({
+    }
+
+    return NextResponse.json({
       success: true,
       liquidContent: cleanedLiquidContent,
       jsonTemplate: correctedJsonTemplate,
       metadata: {
         liquidFileName: liquidFileName,
         jsonFileName: fileName ? `page.${fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : 'page.custom.json',
-        sectionType: sectionType
+        sectionType: sectionType,
+        isLargeFile: isLargeFile,
+        htmlSize: htmlContent.length,
+        htmlLines: htmlContent.split('\n').length
       }
     });
 
