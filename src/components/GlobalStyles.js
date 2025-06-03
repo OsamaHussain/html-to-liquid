@@ -1,6 +1,6 @@
 export default function GlobalStyles() {
-    return (
-        <style>{`
+  return (
+    <style>{`
       @keyframes float {
         0%, 100% { transform: translateY(0px) rotate(0deg); }
         50% { transform: translateY(-15px) rotate(3deg); }
@@ -75,8 +75,7 @@ export default function GlobalStyles() {
         -webkit-text-fill-color: transparent;
         background-clip: text;
       }
-      
-      .shimmer-text {
+        .shimmer-text {
         background: linear-gradient(
           90deg,
           rgba(255, 255, 255, 0.8) 0%,
@@ -89,6 +88,62 @@ export default function GlobalStyles() {
         -webkit-text-fill-color: transparent;
         background-clip: text;
       }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      @keyframes bounce {
+        0%, 80%, 100% { 
+          transform: translateY(0); 
+        }
+        40% { 
+          transform: translateY(-10px); 
+        }
+      }
+      
+      @keyframes loadingDots {
+        0%, 80%, 100% { 
+          transform: scale(0);
+          opacity: 0.5;
+        }
+        40% { 
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      
+      @keyframes backgroundPulse {
+        0%, 100% { 
+          opacity: 0.3; 
+          transform: scale(1);
+        }
+        50% { 
+          opacity: 0.6; 
+          transform: scale(1.1);
+        }
+      }
+      
+      .spinning-loader {
+        animation: spin 1s linear infinite;
+      }
+      
+      .bouncing-emoji {
+        animation: bounce 2s ease-in-out infinite;
+      }
+      
+      .loading-dot {
+        animation: loadingDots 1.4s ease-in-out infinite both;
+      }
+      
+      .loading-dot:nth-child(1) { animation-delay: 0s; }
+      .loading-dot:nth-child(2) { animation-delay: 0.16s; }
+      .loading-dot:nth-child(3) { animation-delay: 0.32s; }
+      
+      .pulsing-bg {
+        animation: backgroundPulse 3s ease-in-out infinite;
+      }
     `}</style>
-    );
+  );
 }

@@ -114,10 +114,13 @@ export default function Home() {
 
     setShowAIGenerationPopup(true);
   };
-
   const performConversion = async () => {
     setIsConverting(true);
     setConversionError('');
+    setLiquidContent('');
+    setJsonTemplate('');
+    setConversionMetadata(null);
+    setFileNames({});
 
     try {
       const response = await fetch('/api/convert-html', {
