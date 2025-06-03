@@ -177,7 +177,6 @@ export default function Home() {
   const handleHowItWorksClick = () => {
     setShowHowItWorksPopup(true);
   };
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -187,10 +186,8 @@ export default function Home() {
       <GlobalStyles />
       <Header onHowItWorksClick={handleHowItWorksClick} />
 
-      <div style={{
-        maxWidth: '1000px',
-        margin: '0 auto',
-        padding: '20px 20px 40px 20px'
+      <div className="container" style={{
+        paddingBottom: '40px'
       }}>
         <FileUploadSection
           isLoading={isLoading}

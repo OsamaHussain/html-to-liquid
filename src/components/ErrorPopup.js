@@ -70,8 +70,8 @@ const ErrorPopup = ({ errors, isVisible, onClose, fileName }) => {
             <div
                 style={{
                     background: 'linear-gradient(145deg, #2d1b2e 0%, #1a1a2e 50%, #0f0f23 100%)',
-                    borderRadius: '20px',
-                    maxWidth: '600px',
+                    borderRadius: 'clamp(15px, 4vw, 20px)',
+                    maxWidth: 'clamp(320px, 90vw, 600px)',
                     width: '100%',
                     maxHeight: '80vh',
                     overflow: 'hidden',
@@ -84,19 +84,23 @@ const ErrorPopup = ({ errors, isVisible, onClose, fileName }) => {
                 onClick={(e) => e.stopPropagation()}
             >
                 <div style={{
-                    padding: '25px 30px',
+                    padding: 'clamp(15px, 4vw, 25px) clamp(20px, 5vw, 30px)',
                     borderBottom: '1px solid rgba(255, 87, 87, 0.2)',
                     background: 'linear-gradient(90deg, rgba(255, 87, 87, 0.1) 0%, rgba(255, 87, 87, 0.05) 100%)'
                 }}>
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between'
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '10px'
                     }}>
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '12px'
+                            gap: '12px',
+                            minWidth: 0,
+                            flex: '1'
                         }}>
                             <div style={{
                                 width: '40px',

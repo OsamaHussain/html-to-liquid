@@ -5,7 +5,8 @@ export default function Header({ onHowItWorksClick }) {
             justifyContent: 'center',
             alignItems: 'center',
             padding: '40px 20px 20px 20px',
-            position: 'relative'
+            position: 'relative',
+            minHeight: '140px'
         }}>
             <div className="animated-logo-container" style={{
                 display: 'flex',
@@ -18,7 +19,9 @@ export default function Header({ onHowItWorksClick }) {
                 padding: '20px 30px',
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
                 transition: 'transform 0.3s ease',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                maxWidth: '100%',
+                textAlign: 'center'
             }}
                 onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-5px) scale(1.02)';
@@ -37,7 +40,8 @@ export default function Header({ onHowItWorksClick }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     position: 'relative',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    flexShrink: 0
                 }}>
                     <span className="lightning-icon" style={{
                         fontSize: '28px',
@@ -55,18 +59,19 @@ export default function Header({ onHowItWorksClick }) {
                         zIndex: 1
                     }}></div>
                 </div>
-                <div>
+                <div style={{ minWidth: 0, flex: '1' }}>
                     <h1 className="gradient-text" style={{
                         margin: 0,
-                        fontSize: '28px',
+                        fontSize: 'clamp(18px, 4vw, 28px)',
                         fontWeight: '800',
-                        letterSpacing: '0.5px'
+                        letterSpacing: '0.5px',
+                        wordBreak: 'break-word'
                     }}>
                         Shopify Liquid Template Generator
                     </h1>
                     <p className="shimmer-text" style={{
                         margin: '5px 0 0 0',
-                        fontSize: '14px',
+                        fontSize: 'clamp(12px, 2.5vw, 14px)',
                         fontWeight: '500'
                     }}>
                         Complete Sections with Schema & Custom Templates
@@ -83,16 +88,17 @@ export default function Header({ onHowItWorksClick }) {
                     background: 'linear-gradient(135deg, #00d4ff 0%, #ff00ff 100%)',
                     border: 'none',
                     borderRadius: '25px',
-                    padding: '12px 20px',
+                    padding: 'clamp(8px, 2vw, 12px) clamp(12px, 3vw, 20px)',
                     color: 'white',
-                    fontSize: '14px',
+                    fontSize: 'clamp(12px, 2.5vw, 14px)',
                     fontWeight: '600',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
                     transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(0, 212, 255, 0.3)'
+                    boxShadow: '0 4px 15px rgba(0, 212, 255, 0.3)',
+                    zIndex: 10
                 }}
                 onMouseEnter={(e) => {
                     e.target.style.transform = 'translateY(-2px) scale(1.05)';

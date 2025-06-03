@@ -40,7 +40,7 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '20px',
+                padding: 'clamp(10px, 3vw, 20px)',
                 opacity: isAnimating ? 1 : 0,
                 transition: 'opacity 0.3s ease-in-out',
                 overflowY: 'auto'
@@ -50,8 +50,8 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
             <div
                 style={{
                     background: 'linear-gradient(145deg, #1e1e2e 0%, #2a2a3e 50%, #1a1a2e 100%)',
-                    borderRadius: '20px',
-                    maxWidth: '500px',
+                    borderRadius: 'clamp(15px, 4vw, 20px)',
+                    maxWidth: 'clamp(320px, 90vw, 500px)',
                     width: '100%',
                     maxHeight: '90vh',
                     overflow: 'hidden',
@@ -74,9 +74,8 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                     background: 'radial-gradient(circle at 50% 50%, rgba(0, 255, 136, 0.1) 0%, transparent 50%), radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%)',
                     pointerEvents: 'none'
                 }}></div>
-
                 <div style={{
-                    padding: '25px 30px',
+                    padding: 'clamp(20px, 5vw, 25px) clamp(20px, 5vw, 30px)',
                     borderBottom: '1px solid rgba(0, 255, 136, 0.2)',
                     background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%)',
                     position: 'relative',
@@ -85,23 +84,28 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between'
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '15px'
                     }}>
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '12px'
+                            gap: 'clamp(8px, 2vw, 12px)',
+                            flex: '1',
+                            minWidth: '200px'
                         }}>
                             <div style={{
-                                width: '50px',
-                                height: '50px',
-                                borderRadius: '15px',
+                                width: 'clamp(40px, 10vw, 50px)',
+                                height: 'clamp(40px, 10vw, 50px)',
+                                borderRadius: 'clamp(12px, 3vw, 15px)',
                                 background: 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '24px',
-                                boxShadow: '0 8px 16px rgba(0, 255, 136, 0.3)'
+                                fontSize: 'clamp(20px, 5vw, 24px)',
+                                boxShadow: '0 8px 16px rgba(0, 255, 136, 0.3)',
+                                flexShrink: 0
                             }}>
                                 🤖
                             </div>
@@ -109,15 +113,17 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                                 <h3 style={{
                                     margin: 0,
                                     color: '#00ff88',
-                                    fontSize: '20px',
-                                    fontWeight: '700'
+                                    fontSize: 'clamp(16px, 4vw, 20px)',
+                                    fontWeight: '700',
+                                    lineHeight: '1.2'
                                 }}>
                                     AI-Powered Code Generation
                                 </h3>
                                 <p style={{
                                     margin: '4px 0 0 0',
                                     color: 'rgba(255, 255, 255, 0.7)',
-                                    fontSize: '14px'
+                                    fontSize: 'clamp(12px, 3vw, 14px)',
+                                    lineHeight: '1.3'
                                 }}>
                                     Smart Liquid + JSON Conversion
                                 </p>
@@ -129,15 +135,18 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                                 background: 'rgba(255, 255, 255, 0.1)',
                                 border: 'none',
                                 borderRadius: '50%',
-                                width: '35px',
-                                height: '35px',
+                                width: 'clamp(32px, 8vw, 35px)',
+                                height: 'clamp(32px, 8vw, 35px)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 cursor: 'pointer',
                                 color: 'rgba(255, 255, 255, 0.8)',
-                                fontSize: '18px',
-                                transition: 'all 0.2s ease'
+                                fontSize: 'clamp(16px, 4vw, 18px)',
+                                transition: 'all 0.2s ease',
+                                minHeight: '44px',
+                                minWidth: '44px',
+                                flexShrink: 0
                             }}
                             onMouseEnter={(e) => {
                                 e.target.style.background = 'rgba(255, 255, 255, 0.2)';
@@ -152,26 +161,25 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                         </button>
                     </div>
                 </div>
-
                 <div style={{
-                    padding: '30px',
+                    padding: 'clamp(20px, 5vw, 30px)',
                     position: 'relative',
                     zIndex: 1
                 }}>
                     <div style={{
-                        marginBottom: '25px'
+                        marginBottom: 'clamp(20px, 5vw, 25px)'
                     }}>
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '10px',
-                            marginBottom: '15px'
+                            gap: 'clamp(8px, 2vw, 10px)',
+                            marginBottom: 'clamp(12px, 3vw, 15px)'
                         }}>
-                            <span style={{ fontSize: '20px' }}>⚡</span>
+                            <span style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>⚡</span>
                             <h4 style={{
                                 margin: 0,
                                 color: '#ffffff',
-                                fontSize: '16px',
+                                fontSize: 'clamp(14px, 3.5vw, 16px)',
                                 fontWeight: '600'
                             }}>
                                 AI-Generated Code Notice
@@ -179,7 +187,7 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                         </div>
                         <p style={{
                             color: '#e6e6e6',
-                            fontSize: '14px',
+                            fontSize: 'clamp(12px, 3vw, 14px)',
                             lineHeight: '1.6',
                             margin: '0 0 15px 0'
                         }}>
@@ -188,25 +196,24 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                             for improved results.
                         </p>
                     </div>
-
                     <div style={{
                         background: 'rgba(0, 212, 255, 0.1)',
                         border: '1px solid rgba(0, 212, 255, 0.3)',
-                        borderRadius: '12px',
-                        padding: '20px',
-                        marginBottom: '25px'
+                        borderRadius: 'clamp(8px, 2vw, 12px)',
+                        padding: 'clamp(15px, 4vw, 20px)',
+                        marginBottom: 'clamp(20px, 5vw, 25px)'
                     }}>
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '10px',
-                            marginBottom: '10px'
+                            gap: 'clamp(8px, 2vw, 10px)',
+                            marginBottom: 'clamp(8px, 2vw, 10px)'
                         }}>
-                            <span style={{ fontSize: '18px' }}>📝</span>
+                            <span style={{ fontSize: 'clamp(16px, 4vw, 18px)' }}>📝</span>
                             <h4 style={{
                                 margin: 0,
                                 color: '#00d4ff',
-                                fontSize: '14px',
+                                fontSize: 'clamp(12px, 3vw, 14px)',
                                 fontWeight: '600'
                             }}>
                                 Important: JSON Schema Configuration
@@ -214,7 +221,7 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                         </div>
                         <p style={{
                             color: '#e6e6e6',
-                            fontSize: '13px',
+                            fontSize: 'clamp(11px, 2.5vw, 13px)',
                             lineHeight: '1.5',
                             margin: 0
                         }}>
@@ -225,27 +232,27 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                                 padding: '2px 6px',
                                 borderRadius: '4px',
                                 color: '#00ff88',
-                                fontSize: '12px'
+                                fontSize: 'clamp(10px, 2.5vw, 12px)'
                             }}>"type": "your-liquid-filename"</code>
                         </p>
                     </div>
                     <div style={{
                         background: 'rgba(138, 43, 226, 0.1)',
                         border: '1px solid rgba(138, 43, 226, 0.3)',
-                        borderRadius: '12px',
-                        padding: '15px',
-                        marginBottom: '20px'
+                        borderRadius: 'clamp(8px, 2vw, 12px)',
+                        padding: 'clamp(12px, 3vw, 15px)',
+                        marginBottom: 'clamp(15px, 4vw, 20px)'
                     }}>
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px',
-                            marginBottom: '8px'
+                            gap: 'clamp(6px, 1.5vw, 8px)',
+                            marginBottom: 'clamp(6px, 1.5vw, 8px)'
                         }}>
-                            <span style={{ fontSize: '16px' }}>⏱️</span>
+                            <span style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}>⏱️</span>
                             <span style={{
                                 color: '#ba68c8',
-                                fontSize: '13px',
+                                fontSize: 'clamp(11px, 2.8vw, 13px)',
                                 fontWeight: '600'
                             }}>
                                 Processing Time
@@ -253,61 +260,65 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                         </div>
                         <p style={{
                             color: '#e6e6e6',
-                            fontSize: '12px',
+                            fontSize: 'clamp(10px, 2.5vw, 12px)',
                             lineHeight: '1.4',
                             margin: 0
                         }}>
                             Less code = faster conversion ⚡ | More code = may take longer ⏳
                         </p>
                     </div>
-
                     <div style={{
                         background: 'rgba(255, 193, 7, 0.1)',
                         border: '1px solid rgba(255, 193, 7, 0.3)',
-                        borderRadius: '12px',
-                        padding: '15px',
-                        marginBottom: '25px'
+                        borderRadius: 'clamp(8px, 2vw, 12px)',
+                        padding: 'clamp(12px, 3vw, 15px)',
+                        marginBottom: 'clamp(20px, 5vw, 25px)'
                     }}>
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px'
+                            gap: 'clamp(6px, 1.5vw, 8px)',
+                            flexWrap: 'wrap'
                         }}>
-                            <span style={{ fontSize: '16px' }}>💡</span>
+                            <span style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}>💡</span>
                             <span style={{
                                 color: '#ffc107',
-                                fontSize: '13px',
-                                fontWeight: '600'
+                                fontSize: 'clamp(11px, 2.8vw, 13px)',
+                                fontWeight: '600',
+                                lineHeight: '1.3'
                             }}>
                                 Pro Tip: Generate multiple times for better results if needed!
                             </span>
                         </div>
                     </div>
                 </div>
-
                 <div style={{
-                    padding: '20px 30px',
+                    padding: 'clamp(15px, 4vw, 20px) clamp(20px, 5vw, 30px)',
                     borderTop: '1px solid rgba(255, 255, 255, 0.1)',
                     background: 'rgba(0, 0, 0, 0.2)',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    gap: '15px',
+                    gap: 'clamp(10px, 3vw, 15px)',
                     position: 'relative',
-                    zIndex: 1
+                    zIndex: 1,
+                    flexWrap: 'wrap'
                 }}>
                     <button
                         onClick={handleClose}
                         style={{
                             background: 'rgba(255, 255, 255, 0.1)',
                             border: '1px solid rgba(255, 255, 255, 0.2)',
-                            borderRadius: '10px',
-                            padding: '10px 20px',
+                            borderRadius: 'clamp(8px, 2vw, 10px)',
+                            padding: 'clamp(8px, 2vw, 10px) clamp(15px, 4vw, 20px)',
                             color: 'rgba(255, 255, 255, 0.8)',
-                            fontSize: '14px',
+                            fontSize: 'clamp(12px, 3vw, 14px)',
                             fontWeight: '600',
                             cursor: 'pointer',
-                            transition: 'all 0.2s ease'
+                            transition: 'all 0.2s ease',
+                            minHeight: '44px',
+                            flex: '1',
+                            minWidth: '100px'
                         }}
                         onMouseEnter={(e) => {
                             e.target.style.background = 'rgba(255, 255, 255, 0.2)';
@@ -325,14 +336,17 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                         style={{
                             background: 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
                             border: 'none',
-                            borderRadius: '10px',
-                            padding: '12px 25px',
+                            borderRadius: 'clamp(8px, 2vw, 10px)',
+                            padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 25px)',
                             color: '#000',
-                            fontSize: '14px',
+                            fontSize: 'clamp(12px, 3vw, 14px)',
                             fontWeight: '700',
                             cursor: 'pointer',
                             transition: 'all 0.2s ease',
-                            boxShadow: '0 4px 15px rgba(0, 255, 136, 0.3)'
+                            boxShadow: '0 4px 15px rgba(0, 255, 136, 0.3)',
+                            minHeight: '44px',
+                            flex: '1',
+                            minWidth: '140px'
                         }}
                         onMouseEnter={(e) => {
                             e.target.style.transform = 'translateY(-2px)';

@@ -7,9 +7,9 @@ export default function FileUploadSection({
     return (
         <div style={{
             background: 'linear-gradient(145deg, #1e1e2e 0%, #2a2a3e 100%)',
-            borderRadius: '25px',
-            padding: '35px',
-            marginBottom: '35px',
+            borderRadius: 'clamp(15px, 4vw, 25px)',
+            padding: 'clamp(20px, 5vw, 35px)',
+            marginBottom: 'clamp(20px, 5vw, 35px)',
             boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             position: 'relative',
@@ -28,29 +28,33 @@ export default function FileUploadSection({
             <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                marginBottom: '25px',
+                marginBottom: 'clamp(15px, 4vw, 25px)',
                 position: 'relative',
-                zIndex: 1
+                zIndex: 1,
+                flexWrap: 'wrap',
+                gap: '15px'
             }}>
                 <div style={{
-                    width: '50px',
-                    height: '50px',
+                    width: 'clamp(40px, 8vw, 50px)',
+                    height: 'clamp(40px, 8vw, 50px)',
                     borderRadius: '15px',
                     background: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginRight: '20px',
-                    boxShadow: '0 8px 16px rgba(0, 212, 255, 0.3)'
+                    boxShadow: '0 8px 16px rgba(0, 212, 255, 0.3)',
+                    flexShrink: 0
                 }}>
-                    <span style={{ color: 'white', fontSize: '24px' }}>📁</span>
+                    <span style={{ color: 'white', fontSize: 'clamp(18px, 4vw, 24px)' }}>📁</span>
                 </div>
                 <h2 style={{
                     margin: 0,
-                    fontSize: '24px',
+                    fontSize: 'clamp(18px, 4vw, 24px)',
                     fontWeight: '700',
                     color: '#ffffff',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    flex: '1',
+                    minWidth: '200px'
                 }}>
                     Upload HTML File
                 </h2>
@@ -58,8 +62,8 @@ export default function FileUploadSection({
 
             <div style={{
                 border: '2px dashed rgba(0, 212, 255, 0.3)',
-                borderRadius: '20px',
-                padding: '40px',
+                borderRadius: 'clamp(15px, 4vw, 20px)',
+                padding: 'clamp(25px, 6vw, 40px)',
                 textAlign: 'center',
                 background: 'rgba(0, 0, 0, 0.2)',
                 transition: 'all 0.3s ease',
@@ -84,15 +88,15 @@ export default function FileUploadSection({
                     }}
                 />
                 <div style={{
-                    fontSize: '60px',
-                    marginBottom: '20px',
+                    fontSize: 'clamp(40px, 10vw, 60px)',
+                    marginBottom: 'clamp(15px, 4vw, 20px)',
                     filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))'
                 }}>
                     {isLoading ? '⏳' : '☁️'}
                 </div>
                 <p style={{
                     margin: '0 0 15px 0',
-                    fontSize: '20px',
+                    fontSize: 'clamp(16px, 4vw, 20px)',
                     fontWeight: '700',
                     color: '#ffffff',
                     textShadow: '0 2px 4px rgba(0,0,0,0.3)'
@@ -101,7 +105,7 @@ export default function FileUploadSection({
                 </p>
                 <p style={{
                     margin: 0,
-                    fontSize: '16px',
+                    fontSize: 'clamp(14px, 3vw, 16px)',
                     color: 'rgba(255, 255, 255, 0.7)',
                     fontWeight: '500'
                 }}>
@@ -111,8 +115,8 @@ export default function FileUploadSection({
 
             {fileName && (
                 <div style={{
-                    marginTop: '25px',
-                    padding: '20px',
+                    marginTop: 'clamp(15px, 4vw, 25px)',
+                    padding: 'clamp(15px, 4vw, 20px)',
                     background: 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
                     borderRadius: '15px',
                     display: 'flex',
@@ -120,19 +124,29 @@ export default function FileUploadSection({
                     justifyContent: 'space-between',
                     boxShadow: '0 10px 20px rgba(0, 255, 136, 0.2)',
                     position: 'relative',
-                    zIndex: 1
+                    zIndex: 1,
+                    flexWrap: 'wrap',
+                    gap: '10px'
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        minWidth: 0,
+                        flex: '1'
+                    }}>
                         <span style={{
-                            fontSize: '24px',
+                            fontSize: 'clamp(18px, 4vw, 24px)',
                             marginRight: '15px',
-                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+                            flexShrink: 0
                         }}>✅</span>
                         <span style={{
                             color: '#000000',
                             fontWeight: '700',
-                            fontSize: '16px',
-                            textShadow: '0 1px 2px rgba(255,255,255,0.1)'
+                            fontSize: 'clamp(14px, 3vw, 16px)',
+                            textShadow: '0 1px 2px rgba(255,255,255,0.1)',
+                            wordBreak: 'break-all',
+                            overflow: 'hidden'
                         }}>
                             {fileName}
                         </span>
@@ -144,12 +158,13 @@ export default function FileUploadSection({
                             color: '#000000',
                             border: 'none',
                             borderRadius: '12px',
-                            padding: '12px 20px',
+                            padding: 'clamp(8px, 2vw, 12px) clamp(12px, 3vw, 20px)',
                             cursor: 'pointer',
-                            fontSize: '14px',
+                            fontSize: 'clamp(12px, 2.5vw, 14px)',
                             fontWeight: '700',
                             transition: 'all 0.2s ease',
-                            boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                            flexShrink: 0
                         }}
                         onMouseOver={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.3)'}
                         onMouseOut={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.2)'}

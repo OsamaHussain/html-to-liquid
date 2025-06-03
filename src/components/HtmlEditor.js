@@ -15,8 +15,8 @@ export default function HtmlEditor({
     return (
         <div style={{
             background: 'linear-gradient(145deg, #1e1e2e 0%, #2a2a3e 100%)',
-            borderRadius: '25px',
-            padding: '35px',
+            borderRadius: 'clamp(15px, 4vw, 25px)',
+            padding: 'clamp(20px, 5vw, 35px)',
             boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             position: 'relative',
@@ -35,29 +35,33 @@ export default function HtmlEditor({
             <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                marginBottom: '25px',
+                marginBottom: 'clamp(15px, 4vw, 25px)',
                 position: 'relative',
-                zIndex: 1
+                zIndex: 1,
+                flexWrap: 'wrap',
+                gap: '15px'
             }}>
                 <div style={{
-                    width: '50px',
-                    height: '50px',
+                    width: 'clamp(40px, 8vw, 50px)',
+                    height: 'clamp(40px, 8vw, 50px)',
                     borderRadius: '15px',
                     background: 'linear-gradient(135deg, #ff00ff 0%, #cc0099 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginRight: '20px',
-                    boxShadow: '0 8px 16px rgba(255, 0, 255, 0.3)'
+                    boxShadow: '0 8px 16px rgba(255, 0, 255, 0.3)',
+                    flexShrink: 0
                 }}>
-                    <span style={{ color: 'white', fontSize: '24px' }}>📝</span>
+                    <span style={{ color: 'white', fontSize: 'clamp(18px, 4vw, 24px)' }}>📝</span>
                 </div>
                 <h2 style={{
                     margin: 0,
-                    fontSize: '24px',
+                    fontSize: 'clamp(18px, 4vw, 24px)',
                     fontWeight: '700',
                     color: '#ffffff',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    flex: '1',
+                    minWidth: '200px'
                 }}>
                     HTML Editor & Validator
                 </h2>
@@ -65,7 +69,7 @@ export default function HtmlEditor({
 
             <div style={{
                 position: 'relative',
-                borderRadius: '20px',
+                borderRadius: 'clamp(15px, 4vw, 20px)',
                 overflow: 'hidden',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 boxShadow: '0 10px 20px rgba(0, 0, 0, 0.3)',
@@ -73,36 +77,42 @@ export default function HtmlEditor({
             }}>
                 <div style={{
                     background: 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)',
-                    padding: '20px 25px',
+                    padding: 'clamp(15px, 4vw, 20px) clamp(15px, 4vw, 25px)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    flexWrap: 'wrap',
+                    gap: '15px'
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: '10px', marginRight: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: '1' }}>
+                        <div style={{ display: 'flex', gap: '10px', marginRight: '20px', flexShrink: 0 }}>
                             <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ff5f56', boxShadow: '0 2px 4px rgba(255, 95, 86, 0.4)' }}></div>
                             <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#ffbd2e', boxShadow: '0 2px 4px rgba(255, 189, 46, 0.4)' }}></div>
                             <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#27ca3f', boxShadow: '0 2px 4px rgba(39, 202, 63, 0.4)' }}></div>
                         </div>
                         <span style={{
                             color: '#ffffff',
-                            fontSize: '16px',
+                            fontSize: 'clamp(14px, 3vw, 16px)',
                             fontWeight: '600',
-                            textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)'
+                            textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
                         }}>
                             {fileName || 'No file selected'}
                         </span>
                     </div>
                     <span style={{
                         color: '#ffffff',
-                        fontSize: '14px',
+                        fontSize: 'clamp(12px, 2.5vw, 14px)',
                         background: 'rgba(255, 255, 255, 0.2)',
                         padding: '6px 12px',
                         borderRadius: '8px',
                         fontWeight: '700',
                         border: '1px solid rgba(255, 255, 255, 0.3)',
-                        textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+                        textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+                        flexShrink: 0
                     }}>
                         HTML
                     </span>
@@ -118,23 +128,24 @@ export default function HtmlEditor({
                         style={{
                             background: 'rgba(255, 255, 255, 0.08)',
                             borderRight: '2px solid rgba(255, 255, 255, 0.15)',
-                            padding: '25px 15px',
+                            padding: 'clamp(15px, 4vw, 25px) clamp(10px, 3vw, 15px)',
                             color: '#888',
-                            fontSize: '15px',
+                            fontSize: 'clamp(13px, 2.5vw, 15px)',
                             fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
                             lineHeight: '1.7',
                             userSelect: 'none',
-                            minWidth: '60px',
+                            minWidth: 'clamp(50px, 10vw, 60px)',
                             textAlign: 'right',
                             overflow: 'hidden',
-                            maxHeight: '450px',
-                            pointerEvents: 'none'
+                            maxHeight: 'clamp(300px, 60vh, 450px)',
+                            pointerEvents: 'none',
+                            display: typeof window !== 'undefined' && window.innerWidth < 480 ? 'none' : 'block'
                         }}>
                         {fileContent && fileContent
                             .split('\n')
                             .map((_, index) => (
                                 <div key={index} style={{
-                                    height: '25.5px',
+                                    height: 'clamp(20px, 4vw, 25.5px)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'flex-end'
@@ -151,11 +162,11 @@ export default function HtmlEditor({
                         placeholder="🤖 Unified HTML Editor - Upload file above OR paste/type content here!"
                         style={{
                             flex: 1,
-                            height: '450px',
-                            padding: '25px',
+                            height: 'clamp(300px, 60vh, 450px)',
+                            padding: 'clamp(15px, 4vw, 25px)',
                             border: 'none',
                             outline: 'none',
-                            fontSize: '15px',
+                            fontSize: 'clamp(13px, 2.5vw, 15px)',
                             fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
                             lineHeight: '1.7',
                             background: 'transparent',
