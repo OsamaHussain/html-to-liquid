@@ -7,6 +7,7 @@ import HtmlEditor from "../components/HtmlEditor";
 import ConversionSection from "../components/ConversionSection";
 import GlobalStyles from "../components/GlobalStyles";
 import HowItWorksPopup from "../components/HowItWorksPopup";
+import AIGenerationPopup from "../components/AIGenerationPopup";
 import { validateAndExtractHtml } from "../utils/htmlValidation";
 
 export default function Home() {
@@ -20,6 +21,7 @@ export default function Home() {
   const [conversionMetadata, setConversionMetadata] = useState(null); const [isConverting, setIsConverting] = useState(false); const [conversionError, setConversionError] = useState("");
   const [inputSource, setInputSource] = useState("");
   const [showHowItWorksPopup, setShowHowItWorksPopup] = useState(false);
+  const [showAIGenerationPopup, setShowAIGenerationPopup] = useState(false);
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -110,6 +112,10 @@ export default function Home() {
       return;
     }
 
+    setShowAIGenerationPopup(true);
+  };
+
+  const performConversion = async () => {
     setIsConverting(true);
     setConversionError('');
 
@@ -214,10 +220,18 @@ export default function Home() {
         onClose={() => setShowErrorPopup(false)}
         fileName={fileName}
       />
-
       <HowItWorksPopup
         isOpen={showHowItWorksPopup}
         onClose={() => setShowHowItWorksPopup(false)}
+      />
+
+      <AIGenerationPopup
+        isVisible={showAIGenerationPopup}
+        onClose={() => setShowAIGenerationPopup(false)}
+        onConfirm={() => {
+          setShowAIGenerationPopup(false);
+          performConversion();
+        }}
       />
     </div>
   );
