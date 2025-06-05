@@ -51,8 +51,28 @@ export async function POST(request) {
    - LITERALLY EVERY PIECE OF TEXT CONTENT MUST BE CONVERTED TO LIQUID VARIABLES!
 
 4. IDENTIFY REPEATING ELEMENTS: If HTML has multiple similar cards/items, use {% for block in section.blocks %}
-5. PRESERVE HTML STRUCTURE: Keep exact HTML structure, classes, and attributes
-6. COMPREHENSIVE SCHEMA REQUIREMENTS:
+5. MANDATORY BLOCK CONVERSION: Convert ALL possible content into BLOCKS for maximum flexibility:
+   - Navigation links → header_link blocks
+   - Feature cards → feature blocks  
+   - Product cards → product blocks
+   - Testimonials → testimonial blocks
+   - Team members → team_member blocks
+   - Services → service blocks
+   - Social media links → social_link blocks
+   - Footer links → footer_link blocks
+   - FAQ items → faq blocks
+   - Gallery images → gallery blocks
+   - Statistics → stat blocks
+   - Process steps → step blocks
+   - Benefits → benefit blocks
+   - Reviews → review blocks
+   - Awards → award blocks
+   - Partners → partner blocks
+   - Contact info → contact_info blocks
+   - Address info → address blocks
+   - ANY repeating or similar content → appropriate block type
+6. PRESERVE HTML STRUCTURE: Keep exact HTML structure, classes, and attributes
+7. COMPREHENSIVE SCHEMA REQUIREMENTS:
    - Extract ACTUAL text from HTML as default values in schema
    - Use "text" type for short text (under 100 characters)
    - Use "textarea" type for long text (over 100 characters)
@@ -64,11 +84,11 @@ export async function POST(request) {
    - Include blocks section for ALL repeating elements
    - Make EVERY single piece of content editable through settings
    - Create unique setting IDs for every text element
-7. NO GENERIC PLACEHOLDERS: Use real content from HTML in schema defaults
-8. CRITICAL SHOPIFY RULE: Never add "default" attribute to "image_picker" settings
-9. COMPLETE CONVERSION: Convert ALL sections including headers, navigation, hero, content, testimonials, products, forms, footer - EVERYTHING!
-10. CREATE COMPREHENSIVE BLOCKS: Include blocks for products, testimonials, education guides, sustainability slides, transformation slides, team members, features, services, etc.
-11. MANDATORY ANCHOR TAG CONVERSION: Every single <a> tag MUST become editable:
+8. NO GENERIC PLACEHOLDERS: Use real content from HTML in schema defaults
+9. CRITICAL SHOPIFY RULE: Never add "default" attribute to "image_picker" settings
+10. COMPLETE CONVERSION: Convert ALL sections including headers, navigation, hero, content, testimonials, products, forms, footer - EVERYTHING!
+11. CREATE COMPREHENSIVE BLOCKS: Include blocks for products, testimonials, education guides, sustainability slides, transformation slides, team members, features, services, etc.
+12. MANDATORY ANCHOR TAG CONVERSION: Every single <a> tag MUST become editable:
     - Header/Navigation links: Use BLOCKS for dynamic header links (can add/remove from admin)
     - Footer links: <a href="{{ section.settings.footer_link_1_url }}">{{ section.settings.footer_link_1_text }}</a>
     - Multiple footer links: footer_link_2_url, footer_link_2_text, footer_link_3_url, footer_link_3_text, etc.
@@ -77,20 +97,20 @@ export async function POST(request) {
     - Social links: <a href="{{ section.settings.social_link_1_url }}">{{ section.settings.social_link_1_text }}</a>
     - Multiple social links: social_link_2_url, social_link_2_text, social_link_3_url, social_link_3_text, etc.
     - ALL other anchor tags: Create unique numbered settings for EACH anchor tag
-12. DYNAMIC HEADER NAVIGATION HANDLING: For header/navigation anchor tags:
+13. DYNAMIC HEADER NAVIGATION HANDLING: For header/navigation anchor tags:
     - Convert header anchor tags to BLOCKS using {% for block in section.blocks %}
     - Create "header_link" block type for each navigation link
     - Each header link becomes a separate block with link_url and link_text settings
     - This allows admin to add/remove header links dynamically
     - Header navigation example: {% for block in section.blocks %}{% if block.type == 'header_link' %}<a href="{{ block.settings.link_url }}">{{ block.settings.link_text }}</a>{% endif %}{% endfor %}
-13. SCHEMA MUST INCLUDE: For every piece of content, create appropriate settings:
+14. SCHEMA MUST INCLUDE: For every piece of content, create appropriate settings:
     - For anchor tags: { "type": "url", "id": "link_name_url", "label": "Link URL", "default": "/" } and { "type": "text", "id": "link_name_text", "label": "Link Text", "default": "actual_link_text" }
     - For headings: { "type": "text", "id": "heading_1", "label": "Heading Text", "default": "actual_heading_text" }
     - For paragraphs: { "type": "textarea", "id": "description_1", "label": "Description", "default": "actual_paragraph_text" }
     - For images: { "type": "image_picker", "id": "image_1", "label": "Image" }
     - For all other text: { "type": "text", "id": "text_content_1", "label": "Text Content", "default": "actual_text" }
 
-14. TEXT CONTENT ANALYSIS: Scan the HTML and identify EVERY single text element:
+15. TEXT CONTENT ANALYSIS: Scan the HTML and identify EVERY single text element:
     - Count all headings and create separate settings for each
     - Count all paragraphs and create separate settings for each
     - Count all buttons and create separate settings for each
@@ -295,11 +315,19 @@ ANALYSIS STEPS:
 5. Extract actual text content from HTML as default values for ALL settings
 6. SCAN for EVERY setting in the schema and populate them with real HTML content
 
+🚨 CRITICAL BLOCK REQUIREMENT: MAXIMIZE BLOCK USAGE IN JSON 🚨
+- Convert EVERY possible content element to BLOCKS in the JSON template
+- Even single elements should be blocks if they might be repeated or customized
+- Create blocks for ALL navigation links, footer links, social links, features, services, testimonials, team members, products, gallery items, FAQ items, contact info, addresses, statistics, reviews, awards, partners, benefits, process steps, etc.
+- PREFER BLOCKS OVER SECTION SETTINGS whenever possible for maximum flexibility
+- Each block should contain ALL its related content (title, description, image, link, etc.)
+- This allows admins to add/remove/reorder elements dynamically
+
 JSON STRUCTURE:
 {
   "sections": {
     "main": {
-      "type": "${sectionType}",
+      "type": "custom-home",
       "blocks": {
         "header-link-1": {
           "type": "header_link",
@@ -309,34 +337,76 @@ JSON STRUCTURE:
           }
         },
         "header-link-2": {
-          "type": "header_link", 
+          "type": "header_link",
           "settings": {
-            "link_url": "/",
+            "link_url": "/collections/all",
             "link_text": "Shop"
           }
         },
-        "block-1": {
-          "type": "EXACT_TYPE_FROM_SCHEMA",
+        "product-block-1": {
+          "type": "product_card",
           "settings": {
-            "setting_id": "ACTUAL_CONTENT_FROM_HTML"
+            "product_title": "Smartwatch Nova",
+            "product_price": "$199",
+            "product_image_url": "shopify://product-image-1"
+          }
+        },
+        "testimonial-1": {
+          "type": "testimonial",
+          "settings": {
+            "quote": "Nova made my work faster!",
+            "author": "Fatima"
+          }
+        },
+        "testimonial-2": {
+          "type": "testimonial",
+          "settings": {
+            "quote": "AI-powered and user-friendly.",
+            "author": "Ali"
+          }
+        },
+        "guide-1": {
+          "type": "feature",
+          "settings": {
+            "title": "Voice Activation",
+            "description": "Speak to command the assistant."
+          }
+        },
+        "footer-link-1": {
+          "type": "footer_link",
+          "settings": {
+            "footer_link_text": "Contact Us",
+            "footer_link_url": "/pages/contact"
+          }
+        },
+        "footer-link-2": {
+          "type": "footer_link",
+          "settings": {
+            "footer_link_text": "Privacy Policy",
+            "footer_link_url": "/pages/privacy"
           }
         }
       },
-      "block_order": ["header-link-1", "header-link-2", "block-1"],
+      "block_order": [
+        "header-link-1",
+        "header-link-2",
+        "product-block-1",
+        "testimonial-1",
+        "testimonial-2",
+        "guide-1",
+        "footer-link-1",
+        "footer-link-2"
+      ],
       "settings": {
-        "setting_id": "ACTUAL_CONTENT_FROM_HTML",
+        "heading": "Welcome to Nova",
         "heading_size": "h1",
-        "color_scheme": "scheme-1",
+        "color_scheme": "scheme-2",
         "padding_top": 36,
         "padding_bottom": 36,
         "margin_top": 0,
         "margin_bottom": 0,
-        "footer_link_1_url": "/", 
-        "footer_link_1_text": "Contact",
-        "footer_link_2_url": "/",
-        "footer_link_2_text": "Privacy",
-        "button_url": "/",
-        "button_text": "Shop Now"
+        "button_text": "Explore More",
+        "button_url": "/collections/all"
       }
     }
   },
@@ -350,45 +420,66 @@ Return ONLY valid JSON:`;
     const jsonCompletion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [{
-        role: "system", content: `You are a Shopify expert who creates comprehensive page template JSON files that capture ALL dynamic content. 🚨 CRITICAL RULES:
+        role: "system",
+        content: `You are a Shopify expert who creates comprehensive page template JSON files that capture ALL dynamic content. 🚨 CRITICAL RULES:
 1. Section type must be "${sectionType}" 
 2. Block types in JSON must EXACTLY match block types defined in the Liquid schema
 3. Parse the Liquid schema first to identify ALL settings (not just block types)
 4. Extract REAL content from HTML for ALL settings - no placeholders
 5. Count repeating elements and create blocks for each one
 6. NEVER add default values to image fields
-7. For image URLs, convert them to simple filenames (e.g., "image.jpg" not full URLs)
+7. 🚨 CRITICAL IMAGE RULE: ALL image fields must be empty strings ("") - NO .jpg, .png, or any image extensions allowed
 8. Return valid JSON only, no markdown formatting
 9. Ensure ALL section settings and block settings match the Liquid schema exactly
 10. Create the exact number of blocks as there are repeating elements in the HTML
-11. ALWAYS include these standard Shopify styling settings in EVERY section:
+11. 🚨 MAXIMIZE BLOCK USAGE: Convert EVERYTHING possible to blocks in JSON for maximum flexibility:
+    - Navigation links → header_link blocks
+    - Footer links → footer_link blocks  
+    - Features → feature blocks
+    - Services → service blocks
+    - Testimonials → testimonial blocks
+    - Team members → team_member blocks
+    - Products → product blocks
+    - Gallery images → gallery blocks
+    - Social links → social_link blocks
+    - Contact info → contact_info blocks
+    - Statistics → stat blocks
+    - Benefits → benefit blocks
+    - FAQ items → faq blocks
+    - Reviews → review blocks
+    - Awards → award blocks
+    - Partners → partner blocks
+    - Process steps → step blocks    
+    - PREFER BLOCKS OVER SECTION SETTINGS for maximum admin flexibility
+12. ALWAYS include these standard Shopify styling settings in EVERY section:
     - "heading_size": "h1" (for heading size control)
     - "color_scheme": "scheme-1" (for color scheme selection) 
     - "padding_top": 36 (top padding in pixels)
     - "padding_bottom": 36 (bottom padding in pixels)
-    - "margin_top": 0 (top margin)
-    - "margin_bottom": 0 (bottom margin)
-12. COMPREHENSIVE CONTENT CAPTURE: You MUST scan the Liquid schema for ALL settings and populate them:
+    - "margin_top": 0 (top margin)    - "margin_bottom": 0 (bottom margin)
+13. COMPREHENSIVE CONTENT CAPTURE: You MUST scan the Liquid schema for ALL settings and populate them:
     - Find EVERY setting in the schema (headings, paragraphs, buttons, links, labels, forms, etc.)
     - Extract actual text content from HTML for each setting
     - Include ALL heading settings: title, subtitle, heading_1, heading_2, etc.
     - Include ALL paragraph settings: description, text_1, text_2, etc.
     - Include ALL button settings: button_text, button_1_text, etc.
     - Include ALL form settings: placeholder_text, input_label, etc.
-    - Include ALL contact settings: phone, email, address, company_name, etc.
+    - Include ALL contact settings: phone, email, address, company_name, etc.    
     - Include ALL anchor tag settings: both URL and text for every link
-13. MANDATORY ANCHOR TAG HANDLING: 
+14. MANDATORY ANCHOR TAG HANDLING:
     - Find every setting ending with "_url" and "_text" in the schema
-    - Extract actual href values and link text from the original HTML
+    - Extract actual href values and link text from the original HTML    
     - Create settings for navigation links, footer links, buttons, social links, etc.
-    - For header/navigation: Create numbered settings or blocks for each navigation link
+    - For header/navigation: Create numbered settings or blocks for each navigation link    
     - Each anchor tag gets corresponding URL and text settings
-14. Count ALL text elements in HTML and ensure each has corresponding JSON setting
-15. Use actual href values (convert localhost URLs to relative paths like "/")
-16. Use actual text content from HTML for all text settings
-17. HEADER LINKS: If there are multiple anchor tags in header/nav section, create blocks or numbered settings for each one
-18. CRITICAL: You must process the ENTIRE schema and create JSON for ALL settings. Do not truncate or skip any parts for large files.
-19. MISSING CONTENT RULE: If a setting exists in schema but no corresponding content found in HTML, use appropriate default values`
+15. Count ALL text elements in HTML and ensure each has corresponding JSON setting
+16. Use actual href values (convert localhost URLs to relative paths like "/")
+17. Use actual text content from HTML for all text settings
+18. HEADER LINKS: If there are multiple anchor tags in header/nav section, create blocks or numbered settings for each one
+19. CRITICAL: You must process the ENTIRE schema and create JSON for ALL settings. Do not truncate or skip any parts for large files.
+20. MISSING CONTENT RULE: If a setting exists in schema but no corresponding content found in HTML, use appropriate default values
+21. 🚨 BLOCK PRIORITY RULE: Always prefer creating BLOCKS over section settings when possible - this gives maximum flexibility to admins to add, remove, and reorder content elements dynamically
+22. 🚨 IMAGE FIELD RULE: For ALL image-related settings in JSON, always use empty string ("") - never include .jpg, .png, or any file extensions`
       },
       {
         role: "user",
