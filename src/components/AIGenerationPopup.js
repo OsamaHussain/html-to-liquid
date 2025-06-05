@@ -55,13 +55,14 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                     width: '100%',
                     maxHeight: '90vh',
                     overflow: 'hidden',
-                    overflowY: 'auto',
                     boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
                     border: '1px solid rgba(0, 255, 136, 0.3)',
                     transform: isAnimating ? 'scale(1) translateY(0)' : 'scale(0.9) translateY(20px)',
                     transition: 'transform 0.3s ease-out',
                     position: 'relative',
-                    margin: 'auto'
+                    margin: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column'
                 }}
                 onClick={(e) => e.stopPropagation()}
             >
@@ -164,7 +165,9 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                 <div style={{
                     padding: 'clamp(20px, 5vw, 30px)',
                     position: 'relative',
-                    zIndex: 1
+                    zIndex: 1,
+                    flex: '1',
+                    overflowY: 'auto'
                 }}>
                     <div style={{
                         marginBottom: 'clamp(20px, 5vw, 25px)'
@@ -192,9 +195,29 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                             margin: '0 0 15px 0'
                         }}>
                             This tool uses AI to generate Shopify Liquid templates and JSON schema files.
+                            <strong style={{ color: '#ffc107' }}> AI provides 95%-98% accuracy, not 100%.</strong> Having
+                            <strong style={{ color: '#00ff88' }}> Liquid knowledge is essential</strong> for fine-tuning results.
                             If the first result doesn't meet your expectations, simply click generate again
                             for improved results.
                         </p>
+                        <div style={{
+                            background: 'rgba(255, 152, 0, 0.1)',
+                            border: '1px solid rgba(255, 152, 0, 0.3)',
+                            borderRadius: 'clamp(6px, 1.5vw, 8px)',
+                            padding: 'clamp(10px, 2.5vw, 12px)',
+                            marginTop: '12px'
+                        }}>
+                            <p style={{
+                                color: '#ff9800',
+                                fontSize: 'clamp(11px, 2.5vw, 13px)',
+                                lineHeight: '1.5',
+                                margin: 0,
+                                fontWeight: '600'
+                            }}>
+                                <span style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}>🤝</span> I assume you have provided correct HTML code for conversion.
+                                If AI repeatedly generates incorrect results, please double-check your HTML code first.
+                            </p>
+                        </div>
                     </div>
                     <div style={{
                         background: 'rgba(0, 212, 255, 0.1)',
@@ -264,7 +287,7 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                             lineHeight: '1.4',
                             margin: 0
                         }}>
-                            Less code = faster conversion ⚡ | More code = may take longer ⏳
+                            Less code = faster conversion ⚡ | Large code = 3-5 minutes ⏳ | More complex code = may take longer
                         </p>
                     </div>
                     <div style={{
@@ -272,7 +295,7 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                         border: '1px solid rgba(255, 193, 7, 0.3)',
                         borderRadius: 'clamp(8px, 2vw, 12px)',
                         padding: 'clamp(12px, 3vw, 15px)',
-                        marginBottom: 'clamp(20px, 5vw, 25px)'
+                        marginBottom: 'clamp(15px, 4vw, 20px)'
                     }}>
                         <div style={{
                             display: 'flex',
@@ -291,6 +314,69 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                             </span>
                         </div>
                     </div>
+                    <div style={{
+                        background: 'rgba(0, 123, 255, 0.1)',
+                        border: '1px solid rgba(0, 123, 255, 0.3)',
+                        borderRadius: 'clamp(8px, 2vw, 12px)',
+                        padding: 'clamp(15px, 4vw, 20px)',
+                        marginBottom: 'clamp(20px, 5vw, 25px)'
+                    }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'clamp(8px, 2vw, 10px)',
+                            marginBottom: 'clamp(12px, 3vw, 15px)'
+                        }}>
+                            <span style={{ fontSize: 'clamp(16px, 4vw, 18px)' }}>📚</span>
+                            <h4 style={{
+                                margin: 0,
+                                color: '#007bff',
+                                fontSize: 'clamp(12px, 3vw, 14px)',
+                                fontWeight: '600'
+                            }}>
+                                Liquid Knowledge Required
+                            </h4>
+                        </div>
+                        <p style={{
+                            color: '#e6e6e6',
+                            fontSize: 'clamp(11px, 2.5vw, 13px)',
+                            lineHeight: '1.5',
+                            margin: '0 0 12px 0'
+                        }}>
+                            <strong style={{ color: '#ffc107' }}>Important:</strong> Basic understanding of Shopify Liquid
+                            templating language is essential for customizing and optimizing the AI-generated code.
+                        </p>
+                        <a
+                            href="https://shopify.dev/docs"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                                color: '#00ff88',
+                                textDecoration: 'none',
+                                fontSize: 'clamp(11px, 2.5vw, 13px)',
+                                fontWeight: '600',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                padding: '6px 12px',
+                                background: 'rgba(0, 255, 136, 0.1)',
+                                borderRadius: '6px',
+                                border: '1px solid rgba(0, 255, 136, 0.3)',
+                                transition: 'all 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.target.style.background = 'rgba(0, 255, 136, 0.2)';
+                                e.target.style.transform = 'translateY(-1px)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.background = 'rgba(0, 255, 136, 0.1)';
+                                e.target.style.transform = 'translateY(0)';
+                            }}
+                        >
+                            📖 Learn Liquid - Shopify Docs
+                            <span style={{ fontSize: 'clamp(10px, 2vw, 12px)' }}>↗</span>
+                        </a>
+                    </div>
                 </div>
                 <div style={{
                     padding: 'clamp(15px, 4vw, 20px) clamp(20px, 5vw, 30px)',
@@ -302,7 +388,9 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                     gap: 'clamp(10px, 3vw, 15px)',
                     position: 'relative',
                     zIndex: 1,
-                    flexWrap: 'wrap'
+                    flexWrap: 'wrap',
+                    marginTop: 'auto',
+                    flexShrink: 0
                 }}>
                     <button
                         onClick={handleClose}
