@@ -59,7 +59,8 @@ export async function POST(request) {
    - Team members → team_member blocks
    - Services → service blocks
    - Social media links → social_link blocks
-   - Footer links → footer_link blocks
+   - Footer columns → footer_column blocks (CRITICAL: Preserve exact multi-column layout)
+   - Footer links within columns → footer_link blocks
    - FAQ items → faq blocks
    - Gallery images → gallery blocks
    - Statistics → stat blocks
@@ -103,14 +104,98 @@ export async function POST(request) {
     - Each header link becomes a separate block with link_url and link_text settings
     - This allows admin to add/remove header links dynamically
     - Header navigation example: {% for block in section.blocks %}{% if block.type == 'header_link' %}<a href="{{ block.settings.link_url }}">{{ block.settings.link_text }}</a>{% endif %}{% endfor %}
-14. SCHEMA MUST INCLUDE: For every piece of content, create appropriate settings:
+
+14. 🚨 CRITICAL MULTI-COLUMN FOOTER HANDLING 🚨:
+    - PRESERVE EXACT FOOTER LAYOUT: Keep all CSS classes, grid structures, flexbox layouts, and responsive design EXACTLY as in HTML
+    - CONVERT FOOTER COLUMNS TO BLOCKS: Each footer column becomes a "footer_column" block
+    - FOOTER COLUMN STRUCTURE: Each footer column block should contain:
+      * Column title/heading as editable text setting
+      * Multiple footer links as sub-blocks or array of links
+      * Preserve exact CSS classes and structure for each column    - FOOTER LIQUID STRUCTURE EXAMPLE:
+      {% for block in section.blocks %}
+        {% if block.type == 'footer_column' %}
+          <div class="original-footer-column-classes">
+            <h4>{{ block.settings.column_title }}</h4>
+            <ul class="original-footer-links-classes">
+              {% if block.settings.link_1_url != blank %}<li><a href="{{ block.settings.link_1_url }}">{{ block.settings.link_1_text }}</a></li>{% endif %}
+              {% if block.settings.link_2_url != blank %}<li><a href="{{ block.settings.link_2_url }}">{{ block.settings.link_2_text }}</a></li>{% endif %}
+              {% if block.settings.link_3_url != blank %}<li><a href="{{ block.settings.link_3_url }}">{{ block.settings.link_3_text }}</a></li>{% endif %}
+              {% if block.settings.link_4_url != blank %}<li><a href="{{ block.settings.link_4_url }}">{{ block.settings.link_4_text }}</a></li>{% endif %}
+            </ul>
+          </div>
+        {% endif %}
+      {% endfor %}
+    - FOOTER SCHEMA EXAMPLE:
+      {
+        "type": "footer_column",
+        "name": "Footer Column",
+        "settings": [
+          {
+            "type": "text",
+            "id": "column_title",
+            "label": "Column Title",
+            "default": "Actual_Column_Title_From_HTML"
+          },
+          {
+            "type": "url",
+            "id": "link_1_url",
+            "label": "Link 1 URL",
+            "default": "/"
+          },
+          {
+            "type": "text",
+            "id": "link_1_text",
+            "label": "Link 1 Text",
+            "default": "Actual_Link_Text"
+          },
+          {
+            "type": "url",
+            "id": "link_2_url",
+            "label": "Link 2 URL",
+            "default": "/"
+          },
+          {
+            "type": "text",
+            "id": "link_2_text",
+            "label": "Link 2 Text",
+            "default": "Actual_Link_Text"
+          },
+          {
+            "type": "url",
+            "id": "link_3_url",
+            "label": "Link 3 URL",
+            "default": "/"
+          },
+          {
+            "type": "text",
+            "id": "link_3_text",
+            "label": "Link 3 Text",
+            "default": "Actual_Link_Text"
+          },
+          {
+            "type": "url",
+            "id": "link_4_url",
+            "label": "Link 4 URL",
+            "default": "/"
+          },
+          {
+            "type": "text",
+            "id": "link_4_text",
+            "label": "Link 4 Text",
+            "default": "Actual_Link_Text"
+          }
+        ]
+      }
+    - EXTRACT REAL FOOTER DATA: Extract actual column titles and links from HTML footer structure
+    - MAINTAIN RESPONSIVE DESIGN: Keep all responsive CSS classes and media queries for footer columns
+15. SCHEMA MUST INCLUDE: For every piece of content, create appropriate settings:
     - For anchor tags: { "type": "url", "id": "link_name_url", "label": "Link URL", "default": "/" } and { "type": "text", "id": "link_name_text", "label": "Link Text", "default": "actual_link_text" }
     - For headings: { "type": "text", "id": "heading_1", "label": "Heading Text", "default": "actual_heading_text" }
     - For paragraphs: { "type": "textarea", "id": "description_1", "label": "Description", "default": "actual_paragraph_text" }
     - For images: { "type": "image_picker", "id": "image_1", "label": "Image" }
     - For all other text: { "type": "text", "id": "text_content_1", "label": "Text Content", "default": "actual_text" }
 
-15. TEXT CONTENT ANALYSIS: Scan the HTML and identify EVERY single text element:
+16. TEXT CONTENT ANALYSIS: Scan the HTML and identify EVERY single text element:
     - Count all headings and create separate settings for each
     - Count all paragraphs and create separate settings for each
     - Count all buttons and create separate settings for each
@@ -138,7 +223,7 @@ Return ONLY the liquid template with complete schema section. Include ALL CSS ex
         content: prompt
       }
       ],
-      max_tokens: 16000,
+      max_tokens: 16384,
       temperature: 0.05,
     });
 
@@ -323,6 +408,13 @@ ANALYSIS STEPS:
 - Each block should contain ALL its related content (title, description, image, link, etc.)
 - This allows admins to add/remove/reorder elements dynamically
 
+🚨 FOOTER MULTI-COLUMN LAYOUT PRESERVATION 🚨
+- CRITICAL: Maintain exact footer column structure and CSS classes from HTML
+- Each footer column must preserve its original CSS grid/flexbox classes
+- Footer responsive design must remain identical to HTML version
+- Extract actual footer content (column titles and links) from HTML
+- Use "footer_column" block type for maximum flexibility and exact UI preservation
+
 JSON STRUCTURE:
 {
   "sections": {
@@ -351,6 +443,14 @@ JSON STRUCTURE:
             "product_image_url": "shopify://product-image-1"
           }
         },
+        "product-block-2": {
+          "type": "product_card",
+          "settings": {
+            "product_title": "Smartwatch Nova",
+            "product_price": "$199",
+            "product_image_url": "shopify://product-image-2"
+          }
+        },
         "testimonial-1": {
           "type": "testimonial",
           "settings": {
@@ -372,18 +472,53 @@ JSON STRUCTURE:
             "description": "Speak to command the assistant."
           }
         },
-        "footer-link-1": {
-          "type": "footer_link",
+        "guide-2": {
+          "type": "feature",
           "settings": {
-            "footer_link_text": "Contact Us",
-            "footer_link_url": "/pages/contact"
+            "title": "Voice Activation",
+            "description": "Speak to command the assistant."
+          }
+        },          
+        "footer-column-shop": {
+          "type": "footer_column",
+          "settings": {
+            "column_title": "Shop",
+            "link_1_url": "/collections/all",
+            "link_1_text": "All Products",
+            "link_2_url": "/collections/treatments",
+            "link_2_text": "Treatments",
+            "link_3_url": "/collections/styling",
+            "link_3_text": "Styling",
+            "link_4_url": "/collections/tools",
+            "link_4_text": "Tools"
           }
         },
-        "footer-link-2": {
-          "type": "footer_link",
+        "footer-column-help": {
+          "type": "footer_column",
           "settings": {
-            "footer_link_text": "Privacy Policy",
-            "footer_link_url": "/pages/privacy"
+            "column_title": "Help",
+            "link_1_url": "/pages/contact",
+            "link_1_text": "Contact Us",
+            "link_2_url": "/pages/faqs",
+            "link_2_text": "FAQs",
+            "link_3_url": "/pages/shipping-returns",
+            "link_3_text": "Shipping & Returns",
+            "link_4_url": "/account",
+            "link_4_text": "My Account"
+          }
+        },
+        "footer-column-about": {
+          "type": "footer_column",
+          "settings": {
+            "column_title": "About",
+            "link_1_url": "/pages/our-story",
+            "link_1_text": "Our Story",
+            "link_2_url": "/pages/ingredients",
+            "link_2_text": "Ingredients",
+            "link_3_url": "/blogs/news",
+            "link_3_text": "Blog",
+            "link_4_url": "",
+            "link_4_text": ""
           }
         }
       },
@@ -394,8 +529,9 @@ JSON STRUCTURE:
         "testimonial-1",
         "testimonial-2",
         "guide-1",
-        "footer-link-1",
-        "footer-link-2"
+        "footer-column-shop",
+        "footer-column-help",
+        "footer-column-about"
       ],
       "settings": {
         "heading": "Welcome to Nova",
@@ -486,7 +622,7 @@ Return ONLY valid JSON:`;
         content: jsonPrompt
       }
       ],
-      max_tokens: 8000,
+      max_tokens: 12000,
       temperature: 0.01,
     });
 
