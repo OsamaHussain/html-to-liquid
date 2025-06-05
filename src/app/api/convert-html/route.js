@@ -185,17 +185,47 @@ export async function POST(request) {
             "default": "Actual_Link_Text"
           }
         ]
-      }
+      }    
     - EXTRACT REAL FOOTER DATA: Extract actual column titles and links from HTML footer structure
     - MAINTAIN RESPONSIVE DESIGN: Keep all responsive CSS classes and media queries for footer columns
-15. SCHEMA MUST INCLUDE: For every piece of content, create appropriate settings:
+
+15. 🚨 CRITICAL FOOTER BOTTOM BAR HANDLING 🚨:
+    - MAKE FOOTER BOTTOM BAR FULLY EDITABLE: Convert all footer bottom content to editable settings
+    - FOOTER BOTTOM ELEMENTS TO CONVERT:
+      * Copyright text → {{ section.settings.copyright_text }}
+      * Company name → {{ section.settings.company_name }}
+      * Year → {{ section.settings.copyright_year }}
+      * Privacy policy link → {{ section.settings.privacy_url }} and {{ section.settings.privacy_text }}
+      * Terms of service link → {{ section.settings.terms_url }} and {{ section.settings.terms_text }}
+      * Social media links → {{ section.settings.social_1_url }}, {{ section.settings.social_1_text }}, etc.
+      * Contact info → {{ section.settings.footer_phone }}, {{ section.settings.footer_email }}
+      * Payment icons/text → {{ section.settings.payment_text }}
+      * All other bottom bar text → appropriate numbered settings
+    - FOOTER BOTTOM LIQUID STRUCTURE EXAMPLE:
+      <div class="footer-bottom original-classes">
+        <p>&copy; {{ section.settings.copyright_year }} {{ section.settings.company_name }}. {{ section.settings.copyright_text }}</p>
+        <div class="footer-bottom-links">
+          {% if section.settings.privacy_url != blank %}<a href="{{ section.settings.privacy_url }}">{{ section.settings.privacy_text }}</a>{% endif %}
+          {% if section.settings.terms_url != blank %}<a href="{{ section.settings.terms_url }}">{{ section.settings.terms_text }}</a>{% endif %}
+        </div>
+        {% if section.settings.footer_email != blank %}<p>{{ section.settings.footer_email }}</p>{% endif %}
+      </div>
+    - FOOTER BOTTOM SCHEMA SETTINGS:
+      * Copyright year: { "type": "text", "id": "copyright_year", "label": "Copyright Year", "default": "2024" }
+      * Company name: { "type": "text", "id": "company_name", "label": "Company Name", "default": "Actual_Company_Name" }
+      * Copyright text: { "type": "text", "id": "copyright_text", "label": "Copyright Text", "default": "All rights reserved" }
+      * Privacy policy: { "type": "url", "id": "privacy_url", "label": "Privacy Policy URL", "default": "/" } and { "type": "text", "id": "privacy_text", "label": "Privacy Policy Text", "default": "Privacy Policy" }
+      * Terms of service: { "type": "url", "id": "terms_url", "label": "Terms URL", "default": "/" } and { "type": "text", "id": "terms_text", "label": "Terms Text", "default": "Terms of Service" }
+      * Contact info: { "type": "email", "id": "footer_email", "label": "Footer Email" } and { "type": "tel", "id": "footer_phone", "label": "Footer Phone" }
+    - PRESERVE FOOTER BOTTOM STYLING: Keep all CSS classes and responsive design exactly as in HTML
+16. SCHEMA MUST INCLUDE: For every piece of content, create appropriate settings:
     - For anchor tags: { "type": "url", "id": "link_name_url", "label": "Link URL", "default": "/" } and { "type": "text", "id": "link_name_text", "label": "Link Text", "default": "actual_link_text" }
     - For headings: { "type": "text", "id": "heading_1", "label": "Heading Text", "default": "actual_heading_text" }
     - For paragraphs: { "type": "textarea", "id": "description_1", "label": "Description", "default": "actual_paragraph_text" }
     - For images: { "type": "image_picker", "id": "image_1", "label": "Image" }
     - For all other text: { "type": "text", "id": "text_content_1", "label": "Text Content", "default": "actual_text" }
 
-16. TEXT CONTENT ANALYSIS: Scan the HTML and identify EVERY single text element:
+17. TEXT CONTENT ANALYSIS: Scan the HTML and identify EVERY single text element:
     - Count all headings and create separate settings for each
     - Count all paragraphs and create separate settings for each
     - Count all buttons and create separate settings for each
@@ -368,10 +398,10 @@ COMPLETE CONTENT ANALYSIS - MANDATORY STEP:
    - All paragraphs: description, text_1, text_2, text_3, etc.
    - All buttons: button_text, button_1_text, button_2_text, etc.
    - All labels: label_1, label_2, label_3, etc.
-   - All form elements: placeholder_text, input_label, etc.
-   - All contact info: phone, email, address, company_name, etc.
+   - All form elements: placeholder_text, input_label, etc.   - All contact info: phone, email, address, company_name, etc.
    - All statistics/numbers: stat_1, stat_2, price_text, etc.
    - All testimonials: testimonial_text, author_name, etc.
+   - All footer bottom content: copyright_text, company_name, privacy_text, terms_text, etc.
 
 ANCHOR TAG ANALYSIS - CRITICAL STEP:
 1. Count ALL <a> tags in the original HTML
@@ -532,7 +562,7 @@ JSON STRUCTURE:
         "footer-column-shop",
         "footer-column-help",
         "footer-column-about"
-      ],
+      ],      
       "settings": {
         "heading": "Welcome to Nova",
         "heading_size": "h1",
@@ -542,7 +572,16 @@ JSON STRUCTURE:
         "margin_top": 0,
         "margin_bottom": 0,
         "button_text": "Explore More",
-        "button_url": "/collections/all"
+        "button_url": "/collections/all",
+        "copyright_year": "2024",
+        "company_name": "Nova Technologies",
+        "copyright_text": "All rights reserved.",
+        "privacy_url": "/pages/privacy-policy",
+        "privacy_text": "Privacy Policy",
+        "terms_url": "/pages/terms-of-service",
+        "terms_text": "Terms of Service",
+        "footer_email": "contact@nova.com",
+        "footer_phone": "+1 (555) 123-4567"
       }
     }
   },
@@ -599,9 +638,9 @@ Return ONLY valid JSON:`;
     - Include ALL heading settings: title, subtitle, heading_1, heading_2, etc.
     - Include ALL paragraph settings: description, text_1, text_2, etc.
     - Include ALL button settings: button_text, button_1_text, etc.
-    - Include ALL form settings: placeholder_text, input_label, etc.
-    - Include ALL contact settings: phone, email, address, company_name, etc.    
+    - Include ALL form settings: placeholder_text, input_label, etc.    - Include ALL contact settings: phone, email, address, company_name, etc.    
     - Include ALL anchor tag settings: both URL and text for every link
+    - Include ALL footer bottom settings: copyright_text, company_name, privacy_url, terms_url, footer_email, etc.
 14. MANDATORY ANCHOR TAG HANDLING:
     - Find every setting ending with "_url" and "_text" in the schema
     - Extract actual href values and link text from the original HTML    
