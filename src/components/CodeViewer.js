@@ -1,5 +1,3 @@
-import Editor from '@monaco-editor/react';
-
 export default function CodeViewer({
     content,
     fileName,
@@ -8,25 +6,12 @@ export default function CodeViewer({
     onDownload,
     readOnly = true
 }) {
-    const getLanguage = () => {
-        switch (fileType?.toLowerCase()) {
-            case 'html':
-            case 'liquid':
-                return 'html';
-            case 'css':
-                return 'css';
-            case 'javascript':
-            case 'js':
-                return 'javascript';
-            case 'json':
-                return 'json';
-            case 'xml':
-                return 'xml';
-            case 'markdown':
-            case 'md':
-                return 'markdown';
-            default:
-                return 'plaintext';
+    let lineNumbersRef = null;
+
+    const handleScroll = (e) => {
+        const codeElement = e.target;
+        if (lineNumbersRef) {
+            lineNumbersRef.scrollTop = codeElement.scrollTop;
         }
     };
     return (
@@ -163,76 +148,94 @@ export default function CodeViewer({
             </div>
             <div style={{
                 display: 'flex',
-                background: '#1E1E1E',
+                background: 'linear-gradient(135deg, #0a0a0a 0%, #111111 100%)',
                 position: 'relative',
-                borderRadius: '0 0 15px 15px',
-                paddingLeft: '10px',
-                paddingTop: '10px',
-                paddingBottom: '10px',
+                maxHeight: fileType === 'JSON' ? 'clamp(250px, 40vh, 300px)' : 'clamp(300px, 50vh, 400px)',
+                overflow: 'hidden'
             }}>
-                <div style={{
-                    width: '100%',
-                    height: fileType === 'JSON' ? 'clamp(250px, 40vh, 300px)' : 'clamp(300px, 50vh, 400px)'
-                }}>
-                    <Editor
-                        height="100%"
-                        language={getLanguage()}
-                        value={typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
-                        theme="vs-dark"
-                        options={{
-                            readOnly: readOnly,
-                            minimap: { enabled: true },
-                            lineNumbers: 'on',
-                            lineNumbersMinChars: 3,
-                            glyphMargin: false,
-                            folding: true,
-                            lineDecorationsWidth: 10,
-                            lineNumbersMinChars: 4,
-                            renderLineHighlight: 'line',
-                            scrollBeyondLastLine: false,
-                            automaticLayout: true,
-                            fontSize: 14,
-                            fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", "Consolas", monospace',
-                            fontLigatures: true,
-                            cursorBlinking: 'blink',
-                            cursorStyle: 'line',
-                            renderWhitespace: 'boundary',
-                            wordWrap: 'on',
-                            bracketPairColorization: { enabled: true },
-                            guides: {
-                                bracketPairs: true,
-                                indentation: true
-                            },
-                            suggest: {
-                                enabled: !readOnly
-                            },
-                            quickSuggestions: !readOnly,
-                            parameterHints: { enabled: !readOnly },
-                            hover: { enabled: true },
-                            contextmenu: true,
-                            mouseWheelZoom: true,
-                            smoothScrolling: true,
-                            cursorSmoothCaretAnimation: 'on',
-                            scrollbar: {
-                                verticalScrollbarSize: 12,
-                                horizontalScrollbarSize: 12,
-                                arrowSize: 11
-                            }
-                        }}
-                        loading={
-                            <div style={{
+                <div
+                    ref={(el) => lineNumbersRef = el}
+                    className="line-numbers"
+                    style={{
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        borderRight: '2px solid rgba(255, 255, 255, 0.15)',
+                        padding: 'clamp(15px, 4vw, 25px) clamp(10px, 3vw, 15px)',
+                        color: '#888',
+                        fontSize: fileType === 'JSON' ? 'clamp(11px, 2vw, 13px)' : 'clamp(13px, 2.5vw, 15px)',
+                        fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
+                        lineHeight: fileType === 'JSON' ? '1.6' : '1.7',
+                        userSelect: 'none',
+                        minWidth: 'clamp(40px, 8vw, 60px)',
+                        textAlign: 'right',
+                        overflow: 'hidden',
+                        maxHeight: fileType === 'JSON' ? 'clamp(250px, 40vh, 300px)' : 'clamp(300px, 50vh, 400px)',
+                        pointerEvents: 'none',
+                        display: 'block'
+                    }}>
+                    {content && (typeof content === 'string' ? content : JSON.stringify(content, null, 2))
+                        .split('\n')
+                        .map((_, index) => (
+                            <div key={index} style={{
+                                height: fileType === 'JSON' ? 'clamp(18px, 3vw, 20.8px)' : 'clamp(20px, 4vw, 25.5px)',
                                 display: 'flex',
-                                justifyContent: 'center',
                                 alignItems: 'center',
-                                height: '100%',
-                                color: '#ffffff',
-                                fontSize: '16px',
-                                fontFamily: '"Fira Code", monospace'
+                                justifyContent: 'flex-end'
                             }}>
-                                Loading Monaco Editor...
+                                {index + 1}
                             </div>
-                        }
-                    />
+                        ))
+                    }
+                </div>
+                <div
+                    onScroll={fileType === 'JSON' ? handleScroll : undefined}
+                    style={{
+                        flex: 1,
+                        overflow: 'auto',
+                        maxHeight: fileType === 'JSON' ? 'clamp(250px, 40vh, 300px)' : 'clamp(300px, 50vh, 400px)'
+                    }}>
+                    {fileType === 'JSON' ? (
+                        <pre
+                            style={{
+                                color: '#f0f0f0',
+                                padding: 'clamp(15px, 4vw, 25px)',
+                                fontSize: 'clamp(11px, 2vw, 13px)',
+                                fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
+                                lineHeight: '1.6',
+                                margin: 0,
+                                border: 'none',
+                                outline: 'none',
+                                background: 'transparent',
+                                scrollbarWidth: 'thin',
+                                scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent',
+                                minHeight: '100%',
+                                overflow: 'visible',
+                                wordBreak: 'break-word',
+                                whiteSpace: 'pre-wrap'
+                            }}>
+                            {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
+                        </pre>
+                    ) : (
+                        <textarea
+                            value={content}
+                            readOnly={readOnly}
+                            onScroll={handleScroll}
+                            style={{
+                                width: '100%',
+                                height: 'clamp(300px, 50vh, 400px)',
+                                padding: 'clamp(15px, 4vw, 25px)',
+                                border: 'none',
+                                outline: 'none',
+                                fontSize: 'clamp(13px, 2.5vw, 15px)',
+                                fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
+                                lineHeight: '1.7',
+                                background: 'transparent',
+                                color: '#f0f0f0',
+                                resize: 'none',
+                                scrollbarWidth: 'thin',
+                                scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
+                            }}
+                        />
+                    )}
                 </div>
             </div>
         </div>
