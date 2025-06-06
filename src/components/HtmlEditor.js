@@ -1,16 +1,10 @@
+import Editor from '@monaco-editor/react';
+
 export default function HtmlEditor({
     fileContent,
     fileName,
     handleManualInput
 }) {
-    let lineNumbersRef = null;
-
-    const handleScroll = (e) => {
-        const textareaElement = e.target;
-        if (lineNumbersRef) {
-            lineNumbersRef.scrollTop = textareaElement.scrollTop;
-        }
-    };
 
     return (
         <div style={{
@@ -119,63 +113,80 @@ export default function HtmlEditor({
                 </div>
                 <div style={{
                     display: 'flex',
-                    background: 'linear-gradient(135deg, #0a0a0a 0%, #111111 100%)',
-                    position: 'relative'
+                    background: '#1E1E1E',
+                    position: 'relative',
+                    borderRadius: '0 0 15px 15px',
+                    paddingLeft: '10px',
+                    paddingTop: '10px',
+                    paddingBottom: '10px',
                 }}>
-                    <div
-                        ref={(el) => lineNumbersRef = el}
-                        className="line-numbers"
-                        style={{
-                            background: 'rgba(255, 255, 255, 0.08)',
-                            borderRight: '2px solid rgba(255, 255, 255, 0.15)',
-                            padding: 'clamp(15px, 4vw, 25px) clamp(10px, 3vw, 15px)',
-                            color: '#888',
-                            fontSize: 'clamp(13px, 2.5vw, 15px)',
-                            fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
-                            lineHeight: '1.7',
-                            userSelect: 'none',
-                            minWidth: 'clamp(50px, 10vw, 60px)',
-                            textAlign: 'right',
-                            overflow: 'hidden',
-                            maxHeight: 'clamp(300px, 60vh, 450px)',
-                            pointerEvents: 'none',
-                            display: typeof window !== 'undefined' && window.innerWidth < 480 ? 'none' : 'block'
-                        }}>
-                        {fileContent && fileContent
-                            .split('\n')
-                            .map((_, index) => (
-                                <div key={index} style={{
-                                    height: 'clamp(20px, 4vw, 25.5px)',
+                    <div style={{
+                        width: '100%',
+                        height: 'clamp(300px, 60vh, 450px)'
+                    }}>
+                        <Editor
+                            height="100%"
+                            language="html"
+                            value={fileContent || ''}
+                            onChange={(value) => handleManualInput(value || '')}
+                            theme="vs-dark"
+                            options={{
+                                readOnly: false,
+                                minimap: { enabled: true },
+                                lineNumbers: 'on',
+                                lineNumbersMinChars: 4,
+                                glyphMargin: false,
+                                folding: true,
+                                lineDecorationsWidth: 10,
+                                renderLineHighlight: 'line',
+                                scrollBeyondLastLine: false,
+                                automaticLayout: true,
+                                fontSize: 14,
+                                fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", "Consolas", monospace',
+                                fontLigatures: true,
+                                cursorBlinking: 'blink',
+                                cursorStyle: 'line',
+                                renderWhitespace: 'boundary',
+                                wordWrap: 'on',
+                                bracketPairColorization: { enabled: true },
+                                guides: {
+                                    bracketPairs: true,
+                                    indentation: true
+                                },
+                                suggest: { enabled: true },
+                                quickSuggestions: true,
+                                parameterHints: { enabled: true },
+                                hover: { enabled: true },
+                                contextmenu: true,
+                                mouseWheelZoom: true,
+                                smoothScrolling: true,
+                                cursorSmoothCaretAnimation: 'on',
+                                autoIndent: 'full',
+                                formatOnPaste: true,
+                                formatOnType: true,
+                                tabCompletion: 'on',
+                                acceptSuggestionOnEnter: 'on',
+                                scrollbar: {
+                                    verticalScrollbarSize: 12,
+                                    horizontalScrollbarSize: 12,
+                                    arrowSize: 11
+                                }
+                            }}
+                            loading={
+                                <div style={{
                                     display: 'flex',
+                                    justifyContent: 'center',
                                     alignItems: 'center',
-                                    justifyContent: 'flex-end'
+                                    height: '100%',
+                                    color: '#ffffff',
+                                    fontSize: '16px',
+                                    fontFamily: '"Fira Code", monospace'
                                 }}>
-                                    {index + 1}
+                                    Loading HTML Editor...
                                 </div>
-                            ))
-                        }
+                            }
+                        />
                     </div>
-                    <textarea
-                        value={fileContent}
-                        onChange={(e) => handleManualInput(e.target.value)}
-                        onScroll={handleScroll}
-                        placeholder="🤖 Unified HTML Editor - Upload file above OR paste/type content here!"
-                        style={{
-                            flex: 1,
-                            height: 'clamp(300px, 60vh, 450px)',
-                            padding: 'clamp(15px, 4vw, 25px)',
-                            border: 'none',
-                            outline: 'none',
-                            fontSize: 'clamp(13px, 2.5vw, 15px)',
-                            fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", monospace',
-                            lineHeight: '1.7',
-                            background: 'transparent',
-                            color: '#f0f0f0',
-                            resize: 'vertical',
-                            scrollbarWidth: 'thin',
-                            scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
-                        }}
-                    />
                 </div>
             </div>
         </div>
