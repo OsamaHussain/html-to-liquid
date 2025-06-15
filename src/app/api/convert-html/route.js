@@ -23,20 +23,93 @@ export async function POST(request) {
       );
     }
 
-    const isLargeFile = htmlContent.length > 8000 || htmlContent.split('\n').length > 400; const prompt = `Convert the following HTML code to a professional Shopify Liquid template file. ${isLargeFile ? 'CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''} Follow these STRICT requirements:
+    const isLargeFile = htmlContent.length > 8000 || htmlContent.split('\n').length > 400;    const prompt = `Convert the following HTML code to a professional Shopify Liquid template file with COMPLETE DOCUMENT STRUCTURE. ${isLargeFile ? 'CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''} Follow these STRICT requirements:
+
+🚨 MANDATORY COMPLETE DOCUMENT STRUCTURE 🚨:
+Start with: <!DOCTYPE html><html lang="en"><head>
+Include ALL meta tags: <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+Include title: <title>{{ section.settings.page_title | default: 'Extracted Title' }}</title>
+Include description: <meta name="description" content="{{ section.settings.meta_description | default: 'Extracted Description' }}">
+Include ALL CDN links exactly as in HTML:
+- <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+- <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Didot:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap">
+Include COMPLETE <style> section exactly as in HTML
+Close with: </head><body>
+End with: COMPLETE <script> section exactly as in HTML</body></html>
 
 🚨 CRITICAL FOOTER REQUIREMENT: For footer columns, EVERY footer_column block MUST include ALL individual link settings (link_1_url, link_1_text, link_2_url, link_2_text, etc.) based on the actual number of links in the HTML. NEVER create a footer_column block with only column_title! 🚨
 
 🚨 MANDATORY: MAKE ALL HARDCODED CONTENT EDITABLE - NO HARDCODED TEXT SHOULD REMAIN! 🚨
 
 🚨 CRITICAL CLIENT FEEDBACK FIXES REQUIRED 🚨:
-1. IMAGE URLs: NEVER leave images blank - use image_picker for ALL images
-2. HEADER ICONS: Convert search/cart icons to header_icon blocks  
-3. MOBILE MENU: Include hamburger button + mobile menu logic in schema
-4. MISSING SECTIONS: Ensure ALL sections are included (CTA, education, newsletter)
-5. SOCIAL ICONS: Convert footer social icons to social_link blocks
-6. CSS PRESERVATION: Keep ALL custom CSS classes (.luxehair-velvet, .maroon-shadow, etc.)
-7. JAVASCRIPT: Preserve ALL <script> tags and interactions
+1. IMAGE URLs: EXTRACT actual URLs from HTML - NEVER leave blank! Add extracted URLs as settings defaults
+2. HEADER ICONS: Convert fa-search and fa-shopping-cart to header_icon blocks with icon_class settings  
+3. MOBILE MENU: Include hamburger_toggle and mobile_menu_enabled settings in schema
+4. MISSING SECTIONS: ALL sections must be included - CTA, education, newsletter, blog cards
+5. SOCIAL ICONS: Convert footer social icons to social_link blocks with icon_class and social_url
+6. IMAGE DISPLAY: Use robust syntax that guarantees image display: 
+   - Primary: {% if settings.image != blank %}{{ settings.image }}{% else %}{{ settings.image_url }}{% endif %}
+   - For external images: ensure full https:// URLs are preserved
+   - Test approach: create both image_picker AND direct URL text field for each image
+6. CSS PRESERVATION: Include COMPLETE <style> section from HTML - ALL custom classes preserved
+7. JAVASCRIPT: Include COMPLETE <script> section from HTML - ALL interactions preserved
+8. CDN LINKS: Include ALL <link> tags from HTML head - fonts, tailwind, fontawesome
+9. IMAGE EXTRACTION: Extract ALL img src and background-image URLs from HTML and use as default values
+
+🚨 CRITICAL IMAGE URL EXTRACTION & EDITABILITY REQUIREMENT 🚨:
+YOU MUST EXTRACT ALL IMAGE URLS AND MAKE THEM EDITABLE WITH FALLBACKS:
+- Find all img src="URL" attributes and extract actual URLs from HTML
+- Find all background-image: url('URL') in style attributes and extract URLs
+- For image_picker fields: Use image_picker type but create parallel text settings for URL fallbacks
+- For each image, create TWO settings:
+  1. image_picker type: "product_image" (for new uploads)
+  2. text type: "product_image_url" with default: "extracted-url-here.jpg" (for fallback)
+- Liquid template format: {% if section.settings.product_image != blank %}{{ section.settings.product_image }}{% else %}{{ section.settings.product_image_url }}{% endif %}
+- Background image format: style="background-image: url('{% if section.settings.bg_image != blank %}{{ section.settings.bg_image }}{% else %}{{ section.settings.bg_image_url }}{% endif %}')"
+- CRITICAL: Do NOT use img_url filter for external URLs - it will break them!
+- Only use img_url for Shopify-uploaded images, use direct URL for external links
+- IMPORTANT: For external images, always provide the full URL including https://
+- Schema structure for each image:  {"type": "image_picker", "id": "product_image", "label": "Product Image"},
+  {"type": "text", "id": "product_image_url", "label": "Product Image URL (Fallback)", "default": "https://extracted-url-here.jpg"}
+- This allows: Upload new images OR use existing URLs OR change URLs via text field
+
+🚨 SPECIFIC CLIENT REQUIREMENTS - MUST INCLUDE 🚨:
+1. HEADER ICONS: Convert fa-search and fa-shopping-cart to schema settings:
+   - Add header_search_icon_url and header_cart_icon_url settings
+   - Create header_icon blocks with icon_class and icon_link settings
+2. MOBILE MENU: Add mobile menu control settings:
+   - mobile_menu_enabled (checkbox, default: true)
+   - hamburger_icon_class (text, default: "fas fa-bars")
+3. ALL SECTIONS: Ensure these sections are fully converted:
+   - Navigation with header icons
+   - Hero section with background image
+   - Products section with all product cards
+   - Stylist/About section with image
+   - Testimonials section
+   - Sustainability slideshow with all slides
+   - Transformations section with before/after images
+   - Shop/CTA section with image
+   - Education/Blog section with guide cards
+   - Newsletter section with form
+   - Footer with social icons and columns
+4. SOCIAL ICONS: Convert footer social icons (Facebook, Instagram, Twitter, Pinterest) to social_link blocks
+5. COMPLETE HTML STRUCTURE: Include DOCTYPE, html, head, meta tags, CDN links, complete CSS, complete JavaScript
+
+🚨 COMPLETE SCHEMA REQUIREMENTS 🚨:
+Add these mandatory settings to schema:
+{
+  "type": "text",
+  "id": "page_title", 
+  "label": "Page Title",
+  "default": "Extracted title from HTML"
+},
+{
+  "type": "textarea",
+  "id": "meta_description",
+  "label": "Meta Description", 
+  "default": "Extracted meta description from HTML"
+}
 
 🚨 SPECIFIC FIXES REQUIRED 🚨:
 - HEADER ICONS: Any fa-search and fa-shopping-cart icons MUST be converted to header_icon blocks
@@ -47,13 +120,31 @@ export async function POST(request) {
 
 🚨 HEADER ICON IMPLEMENTATION REQUIREMENT 🚨:
 If you see <i class="fas fa-search"> or <i class="fas fa-shopping-cart"> in HTML:
-1. Convert to: {% for block in section.blocks %}{% if block.type == 'header_icon' %}<a href="{{ block.settings.icon_link }}"><i class="{{ block.settings.icon_class }}"></i></a>{% endif %}{% endfor %}
-2. Add header_icon blocks to schema with icon_type, icon_link, and icon_class settings
-3. Create separate header_icon blocks for search and cart icons with proper settings
+1. Extract exact icon classes and create header_icon blocks in schema
+2. Liquid template: {% for block in section.blocks %}{% if block.type == 'header_icon' %}<a href="{{ block.settings.icon_link }}" class="{{ block.settings.icon_wrapper_class }}"><i class="{{ block.settings.icon_class }}"></i></a>{% endif %}{% endfor %}
+3. Schema must include blocks: { "type": "header_icon", "name": "Header Icon", "settings": [{"type": "text", "id": "icon_class", "label": "Icon Class", "default": "fas fa-search"}, {"type": "url", "id": "icon_link", "label": "Icon Link", "default": "#"}, {"type": "text", "id": "icon_wrapper_class", "label": "Wrapper Class", "default": "icon-link"}]}
+4. Create separate header_icon blocks for EACH icon found in HTML
+5. JSON must include header_icon blocks for each icon with actual extracted classes
+
+🚨 MOBILE MENU IMPLEMENTATION REQUIREMENT 🚨:
+If you see hamburger menu or mobile navigation in HTML:
+1. Include hamburger button: <button class="hamburger-toggle" id="hamburger-toggle" {% if section.settings.mobile_menu_enabled %}aria-label="Toggle navigation"{% endif %}>
+2. Include mobile menu: <div class="mobile-menu" id="mobile-menu" {% unless section.settings.mobile_menu_enabled %}style="display: none;"{% endunless %}>
+3. Schema settings: {"type": "checkbox", "id": "mobile_menu_enabled", "label": "Enable Mobile Menu", "default": true}, {"type": "text", "id": "hamburger_icon_class", "label": "Hamburger Icon Class", "default": "fas fa-bars"}
+4. Preserve ALL mobile menu JavaScript functionality exactly as in HTML
+
+🚨 STAR RATING IMPLEMENTATION REQUIREMENT 🚨:
+Convert star ratings with EXACT styling preservation:
+HTML: <i class="fas fa-star" style="color: #a13f4f;"></i>
+LIQUID: {% for i in (1..5) %}<i class="fas fa-star{% if i > block.settings.rating %}-half-alt{% endif %}" style="color: #a13f4f;"></i>{% endfor %}
+Include rating number and review count as separate settings.
 
 1. PRESERVE ALL ORIGINAL STYLING: Keep ALL CSS classes, inline styles, and visual design EXACTLY as written in HTML
-2. PRESERVE CSS STRUCTURE: Keep the entire <style> section exactly as is - do NOT modify any CSS
-3. MAINTAIN EXACT VISUAL APPEARANCE: The converted Liquid template must look IDENTICAL to the original HTML when rendered
+2. INCLUDE COMPLETE HTML STRUCTURE: DOCTYPE, html lang, head section with ALL meta tags, title, CDN links
+3. PRESERVE CSS STRUCTURE: Include the COMPLETE <style> section exactly as is - do NOT modify any CSS
+4. PRESERVE JAVASCRIPT: Include the COMPLETE <script> section exactly as is - do NOT modify any JavaScript  
+5. INCLUDE CDN LINKS: Preserve ALL <link> tags for Tailwind CSS, FontAwesome, Google Fonts
+6. MAINTAIN EXACT VISUAL APPEARANCE: The converted Liquid template must look IDENTICAL to the original HTML when rendered
 4. COMPLETE CONTENT REPLACEMENT - MAKE EVERYTHING EDITABLE:
    - ALL heading text (H1/H2/H3/H4/H5/H6) → {{ section.settings.title }}, {{ section.settings.subtitle }}, {{ section.settings.heading_1 }}, etc.
    - ALL paragraph text → {{ section.settings.description }}, {{ section.settings.text_1 }}, {{ section.settings.text_2 }}, etc.
@@ -93,7 +184,8 @@ If you see <i class="fas fa-search"> or <i class="fas fa-shopping-cart"> in HTML
    - Gallery images → gallery blocks
    - Statistics → stat blocks
    - Process steps → step blocks
-   - Benefits → benefit blocks   - Reviews → review blocks
+   - Benefits → benefit blocks   
+   - Reviews → review blocks
    - Awards → award blocks
    - Partners → partner blocks
    - Contact info → contact_info blocks
@@ -120,40 +212,56 @@ If you see <i class="fas fa-search"> or <i class="fas fa-shopping-cart"> in HTML
    - Create unique setting IDs for every text element
 
 🚨 CRITICAL IMAGE HANDLING RULES 🚨:
-- NEVER leave img src blank or empty
-- Convert ALL img src="filename.jpg" to {{ block.settings.image_name | img_url: 'master' }}
-- Extract filename from HTML src and use as schema ID (hero-bg.jpg → hero_background_image)
-- ALL images must use image_picker type in schema
-- NO default values for image_picker fields (will cause errors)
-- Background-image URLs must also use image_picker: style="background-image: url('{{ section.settings.bg_image | img_url: 'master' }}');"
+- EXTRACT ACTUAL URLs FROM HTML - every single img src and background-image URL
+- Convert img src="actual_url.jpg" to {{ block.settings.image_name | default: 'actual_url.jpg' }}
+- For background images: style="background-image: url('{{ section.settings.bg_image | default: 'actual_extracted_url' }}')"
+- Extract filename from HTML src and use as schema ID (logo.jpg → logo_image)  
+- Use extracted URLs as DEFAULT VALUES in text type settings as fallbacks
+- MANDATORY: Every image must have the actual extracted URL as default value in schema
 8. NO GENERIC PLACEHOLDERS: Use real content from HTML in schema defaults
-9. CRITICAL SHOPIFY RULE: Never add "default" attribute to "image_picker" settings
-10. COMPLETE CONVERSION: Convert ALL sections including headers, navigation, hero, content, testimonials, products, forms, footer - EVERYTHING!
-11. CRITICAL MISSING ELEMENTS CHECK: Ensure these common elements are NOT missed:    - Header icons (search, cart, user icons) → header_icon blocks with icon type and link
-    - Mobile menu toggle/hamburger button → mobile_menu settings with toggle functionality
-    - Newsletter signup forms → newsletter blocks with email input and button
+9. CRITICAL SHOPIFY RULE: Use extracted image URLs as default values in text settings for image fallbacks
+10. COMPLETE CONVERSION: Include DOCTYPE html, head section, ALL meta tags, CDN links, complete CSS, complete JavaScript
+11. MANDATORY SECTIONS: Header navigation, hero, content sections, testimonials, products, newsletter form, complete footer
+12. CRITICAL MISSING ELEMENTS CHECK: Ensure these elements are NEVER missed:    - Header icons (search, cart, user icons) → header_icon blocks with icon_class, icon_link settings
+    - Mobile menu toggle/hamburger button → mobile_menu_enabled, hamburger_icon_class settings  
+    - Newsletter signup forms → newsletter blocks with email input, button, form action
     - Footer social icons → social_link blocks (Facebook, Instagram, Twitter, Pinterest, etc.)
-    - Blog/article cards → blog_card blocks
-    - Education guides → education_guide blocks  
-    - CTA sections → cta_section blocks with image and text columns
-    - CTA sections → cta blocks with image and text columns
-    - All form elements → preserve complete form structure with action, method, inputs
-12. JAVASCRIPT & INTERACTIVITY PRESERVATION:
-    - Preserve ALL <script> tags exactly as written in HTML
-    - Keep slider functionality, auto-rotating scripts, click handlers
-    - Maintain navigation dots, carousel controls, modal scripts
-    - Add schema settings for JavaScript-controlled content (slide timing, autoplay, etc.)
-    - Include mobile menu toggle scripts with proper event listeners
-    - Preserve hamburger menu animations and transitions
+    - Blog/article cards → blog_card blocks or education_guide blocks
+    - Education guides → education_guide blocks with guide_image, guide_title, guide_description
+    - CTA sections → cta blocks with image and text columns, call-to-action buttons
+    - All form elements → preserve complete form structure with action, method, all inputs
+    - CDN links in head → ALL <link> tags for Tailwind, FontAwesome, Google Fonts
+    - Complete CSS styles → entire <style> section preserved exactly
+    - Complete JavaScript → entire <script> section preserved exactly
+13. JAVASCRIPT & INTERACTIVITY PRESERVATION:
+    - Preserve ALL <script> tags exactly as written in HTML - COMPLETE JavaScript section
+    - Keep slider functionality, auto-rotating scripts, click handlers for dots navigation
+    - Maintain navigation dots, carousel controls, modal scripts with exact functionality
+    - Add schema settings for JavaScript-controlled content (slide timing, autoplay settings)
+    - Include mobile menu toggle scripts with proper event listeners and hamburger animations
+    - Preserve hamburger menu animations, transitions, and mobile responsiveness
+    - Keep ALL event listeners: click events, resize events, scroll events
+    - Maintain slideshow auto-advance functionality and dot navigation clicks
+
+🚨 COMPLETE DOCUMENT STRUCTURE REQUIREMENT 🚨:
+- Start with: <!DOCTYPE html><html lang="en"><head>
+- Include ALL meta tags: charset, viewport, title, description
+- Include ALL CDN links: Tailwind CSS, FontAwesome, Google Fonts  
+- Include COMPLETE <style> section with ALL CSS
+- Include COMPLETE <script> section with ALL JavaScript
+- End with: </script></body></html>
 
 🚨 CRITICAL CSS PRESERVATION REQUIREMENTS 🚨:
+- INCLUDE COMPLETE <style> SECTION: Copy entire CSS block from HTML exactly as written
 - PRESERVE ALL CUSTOM CSS CLASSES: .luxehair-velvet, .maroon-shadow, .section-sep, .btn-shop, etc.
-- NEVER remove or modify custom CSS class names
-- Keep ENTIRE <style> section exactly as written in HTML
-- Preserve all Tailwind classes and custom gradients
-- Maintain all CSS animations, transitions, and hover effects
-- Keep responsive design and media queries intact
-- Preserve all CSS variables and custom properties
+- NEVER remove or modify custom CSS class names or their definitions
+- Keep ENTIRE <style> section exactly as written in HTML - ALL 500+ lines of CSS
+- Preserve all Tailwind classes and custom gradients exactly as used in HTML
+- Maintain all CSS animations, transitions, hover effects, and keyframes
+- Keep responsive design and media queries intact with exact breakpoints
+- Preserve all CSS variables, custom properties, and style calculations
+- Include all CSS selectors: ::selection, @keyframes, @media queries
+- Maintain exact color values, shadows, borders, and visual styling
 13. CREATE COMPREHENSIVE BLOCKS: Include blocks for products, testimonials, education guides, sustainability slides, transformation slides, team members, features, services, etc.
 12. MANDATORY ANCHOR TAG CONVERSION: Every single <a> tag MUST become editable:
     - Header/Navigation links: Use BLOCKS for dynamic header links (can add/remove from admin)
@@ -782,8 +890,31 @@ Return the complete fixed Shopify section with proper footer link rendering and 
         liquidContent = liquidContent.replace(unicodeStarPattern,
           `{% assign full_stars = block.settings.rating | floor %}{% for i in (1..full_stars) %}★{% endfor %}`
         );
-      } console.log('✅ Star rating post-processing completed');
+      }      
+      console.log('✅ Star rating post-processing completed');
     }
+
+    console.log('🖼️ Processing image URLs from HTML...');
+    const imageUrls = [];
+    const imageRegex = /src=["']([^"']+)["']/g;
+    const backgroundImageRegex = /background-image:\s*url\(['"]([^'"]+)['"]\)/g;
+    
+    let match;
+    while ((match = imageRegex.exec(htmlContent)) !== null) {
+      const url = match[1];
+      if (url && !url.startsWith('data:') && !imageUrls.includes(url)) {
+        imageUrls.push(url);
+      }
+    }
+    
+    while ((match = backgroundImageRegex.exec(htmlContent)) !== null) {
+      const url = match[1];
+      if (url && !url.startsWith('data:') && !imageUrls.includes(url)) {
+        imageUrls.push(url);
+      }
+    }
+    
+    console.log('📸 Found image URLs:', imageUrls.length);
 
     if (htmlContent.includes('fa-search') || htmlContent.includes('fa-shopping-cart')) {
       console.log('🔧 Post-processing header icons to ensure proper block structure...');
@@ -800,13 +931,18 @@ Return the complete fixed Shopify section with proper footer link rendering and 
         console.log('🔄 Converting hardcoded cart icon to header_icon block...');
         liquidContent = liquidContent.replace(
           /<a[^>]*><i[^>]*fas fa-shopping-cart[^>]*><\/i><\/a>/g,
-          '{% for block in section.blocks %}{% if block.type == "header_icon" and block.settings.icon_type == "cart" %}<a href="{{ block.settings.icon_link }}"><i class="{{ block.settings.icon_class }}"></i></a>{% endif %}{% endfor %}'
-        );
+          '{% for block in section.blocks %}{% if block.type == "header_icon" and block.settings.icon_type == "cart" %}<a href="{{ block.settings.icon_link }}"><i class="{{ block.settings.icon_class }}"></i></a>{% endif %}{% endfor %}'        );
       }
-
+      
       console.log('✅ Header icon post-processing completed');
     }
 
+    if (imageUrls.length > 0) {
+      console.log('🔧 Processing extracted image URLs...');
+      
+      
+      console.log('✅ Image URL processing completed');
+    }
 
     if (!liquidContent) {
       return NextResponse.json(
@@ -1625,7 +1761,7 @@ CRITICAL: Use only block types that exist in the Liquid schema. Extract real con
 
 Return ONLY valid JSON:`;
 
-    const jsonCompletion = await openai.chat.completions.create({
+    const jsonCompletion = await openai.chat.completions.create({      
       model: "gpt-4o",
       messages: [{
         role: "system",
@@ -1635,8 +1771,12 @@ Return ONLY valid JSON:`;
 3. Parse the Liquid schema first to identify ALL settings (not just block types)
 4. Extract REAL content from HTML for ALL settings - no placeholders
 5. Count repeating elements and create blocks for each one
-6. NEVER add default values to image fields
-7. 🚨 CRITICAL IMAGE RULE: ALL image fields must be empty strings ("") - NO .jpg, .png, or any image extensions allowed
+6. NEVER add default values to image_picker type fields - keep them empty
+7. 🚨 CRITICAL CLIENT REQUIREMENT: For image handling create dual approach:
+   - Keep image_picker fields empty as per Shopify standards  
+   - Create companion text fields (product_image_url) with extracted URLs from HTML as values
+   - This allows: Upload new images OR use existing URLs OR edit URLs manually
+   - Example: "product_image": "" AND "product_image_url": "https://extracted-url.jpg"
 8. Return valid JSON only, no markdown formatting
 9. Ensure ALL section settings and block settings match the Liquid schema exactly
 10. Create the exact number of blocks as there are repeating elements in the HTML
@@ -1687,7 +1827,7 @@ Return ONLY valid JSON:`;
 19. CRITICAL: You must process the ENTIRE schema and create JSON for ALL settings. Do not truncate or skip any parts for large files.
 20. MISSING CONTENT RULE: If a setting exists in schema but no corresponding content found in HTML, use appropriate default values
 21. 🚨 BLOCK PRIORITY RULE: Always prefer creating BLOCKS over section settings when possible - this gives maximum flexibility to admins to add, remove, and reorder content elements dynamically
-22. 🚨 IMAGE FIELD RULE: For ALL image-related settings in JSON, always use empty string ("") - never include .jpg, .png, or any file extensions`
+22. 🚨 CLIENT REQUIREMENT: For text type image settings, extract actual image URLs from HTML. Only image_picker type fields should be empty.`
       },
       {
         role: "user",
@@ -1796,14 +1936,11 @@ Return ONLY valid JSON:`;
                     block.type = firstValidType;
                   }
                 }
-              }
-
+              }              
               if (block.settings) {
                 Object.keys(block.settings).forEach(key => {
                   const setting = block.settings[key];
-                  if (typeof setting === 'string' && key.includes('image') && (setting.startsWith('http') || setting.includes('.'))) {
-                    block.settings[key] = "";
-                  } else if (typeof setting === 'object' && setting.type === 'image_picker' && setting.default) {
+                  if (typeof setting === 'object' && setting.type === 'image_picker' && setting.default) {
                     delete setting.default;
                   }
                   else if (typeof setting === 'string' && key.includes('url') && setting.startsWith('http')) {
@@ -1833,17 +1970,11 @@ Return ONLY valid JSON:`;
               return `"type": "${sectionType}"`;
             }
           }
-        );
-
-        correctedJsonTemplate = correctedJsonTemplate.replace(
+        );        correctedJsonTemplate = correctedJsonTemplate.replace(
           /("type":\s*"image_picker"[\s\S]*?),\s*"default":\s*"[^"]*"/g,
           '$1'
         );
 
-        correctedJsonTemplate = correctedJsonTemplate.replace(
-          /"([^"]*image[^"]*)":\s*"[^"]*"/gm,
-          '"$1": ""'
-        );
       }
     }
     if (cleanedLiquidContent.includes('column_links') || cleanedLiquidContent.includes('"type": "links"') || cleanedLiquidContent.includes('"default": ""')) {
@@ -1977,9 +2108,68 @@ Return ONLY valid JSON:`;
 
       if (htmlContent.includes('<script>') && !cleanedLiquidContent.includes('<script>')) {
         console.warn('⚠️ JavaScript found in HTML but missing from liquid output');
-      }
-
+      }      
       console.log('✅ Client feedback compliance check completed');
+    }
+
+    if (imageUrls && imageUrls.length > 0) {
+      console.log('🖼️ Populating JSON template with extracted image URLs...');
+      
+      try {
+        const jsonData = JSON.parse(correctedJsonTemplate);
+        let imageIndex = 0;
+        
+        function updateImageSettings(obj) {
+          if (typeof obj === 'object' && obj !== null) {
+            for (const key in obj) {
+              if (typeof obj[key] === 'object') {
+                updateImageSettings(obj[key]);
+              } else if (typeof obj[key] === 'string' && key.includes('image_url') && obj[key] === '' && imageIndex < imageUrls.length) {
+                obj[key] = imageUrls[imageIndex];
+                console.log(`✅ Set ${key} = ${imageUrls[imageIndex]}`);
+                imageIndex++;
+              }
+            }
+          }
+        }
+        
+        updateImageSettings(jsonData);
+        correctedJsonTemplate = JSON.stringify(jsonData, null, 2);
+        
+      } catch (e) {
+        console.log('JSON parsing error, using regex replacement for image URLs');
+        
+        let imageIndex = 0;
+        correctedJsonTemplate = correctedJsonTemplate.replace(
+          /"([^"]*image_url)":\s*""/g,
+          (match, fieldName) => {
+            if (imageIndex < imageUrls.length) {
+              const url = imageUrls[imageIndex];
+              imageIndex++;
+              console.log(`✅ Set ${fieldName} = ${url}`);
+              return `"${fieldName}": "${url}"`;
+            }
+            return match;
+          }
+        );
+      }
+      
+      console.log('✅ Image URL population completed');
+    }
+
+    if (imageUrls && imageUrls.length > 0) {
+      console.log('🔧 Updating Liquid template to use image fallback syntax...');
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /\{\{\s*section\.settings\.([a-zA-Z_][a-zA-Z0-9_]*image)\s*\}\}/g,
+        '{% if section.settings.$1 != blank %}{{ section.settings.$1 }}{% else %}{{ section.settings.$1_url }}{% endif %}'
+      );
+      
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /\{\{\s*block\.settings\.([a-zA-Z_][a-zA-Z0-9_]*image)\s*\}\}/g,
+        '{% if block.settings.$1 != blank %}{{ block.settings.$1 }}{% else %}{{ block.settings.$1_url }}{% endif %}'
+      );
+      
+      console.log('✅ Liquid template updated with dual image approach');
     }
 
     return NextResponse.json({
