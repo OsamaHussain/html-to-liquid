@@ -23,13 +23,38 @@ export async function POST(request) {
       );
     }
 
-    const isLargeFile = htmlContent.length > 10000 || htmlContent.split('\n').length > 800; const prompt = `Convert the following HTML code to a professional Shopify Liquid template file. ${isLargeFile ? 'CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''} Follow these STRICT requirements:
+    const isLargeFile = htmlContent.length > 8000 || htmlContent.split('\n').length > 400; const prompt = `Convert the following HTML code to a professional Shopify Liquid template file. ${isLargeFile ? 'CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''} Follow these STRICT requirements:
+
+🚨 CRITICAL FOOTER REQUIREMENT: For footer columns, EVERY footer_column block MUST include ALL individual link settings (link_1_url, link_1_text, link_2_url, link_2_text, etc.) based on the actual number of links in the HTML. NEVER create a footer_column block with only column_title! 🚨
 
 🚨 MANDATORY: MAKE ALL HARDCODED CONTENT EDITABLE - NO HARDCODED TEXT SHOULD REMAIN! 🚨
 
+🚨 CRITICAL CLIENT FEEDBACK FIXES REQUIRED 🚨:
+1. IMAGE URLs: NEVER leave images blank - use image_picker for ALL images
+2. HEADER ICONS: Convert search/cart icons to header_icon blocks  
+3. MOBILE MENU: Include hamburger button + mobile menu logic in schema
+4. MISSING SECTIONS: Ensure ALL sections are included (CTA, education, newsletter)
+5. SOCIAL ICONS: Convert footer social icons to social_link blocks
+6. CSS PRESERVATION: Keep ALL custom CSS classes (.luxehair-velvet, .maroon-shadow, etc.)
+7. JAVASCRIPT: Preserve ALL <script> tags and interactions
+
+🚨 SPECIFIC FIXES REQUIRED 🚨:
+- HEADER ICONS: Any fa-search and fa-shopping-cart icons MUST be converted to header_icon blocks
+- MOBILE MENU: Any hamburger menu or mobile navigation MUST have hamburger_toggle settings in schema
+- BLOG/EDUCATION: Any "Hair Care Wisdom", "blog", or education cards MUST be converted to blog_card blocks
+- ALL IMAGES: Every img tag must use {{ block.settings.image_name | img_url: 'master' }} - NO blank images!
+- NEVER leave any image setting as empty string - use placeholder text instead
+
+🚨 HEADER ICON IMPLEMENTATION REQUIREMENT 🚨:
+If you see <i class="fas fa-search"> or <i class="fas fa-shopping-cart"> in HTML:
+1. Convert to: {% for block in section.blocks %}{% if block.type == 'header_icon' %}<a href="{{ block.settings.icon_link }}"><i class="{{ block.settings.icon_class }}"></i></a>{% endif %}{% endfor %}
+2. Add header_icon blocks to schema with icon_type, icon_link, and icon_class settings
+3. Create separate header_icon blocks for search and cart icons with proper settings
+
 1. PRESERVE ALL ORIGINAL STYLING: Keep ALL CSS classes, inline styles, and visual design EXACTLY as written in HTML
 2. PRESERVE CSS STRUCTURE: Keep the entire <style> section exactly as is - do NOT modify any CSS
-3. COMPLETE CONTENT REPLACEMENT - MAKE EVERYTHING EDITABLE:
+3. MAINTAIN EXACT VISUAL APPEARANCE: The converted Liquid template must look IDENTICAL to the original HTML when rendered
+4. COMPLETE CONTENT REPLACEMENT - MAKE EVERYTHING EDITABLE:
    - ALL heading text (H1/H2/H3/H4/H5/H6) → {{ section.settings.title }}, {{ section.settings.subtitle }}, {{ section.settings.heading_1 }}, etc.
    - ALL paragraph text → {{ section.settings.description }}, {{ section.settings.text_1 }}, {{ section.settings.text_2 }}, etc.
    - ALL button text → {{ section.settings.button_text }}, {{ section.settings.button_1_text }}, etc.
@@ -48,6 +73,9 @@ export async function POST(request) {
    - ALL contact information → {{ section.settings.phone }}, {{ section.settings.email }}, {{ section.settings.address }}
    - ALL social media text → {{ section.settings.social_text }}
    - ALL copyright text → {{ section.settings.copyright_text }}
+5. PRESERVE EXACT HTML STRUCTURE: Keep all div containers, classes, IDs, and HTML structure exactly as written
+6. MAINTAIN RESPONSIVE DESIGN: Keep all media queries and responsive CSS exactly as in original
+7. EXACT VISUAL REPLICA: The final output must be visually indistinguishable from the original HTML
    - LITERALLY EVERY PIECE OF TEXT CONTENT MUST BE CONVERTED TO LIQUID VARIABLES!
 
 4. IDENTIFY REPEATING ELEMENTS: If HTML has multiple similar cards/items, use {% for block in section.blocks %}
@@ -65,12 +93,15 @@ export async function POST(request) {
    - Gallery images → gallery blocks
    - Statistics → stat blocks
    - Process steps → step blocks
-   - Benefits → benefit blocks
-   - Reviews → review blocks
+   - Benefits → benefit blocks   - Reviews → review blocks
    - Awards → award blocks
    - Partners → partner blocks
    - Contact info → contact_info blocks
+   - Star ratings → product blocks with rating settings
    - Address info → address blocks
+   - Blog cards → blog_card blocks
+   - Newsletter signup → newsletter blocks
+   - Header icons (search, cart) → header_icon blocks
    - ANY repeating or similar content → appropriate block type
 6. PRESERVE HTML STRUCTURE: Keep exact HTML structure, classes, and attributes
 7. COMPREHENSIVE SCHEMA REQUIREMENTS:
@@ -78,6 +109,8 @@ export async function POST(request) {
    - Use "text" type for short text (under 100 characters)
    - Use "textarea" type for long text (over 100 characters)
    - Use "image_picker" for ALL images (NO default values for image_picker)
+   - Convert ALL img src to {{ block.settings.image_name | img_url: 'master' }} format
+   - Extract actual image filenames from HTML src as schema labels for clarity
    - Use "url" for ALL anchor tag links with actual href as default value
    - Use "text" for ALL anchor tag text content as editable settings
    - Use "email" type for email addresses
@@ -85,15 +118,86 @@ export async function POST(request) {
    - Include blocks section for ALL repeating elements
    - Make EVERY single piece of content editable through settings
    - Create unique setting IDs for every text element
+
+🚨 CRITICAL IMAGE HANDLING RULES 🚨:
+- NEVER leave img src blank or empty
+- Convert ALL img src="filename.jpg" to {{ block.settings.image_name | img_url: 'master' }}
+- Extract filename from HTML src and use as schema ID (hero-bg.jpg → hero_background_image)
+- ALL images must use image_picker type in schema
+- NO default values for image_picker fields (will cause errors)
+- Background-image URLs must also use image_picker: style="background-image: url('{{ section.settings.bg_image | img_url: 'master' }}');"
 8. NO GENERIC PLACEHOLDERS: Use real content from HTML in schema defaults
 9. CRITICAL SHOPIFY RULE: Never add "default" attribute to "image_picker" settings
 10. COMPLETE CONVERSION: Convert ALL sections including headers, navigation, hero, content, testimonials, products, forms, footer - EVERYTHING!
-11. CREATE COMPREHENSIVE BLOCKS: Include blocks for products, testimonials, education guides, sustainability slides, transformation slides, team members, features, services, etc.
+11. CRITICAL MISSING ELEMENTS CHECK: Ensure these common elements are NOT missed:    - Header icons (search, cart, user icons) → header_icon blocks with icon type and link
+    - Mobile menu toggle/hamburger button → mobile_menu settings with toggle functionality
+    - Newsletter signup forms → newsletter blocks with email input and button
+    - Footer social icons → social_link blocks (Facebook, Instagram, Twitter, Pinterest, etc.)
+    - Blog/article cards → blog_card blocks
+    - Education guides → education_guide blocks  
+    - CTA sections → cta_section blocks with image and text columns
+    - CTA sections → cta blocks with image and text columns
+    - All form elements → preserve complete form structure with action, method, inputs
+12. JAVASCRIPT & INTERACTIVITY PRESERVATION:
+    - Preserve ALL <script> tags exactly as written in HTML
+    - Keep slider functionality, auto-rotating scripts, click handlers
+    - Maintain navigation dots, carousel controls, modal scripts
+    - Add schema settings for JavaScript-controlled content (slide timing, autoplay, etc.)
+    - Include mobile menu toggle scripts with proper event listeners
+    - Preserve hamburger menu animations and transitions
+
+🚨 CRITICAL CSS PRESERVATION REQUIREMENTS 🚨:
+- PRESERVE ALL CUSTOM CSS CLASSES: .luxehair-velvet, .maroon-shadow, .section-sep, .btn-shop, etc.
+- NEVER remove or modify custom CSS class names
+- Keep ENTIRE <style> section exactly as written in HTML
+- Preserve all Tailwind classes and custom gradients
+- Maintain all CSS animations, transitions, and hover effects
+- Keep responsive design and media queries intact
+- Preserve all CSS variables and custom properties
+13. CREATE COMPREHENSIVE BLOCKS: Include blocks for products, testimonials, education guides, sustainability slides, transformation slides, team members, features, services, etc.
 12. MANDATORY ANCHOR TAG CONVERSION: Every single <a> tag MUST become editable:
     - Header/Navigation links: Use BLOCKS for dynamic header links (can add/remove from admin)
+    - Header icons with links: Use header_icon blocks for search, cart, user icons
     - Footer links: <a href="{{ section.settings.footer_link_1_url }}">{{ section.settings.footer_link_1_text }}</a>
     - Multiple footer links: footer_link_2_url, footer_link_2_text, footer_link_3_url, footer_link_3_text, etc.
-    - Button links: <a href="{{ section.settings.button_url }}">{{ section.settings.button_text }}</a>
+    - Footer social links: Use social_link blocks for Facebook, Instagram, Twitter, Pinterest icons/links    - Button links: <a href="{{ section.settings.button_url }}">{{ section.settings.button_text }}</a>
+
+🚨 CRITICAL STAR RATING CONVERSION REQUIREMENTS 🚨:
+13. STAR RATING ELEMENTS - MANDATORY CONVERSION PATTERNS:
+    
+    A) FontAwesome Star Icons (most common):
+       HTML: <i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+       LIQUID: {% for i in (1..5) %}<i class="fas fa-star{% if i > block.settings.product_rating %}-half-alt{% endif %}"></i>{% endfor %}
+    
+    B) Unicode Star Symbols:
+       HTML: ★★★★☆ or ★★★★★
+       LIQUID: {% assign full_stars = block.settings.rating | floor %}{% for i in (1..full_stars) %}★{% endfor %}
+    
+    C) Star Rating with Numbers:
+       HTML: <span class="rating-text">4.5 (128)</span>
+       LIQUID: <span class="rating-text">{{ block.settings.product_rating }} ({{ block.settings.product_reviews }})</span>
+    
+    D) Complete Product Rating Block Example:
+       <div class="product-rating">
+         <div class="stars">
+           {% for i in (1..5) %}
+             <i class="fas fa-star{% if i > block.settings.product_rating %}-half-alt{% endif %}"></i>
+           {% endfor %}
+         </div>
+         <span class="rating-text">{{ block.settings.product_rating }} ({{ block.settings.product_reviews }})</span>
+       </div>
+    
+    E) Schema Settings for Star Ratings:
+       - "type": "number", "id": "product_rating", "label": "Product Rating", "default": 4.5
+       - "type": "number", "id": "product_reviews", "label": "Number of Reviews", "default": 128
+    
+    F) CRITICAL RULES:
+       - ALWAYS convert individual star icons to dynamic Liquid loops
+       - NEVER leave hardcoded star counts - make them editable via rating settings
+       - Include both rating number AND review count as separate settings
+       - Preserve exact CSS classes for styling (fas fa-star, fas fa-star-half-alt, etc.)
+       - Handle both full stars and half stars dynamically
+       - Convert rating text like "4.5 (128)" to separate editable settings
     - Block links: <a href="{{ block.settings.link_url }}">{{ block.settings.link_text }}</a>
     - Social links: <a href="{{ section.settings.social_link_1_url }}">{{ section.settings.social_link_1_text }}</a>
     - Multiple social links: social_link_2_url, social_link_2_text, social_link_3_url, social_link_3_text, etc.
@@ -101,9 +205,13 @@ export async function POST(request) {
 13. DYNAMIC HEADER NAVIGATION HANDLING: For header/navigation anchor tags:
     - Convert header anchor tags to BLOCKS using {% for block in section.blocks %}
     - Create "header_link" block type for each navigation link
+    - Create "header_icon" block type for search, cart, user icons with links
     - Each header link becomes a separate block with link_url and link_text settings
-    - This allows admin to add/remove header links dynamically
+    - Header icons get icon_type, icon_link, and icon_text settings for full customization
+    - Add mobile menu toggle settings: mobile_menu_enabled, hamburger_style, menu_position
+    - This allows admin to add/remove header links and icons dynamically
     - Header navigation example: {% for block in section.blocks %}{% if block.type == 'header_link' %}<a href="{{ block.settings.link_url }}">{{ block.settings.link_text }}</a>{% endif %}{% endfor %}
+    - Header icons example: {% for block in section.blocks %}{% if block.type == 'header_icon' %}<a href="{{ block.settings.icon_link }}"><i class="{{ block.settings.icon_class }}"></i>{{ block.settings.icon_text }}</a>{% endif %}{% endfor %}
 
 14. 🚨 CRITICAL MULTI-COLUMN FOOTER HANDLING 🚨:
     - PRESERVE EXACT FOOTER LAYOUT: Keep all CSS classes, grid structures, flexbox layouts, and responsive design EXACTLY as in HTML
@@ -111,21 +219,55 @@ export async function POST(request) {
     - FOOTER COLUMN STRUCTURE: Each footer column block should contain:
       * Column title/heading as editable text setting
       * Multiple footer links as sub-blocks or array of links
-      * Preserve exact CSS classes and structure for each column    - FOOTER LIQUID STRUCTURE EXAMPLE:
-      {% for block in section.blocks %}
-        {% if block.type == 'footer_column' %}
-          <div class="original-footer-column-classes">
-            <h4>{{ block.settings.column_title }}</h4>
-            <ul class="original-footer-links-classes">
-              {% if block.settings.link_1_url != blank %}<li><a href="{{ block.settings.link_1_url }}">{{ block.settings.link_1_text }}</a></li>{% endif %}
-              {% if block.settings.link_2_url != blank %}<li><a href="{{ block.settings.link_2_url }}">{{ block.settings.link_2_text }}</a></li>{% endif %}
-              {% if block.settings.link_3_url != blank %}<li><a href="{{ block.settings.link_3_url }}">{{ block.settings.link_3_text }}</a></li>{% endif %}
-              {% if block.settings.link_4_url != blank %}<li><a href="{{ block.settings.link_4_url }}">{{ block.settings.link_4_text }}</a></li>{% endif %}
-            </ul>
+      * Preserve exact CSS classes and structure for each column    - 🚨 MANDATORY FOOTER LIQUID STRUCTURE - COPY THIS EXACTLY 🚨:
+      <footer class="footer-container">
+        <div class="footer-columns">
+          {% for block in section.blocks %}
+            {% if block.type == 'footer_column' %}
+              <div class="footer-column">
+                <h4 class="footer-title">{{ block.settings.column_title }}</h4>
+                <ul class="footer-links">
+                  {% if block.settings.link_1_url != blank and block.settings.link_1_text != blank %}
+                    <li><a href="{{ block.settings.link_1_url }}">{{ block.settings.link_1_text }}</a></li>
+                  {% endif %}
+                  {% if block.settings.link_2_url != blank and block.settings.link_2_text != blank %}
+                    <li><a href="{{ block.settings.link_2_url }}">{{ block.settings.link_2_text }}</a></li>
+                  {% endif %}
+                  {% if block.settings.link_3_url != blank and block.settings.link_3_text != blank %}
+                    <li><a href="{{ block.settings.link_3_url }}">{{ block.settings.link_3_text }}</a></li>
+                  {% endif %}
+                  {% if block.settings.link_4_url != blank and block.settings.link_4_text != blank %}
+                    <li><a href="{{ block.settings.link_4_url }}">{{ block.settings.link_4_text }}</a></li>
+                  {% endif %}
+                  {% if block.settings.link_5_url != blank and block.settings.link_5_text != blank %}
+                    <li><a href="{{ block.settings.link_5_url }}">{{ block.settings.link_5_text }}</a></li>
+                  {% endif %}
+                  {% if block.settings.link_6_url != blank and block.settings.link_6_text != blank %}
+                    <li><a href="{{ block.settings.link_6_url }}">{{ block.settings.link_6_text }}</a></li>
+                  {% endif %}
+                </ul>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; {{ section.settings.copyright_year }} {{ section.settings.company_name }}. {{ section.settings.copyright_text }}</p>
+          <div class="footer-bottom-links">
+            {% if section.settings.privacy_url != blank %}<a href="{{ section.settings.privacy_url }}">{{ section.settings.privacy_text }}</a>{% endif %}
+            {% if section.settings.terms_url != blank %}<a href="{{ section.settings.terms_url }}">{{ section.settings.terms_text }}</a>{% endif %}
           </div>
-        {% endif %}
-      {% endfor %}
-    - FOOTER SCHEMA EXAMPLE:
+        </div>
+      </footer>    
+      - 🚨 CRITICAL: ENSURE ALL FOOTER LINKS ARE VISIBLE AND PROPERLY STYLED:
+      * Each footer column MUST have both title AND visible links underneath
+      * Footer links must be properly styled with color, hover effects, and spacing
+      * The <ul> and <li> elements must be preserved exactly as in original HTML
+      * Links must be clickable and visible - not hidden or transparent
+      * Preserve ALL CSS for .footer-links, .footer-links li, .footer-links a classes
+      * NEVER hide or remove footer link content - ALL links must be shown
+      * Use proper conditional rendering: {% if block.settings.link_1_url != blank and block.settings.link_1_text != blank %}
+      * Each link must be wrapped: <li><a href="{{ block.settings.link_N_url }}">{{ block.settings.link_N_text }}</a></li>
+      * Footer column structure MUST include: {% for block in section.blocks %}...{% if block.type == 'footer_column' %}...{% endif %}...{% endfor %}- FOOTER SCHEMA EXAMPLE:
       {
         "type": "footer_column",
         "name": "Footer Column",
@@ -135,8 +277,7 @@ export async function POST(request) {
             "id": "column_title",
             "label": "Column Title",
             "default": "Actual_Column_Title_From_HTML"
-          },
-          {
+          },          {
             "type": "url",
             "id": "link_1_url",
             "label": "Link 1 URL",
@@ -146,7 +287,7 @@ export async function POST(request) {
             "type": "text",
             "id": "link_1_text",
             "label": "Link 1 Text",
-            "default": "Actual_Link_Text"
+            "default": "Link 1"
           },
           {
             "type": "url",
@@ -156,6 +297,56 @@ export async function POST(request) {
           },
           {
             "type": "text",
+            "id": "link_2_text",
+            "label": "Link 2 Text",
+            "default": "Link 2"
+          },
+          {
+            "type": "url",
+            "id": "link_3_url",
+            "label": "Link 3 URL",
+            "default": "/"
+          },
+          {
+            "type": "text",
+            "id": "link_3_text",
+            "label": "Link 3 Text",
+            "default": "Link 3"
+          },
+          {
+            "type": "url",
+            "id": "link_4_url",
+            "label": "Link 4 URL",
+            "default": "/"
+          },
+          {
+            "type": "text",
+            "id": "link_4_text",
+            "label": "Link 4 Text",
+            "default": "Link 4"
+          }
+          {
+            "type": "text",
+            "id": "link_2_text",
+            "label": "Link 2 Text",
+            "default": "Actual_Link_Text"
+          }
+        ]
+      }    
+        - 🚨 CRITICAL FOOTER SCHEMA RULES 🚨:
+      * EVERY footer column block MUST include ALL individual link settings (link_1_url, link_1_text, link_2_url, link_2_text, etc.)
+      * NEVER create a footer_column block with only a column_title - it MUST have individual link settings
+      * Count the actual links in each HTML footer column and create that many url/text pairs
+      * Example: If HTML has 4 links in a column, schema MUST have link_1_url, link_1_text, link_2_url, link_2_text, link_3_url, link_3_text, link_4_url, link_4_text
+      * ABSOLUTELY NEVER create settings with these IDs: "column_links", "footer_links", "links_array", "link_items"
+      * ABSOLUTELY NEVER use these invalid types: "column_links", "links", "array", "list", "items", "collection"
+      * Each link must be separate url/text pairs: link_1_url, link_1_text, link_2_url, link_2_text, etc.
+      * Use only basic valid types: "text", "textarea", "url", "image_picker", "color", "number", "checkbox", "select"
+      * Each setting MUST have "type" and "id" attributes at minimum
+      * 🚨 VIOLATION WARNING: Creating "column_links" settings will cause CRITICAL schema validation errors
+      * 🚨 VISUAL PRESERVATION: The converted footer must look EXACTLY like the original HTML - same colors, spacing, layout
+      * PRESERVE ALL CSS CLASSES: Keep footer-container, footer-columns, footer-column, footer-links, footer-bottom classes exactly as written
+      * MAINTAIN GRID LAYOUT: Keep display: grid and all grid properties exactly as in original CSS
             "id": "link_2_text",
             "label": "Link 2 Text",
             "default": "Actual_Link_Text"
@@ -218,12 +409,28 @@ export async function POST(request) {
       * Terms of service: { "type": "url", "id": "terms_url", "label": "Terms URL", "default": "/" } and { "type": "text", "id": "terms_text", "label": "Terms Text", "default": "Terms of Service" }
       * Contact info: { "type": "email", "id": "footer_email", "label": "Footer Email" } and { "type": "tel", "id": "footer_phone", "label": "Footer Phone" }
     - PRESERVE FOOTER BOTTOM STYLING: Keep all CSS classes and responsive design exactly as in HTML
-16. SCHEMA MUST INCLUDE: For every piece of content, create appropriate settings:
-    - For anchor tags: { "type": "url", "id": "link_name_url", "label": "Link URL", "default": "/" } and { "type": "text", "id": "link_name_text", "label": "Link Text", "default": "actual_link_text" }
+16. SCHEMA MUST INCLUDE: For every piece of content, create appropriate settings:    - For anchor tags: { "type": "url", "id": "link_name_url", "label": "Link URL", "default": "/" } and { "type": "text", "id": "link_name_text", "label": "Link Text", "default": "actual_link_text" }
     - For headings: { "type": "text", "id": "heading_1", "label": "Heading Text", "default": "actual_heading_text" }
     - For paragraphs: { "type": "textarea", "id": "description_1", "label": "Description", "default": "actual_paragraph_text" }
-    - For images: { "type": "image_picker", "id": "image_1", "label": "Image" }
-    - For all other text: { "type": "text", "id": "text_content_1", "label": "Text Content", "default": "actual_text" }
+    - For images: { "type": "image_picker", "id": "image_1", "label": "Image" } (NO default value for image_picker)
+    - For all other text: { "type": "text", "id": "text_content_1", "label": "Text Content", "default": "actual_text" }    - 🚨 CRITICAL DEFAULT VALUES: ALL settings with "default" attribute MUST have non-empty values:
+      * Text/textarea settings: Use actual text content from HTML as default (never empty strings)
+      * URL settings: Use "/" or actual URL from HTML (never empty strings)
+      * Number settings: Use actual numbers or 1 (never empty)
+      * Color settings: Use "#000000" or actual color values
+      * Email settings: Use "example@example.com" or actual email
+      * Phone settings: Use "+1 (555) 123-4567" or actual phone
+      * Image_picker settings: NEVER include default attribute
+      * NEVER use empty strings (""), null, or undefined as default values
+      * 🚨 FOOTER LINKS: Extract ACTUAL link text from HTML - use "All Products", "Contact Us", "Our Story" etc. as defaults, not generic "Link 1", "Link 2"- 🚨 CRITICAL SCHEMA VALIDATION: NEVER use invalid attributes in schema settings:
+      * STRICTLY FORBIDDEN IDs: "column_links", "footer_links", "links_array", "link_items" - these cause validation errors
+      * STRICTLY FORBIDDEN TYPES: "column_links", "links", "array", "list", "items", "collection" - these don't exist in Shopify
+      * Do NOT use "min", "max", "step", or "item" attributes - these are invalid in Shopify schema
+      * Use only valid schema attributes: "type", "id", "label", "default", "info", "options" (for select), "placeholder"
+      * Use only valid schema types: "text", "textarea", "url", "image_picker", "color", "number", "range", "checkbox", "select", "richtext", "email", "tel"
+      * Every setting MUST have both "type" and "id" attributes
+      * Invalid attributes cause schema validation errors and break the section
+      * 🚨 CRITICAL: Creating "column_links" or similar complex link settings WILL cause validation failures
 
 17. TEXT CONTENT ANALYSIS: Scan the HTML and identify EVERY single text element:
     - Count all headings and create separate settings for each
@@ -235,68 +442,399 @@ export async function POST(request) {
 
 CRITICAL: The liquid template should look IDENTICAL to the original HTML when rendered. Do NOT modify any CSS or styling. CONVERT THE ENTIRE HTML - ALL SECTIONS MUST BE INCLUDED. MAKE EVERY SINGLE PIECE OF TEXT CONTENT EDITABLE!
 
+🚨 VISUAL PRESERVATION REQUIREMENTS:
+- The converted Liquid template must be visually indistinguishable from the original HTML
+- ALL CSS classes, IDs, and styling must remain exactly the same
+- Colors, fonts, spacing, layout must be preserved perfectly
+- Responsive design and media queries must remain intact
+- Grid layouts, flexbox, and positioning must be maintained exactly
+- The end result should render identically to the original HTML file
+
+🚨 MANDATORY OUTPUT FORMAT RULES:
+1. MUST include COMPLETE HTML structure converted to Liquid (NOT just schema)
+2. Start with HTML elements (divs, headers, sections) with Liquid variables
+3. Include ALL CSS styles exactly as in original HTML
+4. Include ALL JavaScript exactly as in original HTML  
+5. End with complete {% schema %} section
+6. Do NOT return only schema - include FULL HTML structure with Liquid variables
+7. Schema MUST have valid presets structure: "presets": [{"name": "Default", "category": "Custom"}]
+
+EXAMPLE STRUCTURE REQUIRED:
+<div class="original-css-class">
+  <h1>{{ section.settings.heading }}</h1>
+  <p>{{ section.settings.description }}</p>
+  <!-- ALL original HTML structure with Liquid variables -->
+</div>
+<style>
+  /* ALL original CSS exactly as written */
+</style>
+<script>
+  /* ALL original JavaScript exactly as written */
+</script>
+{% schema %}
+{
+  /* Complete schema with all settings */
+}
+{% endschema %}
+
 HTML to convert:
-\`\`\`html
+\\\`\\\`\\\`html
 ${htmlContent}
-\`\`\`
+\\\`\\\`\\\`
 
-Return ONLY the liquid template with complete schema section. Include ALL CSS exactly as written in HTML. MUST include all sections from HTML.`;
-
-    const completion = await openai.chat.completions.create({
+Return COMPLETE liquid template: HTML structure + CSS + JavaScript + Schema. NOT just schema alone!`; const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [{
         role: "system",
-        content: "You are a Shopify Liquid expert specializing in converting HTML to FULLY EDITABLE Liquid templates. 🚨 CRITICAL MISSION: Make EVERY single piece of hardcoded content editable through Liquid variables and schema settings. NO hardcoded text should remain in the final template - everything must be dynamic and editable from the Shopify admin. Convert HTML to Liquid templates while preserving ALL original styling and CSS. Extract EVERY piece of real content from HTML and make it editable through schema settings. Create blocks for repeating elements. The converted template must look identical to the original HTML when rendered. NEVER use generic placeholders - always use actual content from the HTML as default values in schema. CRITICAL: image_picker fields in schema must NEVER have default values - this is invalid in Shopify. IMPORTANT: You must convert the ENTIRE HTML content - do not truncate or cut off any sections. Complete the full conversion including all sections, testimonials, and footer content. MANDATORY: Make ALL text content editable - headings, paragraphs, buttons, links, labels, spans, form placeholders, alt text, phone numbers, emails, addresses, company names, testimonials, statistics, prices - EVERYTHING must be converted to Liquid variables with corresponding schema settings. ANCHOR TAGS: Make ALL anchor tags editable - convert both href and text content to Liquid variables with corresponding schema settings. For URL-type settings in schema, always use 'default': '/' as the default value. CRITICAL: You must ensure the COMPLETE conversion of large HTML files. Do not stop mid-conversion. Return the full liquid template with complete schema where EVERY piece of content is editable."
+        content: "You are a Shopify Liquid expert. 🚨 CRITICAL: Convert HTML to SHOPIFY SECTION format with ALL content made editable. Do NOT include <!DOCTYPE>, <html>, <head>, or <body> tags. Start directly with section content, include ALL CSS/JavaScript, end with {% schema %}. You MUST convert the ENTIRE HTML content completely - do not truncate. Make EVERY piece of text editable through Liquid variables."
       },
       {
         role: "user",
-        content: prompt
+        content: `🚨 CRITICAL: Convert to COMPLETE SHOPIFY SECTION format.
+
+REQUIREMENTS:
+1. Convert ALL HTML content to Shopify section format (NOT complete HTML page)
+2. Remove DOCTYPE, html, head, body tags - start with section content
+3. Replace ALL hardcoded text with Liquid variables: {{ section.settings.variable_name }}
+4. Create blocks for repeating elements (products, testimonials, navigation, footer columns)
+5. Include ALL CSS exactly as written in <style> tags
+6. Include ALL JavaScript exactly as written in <script> tags
+7. End with complete {% schema %} section with ALL settings and blocks
+8. Make EVERYTHING editable - headings, paragraphs, buttons, links, images, forms
+
+EXAMPLE FORMAT:
+<!-- Navigation -->
+<nav class="navbar">
+  {% for block in section.blocks %}
+    {% if block.type == 'header_link' %}
+      <a href="{{ block.settings.link_url }}" class="nav-link">{{ block.settings.link_text }}</a>
+    {% endif %}
+  {% endfor %}
+</nav>
+
+<!-- All other sections with Liquid variables -->
+
+<style>
+/* ALL original CSS here */
+</style>
+
+<script>
+/* ALL original JavaScript here */
+</script>
+
+{% schema %}
+{
+  "name": "Hair Care Landing Page",
+  "settings": [...all settings...],
+  "blocks": [...all block types...],
+  "presets": [{"name": "Default", "category": "Custom"}]
+}
+{% endschema %}
+
+HTML to convert:
+${htmlContent}
+
+Convert EVERYTHING to Shopify section format with complete schema!`
       }
       ],
       max_tokens: 16384,
-      temperature: 0.05,
+      temperature: 0.01,
     });
 
     let liquidContent = completion.choices[0]?.message?.content;
+
+    if (htmlContent.toLowerCase().includes('<footer') && liquidContent.includes('footer_column')) {
+      console.log('🔍 Checking footer conversion quality...');
+
+      const schemaMatch = liquidContent.match(/{% schema %}([\s\S]*?){% endschema %}/);
+      let hasIncompleteFooterColumns = false;
+      let hasIncompleteFooterRendering = false;
+
+      if (schemaMatch) {
+        try {
+          const schemaContent = schemaMatch[1].trim();
+          const schemaObj = JSON.parse(schemaContent);
+
+          if (schemaObj.blocks) {
+            schemaObj.blocks.forEach(block => {
+              if (block.type === 'footer_column' && block.settings) {
+                const hasColumnTitle = block.settings.some(s => s.id === 'column_title');
+                const hasLinkSettings = block.settings.some(s => s.id && s.id.match(/^link_\d+_(url|text)$/));
+
+                if (hasColumnTitle && !hasLinkSettings) {
+                  console.warn(`⚠️ INCOMPLETE footer_column block detected - only has title, missing link settings!`);
+                  hasIncompleteFooterColumns = true;
+                }
+              }
+            });
+          }
+        } catch (e) {
+          console.log('Schema parsing error during footer check, continuing...');
+        }
+      }
+      const footerSectionMatch = liquidContent.match(/<footer[\s\S]*?<\/footer>/);
+      if (footerSectionMatch) {
+        const footerLiquidCode = footerSectionMatch[0];
+
+        const hasLinkConditions = footerLiquidCode.includes('block.settings.link_1_url') &&
+          footerLiquidCode.includes('block.settings.link_1_text') &&
+          footerLiquidCode.includes('{% if') &&
+          footerLiquidCode.includes('!= blank');
+
+        const hasLinkElements = footerLiquidCode.includes('<li><a href=') &&
+          footerLiquidCode.includes('{{ block.settings.link_') &&
+          footerLiquidCode.includes('<ul class="footer-links">');
+
+        const hasFooterStructure = footerLiquidCode.includes('footer_column') &&
+          footerLiquidCode.includes('{{ block.settings.column_title }}');
+
+        if (!hasLinkConditions || !hasLinkElements || !hasFooterStructure) {
+          console.warn('⚠️ INCOMPLETE footer rendering detected - footer links may not display correctly!');
+          hasIncompleteFooterRendering = true;
+        }
+      } else {
+        const footerBlockPattern = /{% for block in section\.blocks %}[\s\S]*?footer_column[\s\S]*?{% endfor %}/;
+        if (!footerBlockPattern.test(liquidContent)) {
+          console.warn('⚠️ MISSING footer block loop - footer may not render correctly!');
+          hasIncompleteFooterRendering = true;
+        }
+      }
+
+      if (hasIncompleteFooterColumns || hasIncompleteFooterRendering) {
+        console.log('🔄 Retrying footer conversion with complete link rendering instructions...');
+        const footerRetryCompletion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [{
+            role: "system",
+            content: "🚨 CRITICAL FOOTER FIX SPECIALIST: You MUST create complete footer rendering with visible clickable links. Include BOTH schema AND proper Liquid rendering code that displays ALL links."
+          },
+          {
+            role: "user",
+            content: `🚨 CRITICAL FOOTER FIX REQUIRED: The footer is not properly converted.
+
+PROBLEM: Footer links are missing or not rendering properly.
+
+Original HTML:
+${htmlContent}
+
+Current Liquid (INCOMPLETE):
+${liquidContent}
+
+🚨 MANDATORY FOOTER STRUCTURE - USE THIS EXACT PATTERN:
+
+<footer class="footer-container">
+  <div class="footer-columns">
+    {% for block in section.blocks %}
+      {% if block.type == 'footer_column' %}
+        <div class="footer-column">
+          <h4 class="footer-title">{{ block.settings.column_title }}</h4>
+          <ul class="footer-links">
+            {% if block.settings.link_1_url != blank and block.settings.link_1_text != blank %}
+              <li><a href="{{ block.settings.link_1_url }}">{{ block.settings.link_1_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_2_url != blank and block.settings.link_2_text != blank %}
+              <li><a href="{{ block.settings.link_2_url }}">{{ block.settings.link_2_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_3_url != blank and block.settings.link_3_text != blank %}
+              <li><a href="{{ block.settings.link_3_url }}">{{ block.settings.link_3_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_4_url != blank and block.settings.link_4_text != blank %}
+              <li><a href="{{ block.settings.link_4_url }}">{{ block.settings.link_4_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_5_url != blank and block.settings.link_5_text != blank %}
+              <li><a href="{{ block.settings.link_5_url }}">{{ block.settings.link_5_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_6_url != blank and block.settings.link_6_text != blank %}
+              <li><a href="{{ block.settings.link_6_url }}">{{ block.settings.link_6_text }}</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; {{ section.settings.copyright_year }} {{ section.settings.company_name }}. {{ section.settings.copyright_text }}</p>
+    <div class="footer-bottom-links">
+      {% if section.settings.privacy_url != blank %}<a href="{{ section.settings.privacy_url }}">{{ section.settings.privacy_text }}</a>{% endif %}
+      {% if section.settings.terms_url != blank %}<a href="{{ section.settings.terms_url }}">{{ section.settings.terms_text }}</a>{% endif %}
+    </div>
+  </div>
+</footer>
+
+CRITICAL REQUIREMENTS:
+1. Schema: Count actual links in each HTML footer column and create link_N_url, link_N_text settings for each
+2. Rendering: Replace the footer section with the EXACT structure above
+3. Extract real link text from HTML as default values (e.g., "All Products", "Contact Us", "Our Story")
+4. Keep all CSS classes and structure exactly the same as HTML
+5. ENSURE ALL FOOTER LINKS ARE VISIBLE AND CLICKABLE IN THE OUTPUT
+6. Each footer column MUST have BOTH column title AND individual link settings in schema
+7. The {% for block in section.blocks %} loop MUST be present for footer columns
+8. Links MUST be wrapped in proper <ul><li><a> structure for styling
+
+Return the complete fixed Shopify section with proper footer link rendering and complete schema.`
+          }],
+          max_tokens: 8000,
+          temperature: 0.05,
+        }); const fixedFooterContent = footerRetryCompletion.choices[0]?.message?.content;
+        if (fixedFooterContent && fixedFooterContent.length > liquidContent.length) {
+          console.log('✅ Footer retry successful - using fixed version');
+          liquidContent = fixedFooterContent;
+        }
+      }
+    }
+
+    if (htmlContent.toLowerCase().includes('<footer') && liquidContent.includes('footer_column')) {
+      console.log('🔧 Post-processing footer to ensure correct link rendering...');
+      const badFooterPattern = /{% for link in block\.settings\.column_links %}[\s\S]*?{% endfor %}/g;
+      const badFooterPattern2 = /{% for link in block\.settings\.footer_links %}[\s\S]*?{% endfor %}/g;
+      const badFooterPattern3 = /{% for link in block\.settings\.links %}[\s\S]*?{% endfor %}/g;
+
+      if (badFooterPattern.test(liquidContent) || badFooterPattern2.test(liquidContent) || badFooterPattern3.test(liquidContent)) {
+        console.log('🔄 Fixing invalid footer loop patterns...');
+
+        const correctFooterLinks = `{% if block.settings.link_1_url != blank and block.settings.link_1_text != blank %}
+                <li><a href="{{ block.settings.link_1_url }}">{{ block.settings.link_1_text }}</a></li>
+              {% endif %}
+              {% if block.settings.link_2_url != blank and block.settings.link_2_text != blank %}
+                <li><a href="{{ block.settings.link_2_url }}">{{ block.settings.link_2_text }}</a></li>
+              {% endif %}
+              {% if block.settings.link_3_url != blank and block.settings.link_3_text != blank %}
+                <li><a href="{{ block.settings.link_3_url }}">{{ block.settings.link_3_text }}</a></li>
+              {% endif %}
+              {% if block.settings.link_4_url != blank and block.settings.link_4_text != blank %}
+                <li><a href="{{ block.settings.link_4_url }}">{{ block.settings.link_4_text }}</a></li>
+              {% endif %}`;
+
+        liquidContent = liquidContent.replace(badFooterPattern, correctFooterLinks);
+        liquidContent = liquidContent.replace(badFooterPattern2, correctFooterLinks);
+        liquidContent = liquidContent.replace(badFooterPattern3, correctFooterLinks);
+      }
+
+      const footerSectionMatch = liquidContent.match(/<footer[\s\S]*?<\/footer>/);
+      if (footerSectionMatch) {
+        const footerContent = footerSectionMatch[0];
+
+        if (!footerContent.includes('{% for block in section.blocks %}') && footerContent.includes('footer-column')) {
+          console.log('🔄 Adding missing footer block loop structure...');
+
+          const columnsMatch = footerContent.match(/<div class="footer-columns"[\s\S]*?<\/div>/);
+          if (columnsMatch) {
+            const blockLoopStructure = `<div class="footer-columns">
+    {% for block in section.blocks %}
+      {% if block.type == 'footer_column' %}
+        <div class="footer-column">
+          <h4 class="footer-title">{{ block.settings.column_title }}</h4>
+          <ul class="footer-links">
+            {% if block.settings.link_1_url != blank and block.settings.link_1_text != blank %}
+              <li><a href="{{ block.settings.link_1_url }}">{{ block.settings.link_1_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_2_url != blank and block.settings.link_2_text != blank %}
+              <li><a href="{{ block.settings.link_2_url }}">{{ block.settings.link_2_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_3_url != blank and block.settings.link_3_text != blank %}
+              <li><a href="{{ block.settings.link_3_url }}">{{ block.settings.link_3_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_4_url != blank and block.settings.link_4_text != blank %}
+              <li><a href="{{ block.settings.link_4_url }}">{{ block.settings.link_4_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_5_url != blank and block.settings.link_5_text != blank %}
+              <li><a href="{{ block.settings.link_5_url }}">{{ block.settings.link_5_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_6_url != blank and block.settings.link_6_text != blank %}
+              <li><a href="{{ block.settings.link_6_url }}">{{ block.settings.link_6_text }}</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>`;
+
+            const newFooterContent = footerContent.replace(columnsMatch[0], blockLoopStructure);
+            liquidContent = liquidContent.replace(footerContent, newFooterContent);
+          }
+        }
+      }
+      console.log('✅ Footer post-processing completed');
+    }
+
+    if (liquidContent.includes('fa-star') || liquidContent.includes('★')) {
+      console.log('🔧 Post-processing star ratings to ensure proper conversion...');
+
+      const hardcodedStarPattern = /(<i class="fas fa-star"[^>]*><\/i>)\s*(<i class="fas fa-star"[^>]*><\/i>)\s*(<i class="fas fa-star"[^>]*><\/i>)\s*(<i class="fas fa-star"[^>]*><\/i>)\s*(<i class="fas fa-star[^>]*><\/i>)/g;
+
+      if (hardcodedStarPattern.test(liquidContent)) {
+        console.log('🔄 Converting hardcoded FontAwesome stars to dynamic Liquid...');
+        liquidContent = liquidContent.replace(hardcodedStarPattern,
+          `{% for i in (1..5) %}
+            <i class="fas fa-star{% if i > block.settings.product_rating %}-half-alt{% endif %}"></i>
+          {% endfor %}`
+        );
+      }
+
+      const hardcodedRatingPattern = /(\d+\.?\d*)\s*\((\d+)\)/g;
+      liquidContent = liquidContent.replace(hardcodedRatingPattern,
+        '{{ block.settings.product_rating }} ({{ block.settings.product_reviews }})'
+      );
+
+      const unicodeStarPattern = /★{3,5}/g;
+      if (unicodeStarPattern.test(liquidContent)) {
+        console.log('🔄 Converting hardcoded Unicode stars to dynamic Liquid...');
+        liquidContent = liquidContent.replace(unicodeStarPattern,
+          `{% assign full_stars = block.settings.rating | floor %}{% for i in (1..full_stars) %}★{% endfor %}`
+        );
+      } console.log('✅ Star rating post-processing completed');
+    }
+
+    if (htmlContent.includes('fa-search') || htmlContent.includes('fa-shopping-cart')) {
+      console.log('🔧 Post-processing header icons to ensure proper block structure...');
+
+      if (liquidContent.includes('fas fa-search') && !liquidContent.includes('header_icon')) {
+        console.log('🔄 Converting hardcoded search icon to header_icon block...');
+        liquidContent = liquidContent.replace(
+          /<a[^>]*><i[^>]*fas fa-search[^>]*><\/i><\/a>/g,
+          '{% for block in section.blocks %}{% if block.type == "header_icon" and block.settings.icon_type == "search" %}<a href="{{ block.settings.icon_link }}"><i class="{{ block.settings.icon_class }}"></i></a>{% endif %}{% endfor %}'
+        );
+      }
+
+      if (liquidContent.includes('fas fa-shopping-cart') && !liquidContent.includes('header_icon')) {
+        console.log('🔄 Converting hardcoded cart icon to header_icon block...');
+        liquidContent = liquidContent.replace(
+          /<a[^>]*><i[^>]*fas fa-shopping-cart[^>]*><\/i><\/a>/g,
+          '{% for block in section.blocks %}{% if block.type == "header_icon" and block.settings.icon_type == "cart" %}<a href="{{ block.settings.icon_link }}"><i class="{{ block.settings.icon_class }}"></i></a>{% endif %}{% endfor %}'
+        );
+      }
+
+      console.log('✅ Header icon post-processing completed');
+    }
+
 
     if (!liquidContent) {
       return NextResponse.json(
         { error: 'Failed to generate Liquid content' },
         { status: 500 }
       );
-    }
-
-    if (isLargeFile && !liquidContent.includes('{% endschema %}')) {
-      console.warn('Large file conversion appears incomplete, attempting retry with different approach...');
-
-      const retryCompletion = await openai.chat.completions.create({
+    } if (isLargeFile && (!liquidContent.includes('{% endschema %}') || liquidContent.split('{% schema %}')[0].trim().length < 500)) {
+      console.warn('Large file conversion appears incomplete or missing HTML structure, attempting retry...'); const retryCompletion = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [{
           role: "system",
-          content: "You are a Shopify Liquid expert specializing in converting large HTML files to FULLY EDITABLE Liquid templates. 🚨 CRITICAL MISSION: Make EVERY single piece of hardcoded text/content editable through Liquid variables. NO hardcoded content should remain. CRITICAL: You must return the COMPLETE liquid template including the full schema section. Never truncate or stop mid-conversion. Ensure the response ends with {% endschema %} tag. Make ALL text content dynamic and editable from Shopify admin."
+          content: "🚨 Convert to SHOPIFY SECTION format. Do NOT include <!DOCTYPE>, <html>, <head>, <body> tags. Start with section content and end with {% schema %}."
         },
         {
           role: "user",
-          content: `URGENT: Complete the full conversion of this large HTML file to Shopify Liquid. You must include ALL sections and complete the full schema. Do not stop until the entire HTML is converted and the schema is complete with {% endschema %} tag.
+          content: `WRONG: You returned complete HTML page with DOCTYPE, html, head, body tags.
 
-🚨 CRITICAL REQUIREMENT: Make EVERY single piece of hardcoded content EDITABLE through Liquid variables and schema settings. NO hardcoded text should remain in the template! 🚨
+CORRECT: Shopify section format:
+<section class="hero">
+  <h1>{{ section.settings.title }}</h1>
+</section>
+<style>css</style>
+{% schema %}...{% endschema %}
 
-HTML Content:
-\`\`\`html
+Convert HTML to SHOPIFY SECTION (no DOCTYPE/html/head/body):
 ${htmlContent}
-\`\`\`
 
-MANDATORY Requirements:
-1. Convert ENTIRE HTML - all sections must be included
-2. Complete schema with {% endschema %} at the end
-3. Preserve all CSS and styling exactly
-4. Make ALL text content editable: headings, paragraphs, buttons, links, labels, spans, form text, alt text, phone numbers, emails, addresses, company names, testimonials, statistics, prices - EVERYTHING!
-5. Make all anchor tags editable with Liquid variables (both href and text)
-6. Extract real content for schema default values
-7. Include blocks for repeating elements
-8. Create numbered settings for multiple similar elements (title_1, title_2, etc.)
-9. Use appropriate field types: "text" for short text, "textarea" for long text, "image_picker" for images, "url" for links, "email" for emails, "tel" for phones
-10. NO hardcoded content should remain - make everything dynamic and editable from Shopify admin`
+Return section content only with schema!`
         }
         ],
         max_tokens: 16000,
@@ -308,11 +846,23 @@ MANDATORY Requirements:
         console.log('Retry successful - using complete conversion');
         liquidContent = retryLiquidContent;
       }
-    }
-
-    let cleanedLiquidContent = liquidContent;
+    } let cleanedLiquidContent = liquidContent;
 
     cleanedLiquidContent = cleanedLiquidContent.replace(/^```liquid\s*/, '').replace(/\s*```$/, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/^```html\s*/, '').replace(/\s*```$/, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+
+    cleanedLiquidContent = cleanedLiquidContent.replace(/^<!DOCTYPE[\s\S]*?>\s*/gm, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/^<html[\s\S]*?>\s*/gm, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/^<\/html>\s*/gm, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/^<head>[\s\S]*?<\/head>\s*/gm, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/^<body[\s\S]*?>\s*/gm, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/^<\/body>\s*/gm, '');
+
+    cleanedLiquidContent = cleanedLiquidContent.replace(/<html[\s\S]*?<\/html>/gm, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/<head>[\s\S]*?<\/head>/gm, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/<body[\s\S]*?>/gm, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/<\/body>/gm, '');
 
     if (cleanedLiquidContent.includes('This Liquid template preserves')) {
       const explanationIndex = cleanedLiquidContent.indexOf('This Liquid template preserves');
@@ -321,10 +871,416 @@ MANDATORY Requirements:
     cleanedLiquidContent = cleanedLiquidContent.replace(/\n\nThis Liquid template[\s\S]*$/i, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/\n\nThe above[\s\S]*$/i, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/\n\nNote:[\s\S]*$/i, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/\n\n\*\*[\s\S]*$/i, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/\n\nExplanation:[\s\S]*$/i, '');
 
     cleanedLiquidContent = cleanedLiquidContent.replace(/```\s*$/g, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/^```.*?\n/g, '');
     cleanedLiquidContent = cleanedLiquidContent.trim();
+
+    cleanedLiquidContent = cleanedLiquidContent.replace(/^<html[\s\S]*?<\/html>$/gm, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/^<!DOCTYPE[\s\S]*?>\s*/gm, '');
+    if (!cleanedLiquidContent.includes('{% schema %}')) {
+      console.error('Missing schema in Liquid template');
+    }
+
+    if (!cleanedLiquidContent.includes('{% endschema %}')) {
+      console.error('Missing endschema in Liquid template');
+    }
+    if (cleanedLiquidContent.trim().startsWith('{% schema %}')) {
+      console.error('AI returned only schema - need to regenerate with HTML structure');
+      const htmlStructureCompletion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{
+          role: "system",
+          content: "🚨 Convert to SHOPIFY SECTION format. Remove DOCTYPE, html, head, body tags. Start with section content, end with {% schema %}."
+        },
+        {
+          role: "user",
+          content: `Convert to SHOPIFY SECTION format (NOT complete HTML page):
+
+Required format:
+<!-- Navigation -->
+<nav class="navbar">
+  <a href="{{ section.settings.link_url }}">{{ section.settings.link_text }}</a>
+</nav>
+<!-- Hero -->
+<section class="hero">
+  <h1>{{ section.settings.hero_title }}</h1>
+</section>
+<!-- All other sections -->
+<style>css here</style>
+{% schema %}schema here{% endschema %}
+
+HTML to convert:
+${htmlContent}
+
+Return SHOPIFY SECTION format with ALL content + schema!`
+        }
+        ],
+        max_tokens: 16000,
+        temperature: 0.01,
+      });
+
+      const htmlStructureContent = htmlStructureCompletion.choices[0]?.message?.content;
+      if (htmlStructureContent && !htmlStructureContent.trim().startsWith('{% schema %}')) {
+        console.log('Successfully generated complete HTML structure');
+        cleanedLiquidContent = htmlStructureContent;
+      }
+    }
+
+    const htmlSectionCount = (htmlContent.match(/<(section|div|header|main|footer|article)/gi) || []).length;
+    const liquidSectionCount = (cleanedLiquidContent.match(/<(section|div|header|main|footer|article)/gi) || []).length;
+
+    if (liquidSectionCount < htmlSectionCount * 0.5) {
+      console.warn('Partial conversion detected - regenerating complete version');
+
+      const completeCompletion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{
+          role: "system",
+          content: "🚨 You gave a partial conversion. I need the COMPLETE HTML file converted to Liquid with ALL sections included."
+        },
+        {
+          role: "user",
+          content: `You only converted part of the HTML. I need ALL sections converted:
+
+Original HTML has ${htmlSectionCount} sections/divs.
+Your conversion only has ${liquidSectionCount} sections.
+
+Convert the COMPLETE HTML file including:
+- Header/Navigation
+- Hero section
+- Products section  
+- Testimonials
+- Sustainability slides
+- Transformations
+- Footer
+- ALL other sections
+
+COMPLETE HTML to convert:
+${htmlContent}
+
+Return COMPLETE conversion with ALL sections!`
+        }
+        ],
+        max_tokens: 16000,
+        temperature: 0.01,
+      });
+
+      const completeContent = completeCompletion.choices[0]?.message?.content;
+      if (completeContent && completeContent.length > cleanedLiquidContent.length * 1.5) {
+        console.log('Successfully generated complete conversion');
+        cleanedLiquidContent = completeContent;
+      }
+    }
+
+    const beforeSchemaContent = cleanedLiquidContent.split('{% schema %}')[0].trim();
+    if (beforeSchemaContent.length < 500) {
+      console.warn('Possible incomplete conversion - missing HTML structure before schema');
+
+      if (beforeSchemaContent.length < 100) {
+        console.log('Attempting to regenerate with stronger HTML structure requirements...');
+
+        const structureCompletion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [{
+            role: "system",
+            content: "🚨 CRITICAL: You are returning ONLY schema when you need to return COMPLETE HTML structure converted to Liquid. You MUST include the full HTML template with Liquid variables - NOT just schema alone. Return: HTML structure + CSS + JavaScript + Schema."
+          },
+          {
+            role: "user",
+            content: `CRITICAL ERROR: You returned only schema. I need the COMPLETE HTML structure converted to Liquid format.
+
+Required Output:
+1. Start with HTML elements (divs, headers, sections, etc.) with Liquid variables
+2. Include all CSS styles from original HTML
+3. Include all JavaScript from original HTML  
+4. End with schema section
+
+Example of what I need:
+<div class="hero-section">
+  <h1>{{ section.settings.hero_title }}</h1>
+  <p>{{ section.settings.hero_description }}</p>
+</div>
+<style>
+/* Original CSS here */
+</style>
+<script>
+/* Original JavaScript here */
+</script>
+{% schema %}
+/* Schema here */
+{% endschema %}
+
+Original HTML:
+\\\`\\\`\\\`html
+${htmlContent}
+\\\`\\\`\\\`
+
+Return COMPLETE HTML structure converted to Liquid - NOT just schema!`
+          }
+          ],
+          max_tokens: 16000,
+          temperature: 0.01,
+        });
+
+        const structureContent = structureCompletion.choices[0]?.message?.content;
+        if (structureContent && structureContent.includes('<') && structureContent.length > cleanedLiquidContent.length) {
+          console.log('Successfully generated complete HTML structure');
+          cleanedLiquidContent = structureContent;
+        }
+      }
+    }
+
+    if (cleanedLiquidContent.includes('{% schema %}')) {
+      const schemaMatch = cleanedLiquidContent.match(/{% schema %}([\s\S]*?){% endschema %}/);
+      if (schemaMatch) {
+        try {
+          const schemaContent = schemaMatch[1].trim();
+          let schemaObj = JSON.parse(schemaContent);
+          if (!schemaObj.presets || !Array.isArray(schemaObj.presets)) {
+            schemaObj.presets = [
+              {
+                "name": "Default",
+                "category": "Custom"
+              }
+            ];
+          }
+          function removeInvalidAttributes(obj) {
+            if (Array.isArray(obj)) {
+              obj.forEach(item => removeInvalidAttributes(item));
+            } else if (obj && typeof obj === 'object') {
+              if (obj.settings && Array.isArray(obj.settings)) {
+                obj.settings = obj.settings.filter(setting => {
+                  if (setting && typeof setting === 'object') {
+                    const problematicIds = ['column_links', 'footer_links', 'links_array', 'link_items'];
+                    if (problematicIds.includes(setting.id)) {
+                      console.warn(`Removing problematic setting with id: ${setting.id}`);
+                      return false;
+                    }
+
+                    if (setting.id && (setting.id.match(/^link_\d+_(url|text)$/) || setting.id.match(/^social_\d+_(url|text)$/))) {
+                      console.log(`Preserving valid link setting: ${setting.id}`);
+                    }
+
+                    delete setting.min;
+                    delete setting.max;
+                    delete setting.step;
+                    delete setting.item;
+
+                    if (!setting.type || !setting.id) {
+                      console.warn(`Removing invalid setting: ${JSON.stringify(setting)}`);
+                      return false;
+                    }
+
+                    const invalidTypes = ['column_links', 'links', 'array', 'list', 'items', 'collection'];
+                    if (invalidTypes.includes(setting.type)) {
+                      console.warn(`Removing setting with invalid type: ${setting.type}`);
+                      return false;
+                    }
+                    const validAttributes = ['type', 'id', 'label', 'default', 'info', 'options', 'placeholder'];
+                    Object.keys(setting).forEach(key => {
+                      if (!validAttributes.includes(key)) {
+                        delete setting[key];
+                      }
+                    });
+                    if (setting.type === 'image_picker') {
+                      delete setting.default;
+                    } else if (setting.hasOwnProperty('default')) {
+                      if (setting.default === '' || setting.default === null || setting.default === undefined) {
+                        switch (setting.type) {
+                          case 'text':
+                          case 'textarea':
+                          case 'richtext':
+                            setting.default = setting.label || 'Sample text';
+                            break;
+                          case 'url':
+                            setting.default = '/';
+                            break;
+                          case 'email':
+                            setting.default = 'example@example.com';
+                            break;
+                          case 'tel':
+                            setting.default = '+1 (555) 123-4567';
+                            break;
+                          case 'number':
+                          case 'range':
+                            setting.default = 1;
+                            break;
+                          case 'checkbox':
+                            setting.default = false;
+                            break;
+                          case 'color':
+                            setting.default = '#000000';
+                            break;
+                          case 'select':
+                            if (setting.options && setting.options.length > 0) {
+                              setting.default = setting.options[0].value || setting.options[0];
+                            } else {
+                              setting.default = 'option1';
+                            }
+                            break;
+                          default:
+                            setting.default = 'Default value';
+                        }
+                      }
+                    }
+
+                    return true;
+                  }
+                  return false;
+                });
+              }
+              Object.keys(obj).forEach(key => {
+                if (typeof obj[key] === 'object') {
+                  removeInvalidAttributes(obj[key]);
+                }
+              });
+
+              if (obj.blocks && Array.isArray(obj.blocks)) {
+                obj.blocks.forEach(block => {
+                  if (block.type === 'footer_column' && block.settings) {
+                    const hasColumnTitle = block.settings.some(s => s.id === 'column_title');
+                    const hasLinkSettings = block.settings.some(s => s.id && s.id.match(/^link_\d+_(url|text)$/));
+
+                    if (hasColumnTitle && !hasLinkSettings) {
+                      console.warn('⚠️ CRITICAL: footer_column block only has column_title but no individual link settings!');
+                      console.warn('This will cause missing links in the footer. Adding default link settings...');
+
+                      for (let i = 1; i <= 4; i++) {
+                        block.settings.push({
+                          "type": "url",
+                          "id": `link_${i}_url`,
+                          "label": `Link ${i} URL`,
+                          "default": "/"
+                        });
+                        block.settings.push({
+                          "type": "text",
+                          "id": `link_${i}_text`,
+                          "label": `Link ${i} Text`,
+                          "default": `Link ${i}`
+                        });
+                      }
+                    }
+                  }
+                });
+              }
+            }
+          }
+          removeInvalidAttributes(schemaObj);
+
+          if (htmlContent.toLowerCase().includes('<footer') && schemaObj.blocks) {
+            const footerColumnBlocks = schemaObj.blocks.filter(block => block.type === 'footer_column');
+            if (footerColumnBlocks.length > 0) {
+              console.log(`Found ${footerColumnBlocks.length} footer_column blocks, verifying rendering...`);
+
+              const footerRenderingRegex = /{% for block in section\.blocks %}[\s\S]*?{% if block\.type == ['"]footer_column['"] %}[\s\S]*?{% endif %}[\s\S]*?{% endfor %}/;
+              const hasFooterLoop = footerRenderingRegex.test(cleanedLiquidContent);
+
+              if (!hasFooterLoop) {
+                console.warn('⚠️ MISSING footer rendering loop - adding default footer structure');
+
+                const footerSectionMatch = cleanedLiquidContent.match(/<footer[\s\S]*?<\/footer>/);
+                if (footerSectionMatch) {
+                  const footerSection = footerSectionMatch[0];
+                  const originalFooterClasses = footerSection.match(/class="([^"]*)"/) ? footerSection.match(/class="([^"]*)"/)[1] : 'footer-container';
+                  const originalColumnClasses = footerSection.match(/<div[^>]*class="([^"]*footer-column[^"]*)"/) ? footerSection.match(/<div[^>]*class="([^"]*footer-column[^"]*)"/)[1] : 'footer-column';
+
+                  const newFooterStructure = `<footer class="${originalFooterClasses}">
+  <div class="footer-columns">
+    {% for block in section.blocks %}
+      {% if block.type == 'footer_column' %}
+        <div class="${originalColumnClasses}">
+          <h4 class="footer-title">{{ block.settings.column_title }}</h4>
+          <ul class="footer-links">
+            {% if block.settings.link_1_url != blank and block.settings.link_1_text != blank %}
+              <li><a href="{{ block.settings.link_1_url }}">{{ block.settings.link_1_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_2_url != blank and block.settings.link_2_text != blank %}
+              <li><a href="{{ block.settings.link_2_url }}">{{ block.settings.link_2_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_3_url != blank and block.settings.link_3_text != blank %}
+              <li><a href="{{ block.settings.link_3_url }}">{{ block.settings.link_3_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_4_url != blank and block.settings.link_4_text != blank %}
+              <li><a href="{{ block.settings.link_4_url }}">{{ block.settings.link_4_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_5_url != blank and block.settings.link_5_text != blank %}
+              <li><a href="{{ block.settings.link_5_url }}">{{ block.settings.link_5_text }}</a></li>
+            {% endif %}
+            {% if block.settings.link_6_url != blank and block.settings.link_6_text != blank %}
+              <li><a href="{{ block.settings.link_6_url }}">{{ block.settings.link_6_text }}</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; {{ section.settings.copyright_year }} {{ section.settings.company_name }}. {{ section.settings.copyright_text }}</p>
+    <div class="footer-bottom-links">
+      {% if section.settings.privacy_url != blank %}<a href="{{ section.settings.privacy_url }}">{{ section.settings.privacy_text }}</a>{% endif %}
+      {% if section.settings.terms_url != blank %}<a href="{{ section.settings.terms_url }}">{{ section.settings.terms_text }}</a>{% endif %}
+    </div>
+  </div>
+</footer>`;
+
+                  cleanedLiquidContent = cleanedLiquidContent.replace(footerSection, newFooterStructure);
+                  console.log('✅ Added proper footer rendering structure');
+                }
+              }
+            }
+          }
+
+          cleanedLiquidContent = cleanedLiquidContent.replace(
+            /{% schema %}[\s\S]*?{% endschema %}/,
+            `{% schema %}\n${JSON.stringify(schemaObj, null, 2)}\n{% endschema %}`
+          );
+        } catch (e) {
+          console.log('Schema JSON parsing error, applying fallback fixes');
+          let schemaSection = cleanedLiquidContent.match(/{% schema %}([\s\S]*?){% endschema %}/)[1];
+          schemaSection = schemaSection.replace(/,(\s*[}\]])/g, '$1');
+
+          schemaSection = schemaSection.replace(/{\s*"type":\s*"[^"]*",\s*"id":\s*"column_links"[^}]*},?/g, '');
+          schemaSection = schemaSection.replace(/{\s*"id":\s*"column_links"[^}]*},?/g, '');
+          schemaSection = schemaSection.replace(/{\s*"type":\s*"column_links"[^}]*},?/g, '');
+          schemaSection = schemaSection.replace(/"min":\s*\d+,?\s*/g, '');
+          schemaSection = schemaSection.replace(/"max":\s*\d+,?\s*/g, '');
+          schemaSection = schemaSection.replace(/"step":\s*\d+,?\s*/g, '');
+          schemaSection = schemaSection.replace(/"item":\s*[^,}]+,?\s*/g, '');
+
+          schemaSection = schemaSection.replace(/"default":\s*""\s*,?/g, '"default": "Sample text",');
+          schemaSection = schemaSection.replace(/"default":\s*null\s*,?/g, '"default": "Sample text",');
+          schemaSection = schemaSection.replace(/"default":\s*undefined\s*,?/g, '"default": "Sample text",');
+
+          schemaSection = schemaSection.replace(/("type":\s*"image_picker"[^}]*?),\s*"default":\s*"[^"]*"/g, '$1');
+
+          schemaSection = schemaSection.replace(/{\s*"type":\s*"column_links"[^}]*},?/g, '');
+          schemaSection = schemaSection.replace(/{\s*"type":\s*"links"[^}]*},?/g, '');
+          schemaSection = schemaSection.replace(/{\s*"type":\s*"array"[^}]*},?/g, '');
+          schemaSection = schemaSection.replace(/{\s*"type":\s*"list"[^}]*},?/g, '');
+          schemaSection = schemaSection.replace(/{\s*"type":\s*"items"[^}]*},?/g, '');
+
+          schemaSection = schemaSection.replace(/{\s*(?![^}]*"type"\s*:)(?![^}]*"id"\s*:)[^}]*},?/g, '');
+
+          schemaSection = schemaSection.replace(/,(\s*,)/g, '$1');
+          schemaSection = schemaSection.replace(/,(\s*[}\]])/g, '$1');
+
+          if (!schemaSection.includes('"presets": [')) {
+            schemaSection = schemaSection.replace(
+              /("blocks":\s*\[[\s\S]*?\]\s*)(}|\s*,\s*"presets")/,
+              '$1,\n  "presets": [\n    {\n      "name": "Default",\n      "category": "Custom"\n    }\n  ]$2'
+            );
+          }
+
+          cleanedLiquidContent = cleanedLiquidContent.replace(
+            /{% schema %}[\s\S]*?{% endschema %}/,
+            `{% schema %}\n${schemaSection}\n{% endschema %}`
+          );
+        }
+      }
+    }
 
     if (!cleanedLiquidContent.includes('{% endschema %}')) {
       console.warn('Liquid conversion appears incomplete - missing endschema tag');
@@ -340,9 +1296,7 @@ MANDATORY Requirements:
           console.warn(`Conversion ratio seems low: ${conversionRatio.toFixed(2)}`);
         }
       }
-    }
-
-    if (cleanedLiquidContent.includes('{% schema %}')) {
+    } if (cleanedLiquidContent.includes('{% schema %}')) {
       cleanedLiquidContent = cleanedLiquidContent.replace(
         /"label":\s*"([^"]*)"([^,\n}])/g,
         '"label": "$1",$2'
@@ -356,6 +1310,22 @@ MANDATORY Requirements:
       cleanedLiquidContent = cleanedLiquidContent.replace(
         /"default":\s*"([^"]*)"([^,\n}])/g,
         '"default": "$1",$2'
+      );
+
+      if (cleanedLiquidContent.includes('"presets"') && !cleanedLiquidContent.includes('"presets": [')) {
+        cleanedLiquidContent = cleanedLiquidContent.replace(
+          /"presets":\s*{/g,
+          '"presets": [{'
+        );
+        cleanedLiquidContent = cleanedLiquidContent.replace(
+          /}\s*}\s*{% endschema %}/g,
+          '}]}\n{% endschema %}'
+        );
+      }
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /,(\s*[}\]])/g,
+        '$1'
       );
     }
 
@@ -400,6 +1370,7 @@ COMPLETE CONTENT ANALYSIS - MANDATORY STEP:
    - All labels: label_1, label_2, label_3, etc.
    - All form elements: placeholder_text, input_label, etc.   - All contact info: phone, email, address, company_name, etc.
    - All statistics/numbers: stat_1, stat_2, price_text, etc.
+   - All star ratings: product_rating, product_reviews, rating_text, etc.
    - All testimonials: testimonial_text, author_name, etc.
    - All footer bottom content: copyright_text, company_name, privacy_text, terms_text, etc.
 
@@ -457,12 +1428,30 @@ JSON STRUCTURE:
             "link_url": "/",
             "link_text": "Home"
           }
-        },
+        },        
         "header-link-2": {
           "type": "header_link",
           "settings": {
             "link_url": "/collections/all",
             "link_text": "Shop"
+          }
+        },
+        "header-icon-search": {
+          "type": "header_icon",
+          "settings": {
+            "icon_type": "search",
+            "icon_link": "/search",
+            "icon_text": "Search",
+            "icon_class": "fas fa-search"
+          }
+        },
+        "header-icon-cart": {
+          "type": "header_icon",
+          "settings": {
+            "icon_type": "cart",
+            "icon_link": "/cart",
+            "icon_text": "Cart",
+            "icon_class": "fas fa-shopping-cart"
           }
         },
         "product-block-1": {
@@ -501,14 +1490,49 @@ JSON STRUCTURE:
             "title": "Voice Activation",
             "description": "Speak to command the assistant."
           }
-        },
+        },        
         "guide-2": {
           "type": "feature",
           "settings": {
             "title": "Voice Activation",
             "description": "Speak to command the assistant."
           }
-        },          
+        },
+        "blog-card-1": {
+          "type": "blog_card",
+          "settings": {
+            "title": "Hair Care Tips",
+            "description": "Expert advice for healthy hair",
+            "link_url": "/blogs/hair-care",
+            "link_text": "Read More"
+          }
+        },
+        "newsletter-signup": {
+          "type": "newsletter",
+          "settings": {
+            "title": "Subscribe to Newsletter",
+            "description": "Get updates and exclusive offers",
+            "placeholder_text": "Enter your email",
+            "button_text": "Subscribe",
+            "form_action": "/newsletter-signup"
+          }
+        },
+        "social-link-facebook": {
+          "type": "social_link",
+          "settings": {
+            "platform": "Facebook",
+            "social_url": "https://facebook.com/brand",
+            "icon_class": "fab fa-facebook-f"
+          }
+        },
+        "social-link-instagram": {
+          "type": "social_link",
+          "settings": {
+            "platform": "Instagram", 
+            "social_url": "https://instagram.com/brand",
+            "icon_class": "fab fa-instagram"
+          }
+        },
         "footer-column-shop": {
           "type": "footer_column",
           "settings": {
@@ -551,18 +1575,24 @@ JSON STRUCTURE:
             "link_4_text": ""
           }
         }
-      },
+      },      
       "block_order": [
         "header-link-1",
         "header-link-2",
+        "header-icon-search",
+        "header-icon-cart",
         "product-block-1",
         "testimonial-1",
         "testimonial-2",
         "guide-1",
+        "blog-card-1",
+        "newsletter-signup",
+        "social-link-facebook",
+        "social-link-instagram",
         "footer-column-shop",
         "footer-column-help",
         "footer-column-about"
-      ],      
+      ],
       "settings": {
         "heading": "Welcome to Nova",
         "heading_size": "h1",
@@ -578,10 +1608,13 @@ JSON STRUCTURE:
         "copyright_text": "All rights reserved.",
         "privacy_url": "/pages/privacy-policy",
         "privacy_text": "Privacy Policy",
-        "terms_url": "/pages/terms-of-service",
+        "terms_url": "/pages/terms-of-service",        
         "terms_text": "Terms of Service",
         "footer_email": "contact@nova.com",
-        "footer_phone": "+1 (555) 123-4567"
+        "footer_phone": "+1 (555) 123-4567",
+        "mobile_menu_enabled": true,
+        "hamburger_style": "lines",
+        "menu_position": "right"
       }
     }
   },
@@ -732,11 +1765,17 @@ Return ONLY valid JSON:`;
 
           if (jsonData.sections.main.blocks) {
             Object.keys(jsonData.sections.main.blocks).forEach(blockKey => {
-              const block = jsonData.sections.main.blocks[blockKey];
-
-              if (!validBlockTypes.has(block.type)) {
+              const block = jsonData.sections.main.blocks[blockKey]; if (!validBlockTypes.has(block.type)) {
                 if (blockKey.includes('header-link') && validBlockTypes.has('header_link')) {
                   block.type = 'header_link';
+                } else if (blockKey.includes('header-icon') && validBlockTypes.has('header_icon')) {
+                  block.type = 'header_icon';
+                } else if (blockKey.includes('social-link') && validBlockTypes.has('social_link')) {
+                  block.type = 'social_link';
+                } else if (blockKey.includes('blog-card') && validBlockTypes.has('blog_card')) {
+                  block.type = 'blog_card';
+                } else if (blockKey.includes('newsletter') && validBlockTypes.has('newsletter')) {
+                  block.type = 'newsletter';
                 } else if (blockKey.includes('product') && validBlockTypes.has('product')) {
                   block.type = 'product';
                 } else if (blockKey.includes('testimonial') && validBlockTypes.has('testimonial')) {
@@ -806,6 +1845,141 @@ Return ONLY valid JSON:`;
           '"$1": ""'
         );
       }
+    }
+    if (cleanedLiquidContent.includes('column_links') || cleanedLiquidContent.includes('"type": "links"') || cleanedLiquidContent.includes('"default": ""')) {
+      console.warn('Detected remaining problematic settings, applying final cleanup...');
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /{\s*"type":\s*"column_links"[^}]*},?\s*/g,
+        ''
+      );
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /{\s*"id":\s*"column_links"[^}]*},?\s*/g,
+        ''
+      );
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /{\s*"type":\s*"links"[^}]*},?\s*/g,
+        ''
+      );
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /"default":\s*""\s*,?/g,
+        '"default": "Sample text",'
+      );
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /"default":\s*null\s*,?/g,
+        '"default": "Sample text",'
+      );
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /"default":\s*undefined\s*,?/g,
+        '"default": "Sample text",'
+      );
+      cleanedLiquidContent = cleanedLiquidContent.replace(/,(\s*,)/g, '$1');
+      cleanedLiquidContent = cleanedLiquidContent.replace(/,(\s*[}\]])/g, '$1');
+      cleanedLiquidContent = cleanedLiquidContent.replace(/\[\s*,/g, '[');
+    }
+
+    if (htmlContent.length > 5000) {
+      console.log('🔧 Running client feedback compliance checks...');
+      if (correctedJsonTemplate) {
+        try {
+          const jsonData = JSON.parse(correctedJsonTemplate);
+          let hasBlankImages = false;
+          let needsHeaderIcons = false;
+
+          if (jsonData.sections?.main?.blocks) {
+            Object.keys(jsonData.sections.main.blocks).forEach(blockKey => {
+              const block = jsonData.sections.main.blocks[blockKey];
+              if (block.settings) {
+                Object.keys(block.settings).forEach(settingKey => {
+                  if (settingKey.includes('_image') && block.settings[settingKey] === '') {
+                    console.warn(`⚠️ Found blank image in ${blockKey}.${settingKey}`);
+                    hasBlankImages = true;
+                  }
+                });
+              }
+            });
+
+            const hasHeaderIconBlocks = Object.values(jsonData.sections.main.blocks).some(block => block.type === 'header_icon');
+            if ((htmlContent.includes('fa-search') || htmlContent.includes('fa-shopping-cart')) && !hasHeaderIconBlocks) {
+              console.warn('⚠️ Adding missing header_icon blocks to JSON template...');
+              needsHeaderIcons = true;
+
+              if (htmlContent.includes('fa-search')) {
+                jsonData.sections.main.blocks['header-icon-search'] = {
+                  "type": "header_icon",
+                  "settings": {
+                    "icon_type": "search",
+                    "icon_link": "/search",
+                    "icon_class": "fas fa-search"
+                  }
+                };
+              }
+
+              if (htmlContent.includes('fa-shopping-cart')) {
+                jsonData.sections.main.blocks['header-icon-cart'] = {
+                  "type": "header_icon",
+                  "settings": {
+                    "icon_type": "cart",
+                    "icon_link": "/cart",
+                    "icon_class": "fas fa-shopping-cart"
+                  }
+                };
+              }
+            }
+          }
+
+          if (hasBlankImages || needsHeaderIcons) {
+            correctedJsonTemplate = JSON.stringify(jsonData, null, 2);
+            if (needsHeaderIcons) {
+              console.log('✅ Added missing header_icon blocks to JSON template');
+            }
+          }
+
+          if (hasBlankImages) {
+            console.warn('⚠️ Blank images detected in JSON template');
+          }
+        } catch (e) {
+          console.warn('⚠️ Could not parse JSON for image check:', e.message);
+        }
+      }
+
+      if (htmlContent.includes('fa-search') || htmlContent.includes('fa-shopping-cart')) {
+        if (!cleanedLiquidContent.includes('header_icon') && !correctedJsonTemplate.includes('header_icon')) {
+          console.warn('⚠️ Header search/cart icons found but not converted to header_icon blocks');
+        }
+      }
+
+      if (htmlContent.includes('hamburger') || htmlContent.includes('mobile-menu')) {
+        if (!cleanedLiquidContent.includes('hamburger-toggle')) {
+          console.warn('⚠️ Mobile menu found but hamburger toggle missing from liquid');
+        }
+      }
+
+      if (htmlContent.includes('Hair Care Wisdom') || htmlContent.includes('Education')) {
+        if (!correctedJsonTemplate.includes('blog_card') && !correctedJsonTemplate.includes('guide') && !correctedJsonTemplate.includes('education')) {
+          console.warn('⚠️ Blog/Education content found but not converted to proper blocks');
+        }
+      }
+
+      if (htmlContent.includes('facebook') || htmlContent.includes('instagram') || htmlContent.includes('social')) {
+        if (!correctedJsonTemplate.includes('social_link')) {
+          console.warn('⚠️ Social media icons found but not converted to social_link blocks');
+        }
+      }
+
+      const customClasses = ['luxehair-velvet', 'maroon-shadow'];
+      customClasses.forEach(className => {
+        if (htmlContent.includes(className) && !cleanedLiquidContent.includes(className)) {
+          console.warn(`⚠️ Custom CSS class ${className} missing from liquid output`);
+        }
+      });
+
+      if (htmlContent.includes('<script>') && !cleanedLiquidContent.includes('<script>')) {
+        console.warn('⚠️ JavaScript found in HTML but missing from liquid output');
+      }
+
+      console.log('✅ Client feedback compliance check completed');
     }
 
     return NextResponse.json({
