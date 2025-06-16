@@ -20,7 +20,7 @@ jobs:
         run: |
           sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} << 'EOF'
             echo "🚀 Connected to VPS Successfully!"
-            cd /home/feeleclt/admin.feel.travel
+            cd /html-to-liquid/
             chmod +x ./.scripts/deploy.sh
             echo "🚀 Running deployment script..."
             ./.scripts/deploy.sh || { echo "❌ Deployment Failed!"; exit 1; }
