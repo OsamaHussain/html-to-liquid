@@ -1,0 +1,28 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - production  # Change this if needed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install SSH Client
+        run: sudo apt-get install -y openssh-client
+
+      - name: Deploy to Server (Using Password)
+        run: |
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} << 'EOF'
+            echo "🚀 Connected to VPS Successfully!"
+            cd /home/feeleclt/admin.feel.travel
+            chmod +x ./.scripts/deploy.sh
+            echo "🚀 Running deployment script..."
+            ./.scripts/deploy.sh || { echo "❌ Deployment Failed!"; exit 1; }
+            echo "✅ Deployment Complete!"
+          EOF
