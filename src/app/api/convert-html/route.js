@@ -42,20 +42,70 @@ End with: COMPLETE <script> section exactly as in HTML</body></html>
 
 🚨 MANDATORY: MAKE ALL HARDCODED CONTENT EDITABLE - NO HARDCODED TEXT SHOULD REMAIN! 🚨
 
-🚨 CRITICAL CLIENT FEEDBACK FIXES REQUIRED 🚨:
-1. IMAGE URLs: EXTRACT actual URLs from HTML - NEVER leave blank! Add extracted URLs as settings defaults
-2. HEADER ICONS: Convert fa-search and fa-shopping-cart to header_icon blocks with icon_class settings  
-3. MOBILE MENU: Include hamburger_toggle and mobile_menu_enabled settings in schema
-4. MISSING SECTIONS: ALL sections must be included - CTA, education, newsletter, blog cards
-5. SOCIAL ICONS: Convert footer social icons to social_link blocks with icon_class and social_url
-6. IMAGE DISPLAY: Use robust syntax that guarantees image display: 
-   - Primary: {% if settings.image != blank %}{{ settings.image }}{% else %}{{ settings.image_url }}{% endif %}
-   - For external images: ensure full https:// URLs are preserved
-   - Test approach: create both image_picker AND direct URL text field for each image
-6. CSS PRESERVATION: Include COMPLETE <style> section from HTML - ALL custom classes preserved
-7. JAVASCRIPT: Include COMPLETE <script> section from HTML - ALL interactions preserved
-8. CDN LINKS: Include ALL <link> tags from HTML head - fonts, tailwind, fontawesome
-9. IMAGE EXTRACTION: Extract ALL img src and background-image URLs from HTML and use as default values
+🚨 ULTRA-CRITICAL CLIENT FEEDBACK FIXES - ZERO TOLERANCE FOR ERRORS 🚨:
+
+🔥 **BULLETPROOF IMAGE HANDLING** 🔥:
+1. MANDATORY TRIPLE-FALLBACK IMAGE SYSTEM:
+   - Extract EVERY img src and background-image URL from HTML
+   - Create image_picker + image_url + default_placeholder for EACH image
+   - NEVER leave any image field empty - always provide working URL as default
+   - Liquid syntax: {% assign img_src = block.settings.image | default: block.settings.image_url | default: 'https://via.placeholder.com/800x600/cccccc/666666?text=DefaultImage' %}{% if img_src contains 'http' %}{{ img_src }}{% else %}{{ img_src | img_url: 'master' }}{% endif %}
+
+🔥 **FOOLPROOF HEADER ICONS IMPLEMENTATION** 🔥:
+2. CONVERT ALL HEADER ICONS TO DEDICATED BLOCKS:
+   - Find <i class="fas fa-search"> → Create header_search_icon block
+   - Find <i class="fas fa-shopping-cart"> → Create header_cart_icon block  
+   - Schema: {"type": "header_icon", "name": "Header Icon", "settings": [{"type": "text", "id": "icon_class", "default": "extracted-icon-class"}, {"type": "url", "id": "icon_link", "default": "#"}, {"type": "text", "id": "icon_text", "default": ""}]}
+   - Liquid: {% for block in section.blocks %}{% if block.type == 'header_icon' %}<a href="{{ block.settings.icon_link }}" class="icon-link"><i class="{{ block.settings.icon_class }}"></i>{{ block.settings.icon_text }}</a>{% endif %}{% endfor %}
+
+🔥 **BULLETPROOF MOBILE MENU SYSTEM** 🔥:
+3. MANDATORY MOBILE MENU CONTROLS:
+   - Schema settings: {"type": "checkbox", "id": "enable_mobile_menu", "label": "Enable Mobile Menu", "default": true}
+   - {"type": "text", "id": "hamburger_icon", "label": "Hamburger Icon Class", "default": "fas fa-bars"}
+   - {"type": "text", "id": "close_icon", "label": "Close Icon Class", "default": "fas fa-times"}
+   - Liquid: <button class="hamburger-toggle" {% if section.settings.enable_mobile_menu %}id="hamburger-toggle"{% endif %}><i class="{{ section.settings.hamburger_icon }}"></i></button>
+
+🔥 **GUARANTEED SECTION COMPLETION** 🔥:
+4. MANDATORY SECTION VERIFICATION CHECKLIST:
+   - Hero Section ✓ - Navigation ✓ - Products/Services ✓ - About/Stylist ✓
+   - Testimonials ✓ - Sustainability/Features ✓ - Transformations/Gallery ✓
+   - CTA/Shop ✓ - Education/Blog ✓ - Newsletter ✓ - Footer ✓
+   - EACH section must have corresponding schema settings
+   - EACH section must have proper block structure where applicable
+
+🔥 **IRONCLAD SOCIAL ICONS SYSTEM** 🔥:
+5. CONVERT ALL SOCIAL ICONS TO BLOCKS:
+   - Find <i class="fab fa-facebook-f"> → Create social_facebook block
+   - Find <i class="fab fa-instagram"> → Create social_instagram block
+   - Schema: {"type": "social_link", "name": "Social Link", "settings": [{"type": "url", "id": "social_url", "default": "#"}, {"type": "text", "id": "social_icon", "default": "extracted-icon-class"}, {"type": "text", "id": "social_name", "default": "Social Platform"}]}
+
+🔥 **COMPLETE CODE PRESERVATION GUARANTEE** 🔥:
+6. MANDATORY FULL HTML STRUCTURE:
+   - Start: <!DOCTYPE html><html lang="en"><head>
+   - Include: ALL <meta> tags, <title>, <link> tags for CDN
+   - Include: COMPLETE <style> section - ZERO modifications
+   - Include: COMPLETE <script> section - ZERO modifications  
+   - End: </body></html>
+
+🔥 **ERROR-PROOF EXTRACTION SYSTEM** 🔥:
+7. EXTRACTION VERIFICATION PROTOCOL:
+   - Scan HTML for ALL img src="..." and extract URLs
+   - Scan HTML for ALL background-image: url('...') and extract URLs
+   - Scan HTML for ALL <i class="fa..." and extract icon classes
+   - Scan HTML for ALL href="..." and extract link URLs
+   - Scan HTML for ALL text content and make editable via settings
+   - VERIFY: Every extracted element has corresponding schema setting
+
+🔥 **CLIENT COMPLAINT PREVENTION SYSTEM** 🔥:
+8. MANDATORY PRE-DELIVERY CHECKLIST:
+   - ✓ ALL images display properly (no blanks)
+   - ✓ ALL icons render correctly  
+   - ✓ Mobile menu functions perfectly
+   - ✓ ALL sections present and functional
+   - ✓ ALL JavaScript interactions work
+   - ✓ ALL CSS styling preserved
+   - ✓ ALL content editable via settings
+   - ✓ Perfect visual match to original HTML
 
 🚨 CRITICAL IMAGE URL EXTRACTION & EDITABILITY REQUIREMENT 🚨:
 YOU MUST EXTRACT ALL IMAGE URLS AND MAKE THEM EDITABLE WITH ROBUST FALLBACKS:
@@ -77,42 +127,237 @@ YOU MUST EXTRACT ALL IMAGE URLS AND MAKE THEM EDITABLE WITH ROBUST FALLBACKS:
   {"type": "text", "id": "product_image_url", "label": "Product Image URL (Fallback)", "default": "https://extracted-url-here.jpg"}
 - This allows: Upload new images OR use existing URLs OR change URLs via text field OR show placeholder if nothing set
 
-🚨 SPECIFIC CLIENT REQUIREMENTS - MUST INCLUDE 🚨:
-1. HEADER ICONS: Convert fa-search and fa-shopping-cart to schema settings:
-   - Add header_search_icon_url and header_cart_icon_url settings
-   - Create header_icon blocks with icon_class and icon_link settings
-2. MOBILE MENU: Add mobile menu control settings:
-   - mobile_menu_enabled (checkbox, default: true)
-   - hamburger_icon_class (text, default: "fas fa-bars")
-3. ALL SECTIONS: Ensure these sections are fully converted:
-   - Navigation with header icons
-   - Hero section with background image
-   - Products section with all product cards
-   - Stylist/About section with image
-   - Testimonials section
-   - Sustainability slideshow with all slides
-   - Transformations section with before/after images
-   - Shop/CTA section with image
-   - Education/Blog section with guide cards
-   - Newsletter section with form
-   - Footer with social icons and columns
-4. SOCIAL ICONS: Convert footer social icons (Facebook, Instagram, Twitter, Pinterest) to social_link blocks
-5. COMPLETE HTML STRUCTURE: Include DOCTYPE, html, head, meta tags, CDN links, complete CSS, complete JavaScript
+🚨 MANDATORY QUALITY ASSURANCE PROTOCOL 🚨:
 
-🚨 COMPLETE SCHEMA REQUIREMENTS 🚨:
-Add these mandatory settings to schema:
+BEFORE RETURNING ANY CONVERSION, RUN THIS CHECKLIST:
+
+📋 **IMAGE VERIFICATION CHECKLIST**:
+- [ ] Every img src URL extracted and added as default in schema
+- [ ] Every background-image URL extracted and added as default  
+- [ ] NO image field left as empty string ""
+- [ ] All image URLs start with https:// (full URLs)
+- [ ] Fallback placeholder provided for every image
+- [ ] Test: {% if image != blank %}{{ image | img_url: 'master' }}{% elsif image_url != blank %}{{ image_url }}{% else %}placeholder{% endif %}
+
+📋 **ICON VERIFICATION CHECKLIST**:
+- [ ] fa-search converted to searchable block or setting
+- [ ] fa-shopping-cart converted to searchable block or setting
+- [ ] ALL social media icons (fa-facebook-f, fa-instagram, fa-twitter, fa-pinterest-p) converted to blocks
+- [ ] Mobile hamburger icon (fa-bars, fa-times) handled with settings
+- [ ] Icon classes preserved exactly as in HTML
+
+📋 **MOBILE MENU CHECKLIST**:
+- [ ] Hamburger button present with proper ID
+- [ ] Mobile menu div present with proper ID  
+- [ ] JavaScript toggle functionality included
+- [ ] CSS classes for mobile responsiveness preserved
+- [ ] Schema includes mobile menu control settings
+
+📋 **SECTION COMPLETENESS CHECKLIST**:
+- [ ] Navigation section ✓
+- [ ] Hero section ✓  
+- [ ] Products/Services section ✓
+- [ ] About/Team section ✓
+- [ ] Testimonials section ✓
+- [ ] Features/Benefits section ✓
+- [ ] Gallery/Portfolio section ✓
+- [ ] CTA/Contact section ✓
+- [ ] Blog/News section ✓
+- [ ] Newsletter section ✓
+- [ ] Footer section ✓
+
+📋 **CODE PRESERVATION CHECKLIST**:
+- [ ] DOCTYPE html declaration included
+- [ ] Complete <head> section with all meta tags
+- [ ] ALL CDN links preserved (Tailwind, FontAwesome, Google Fonts)
+- [ ] COMPLETE <style> section included unchanged
+- [ ] COMPLETE <script> section included unchanged
+- [ ] All CSS classes and IDs preserved
+- [ ] All JavaScript functions preserved
+
+📋 **FUNCTIONALITY CHECKLIST**:
+- [ ] Slideshow/carousel functionality preserved
+- [ ] Form submission handling preserved  
+- [ ] Mobile responsive behavior preserved
+- [ ] Hover effects and animations preserved
+- [ ] Click handlers and event listeners preserved
+
+🚨 IF ANY CHECKBOX IS UNCHECKED, DO NOT RETURN THE CONVERSION! 🚨
+🚨 FIX ALL ISSUES FIRST, THEN VERIFY AGAIN! 🚨
+
+� **ULTRA-STRONG IMPLEMENTATION SOLUTIONS** 🚀:
+
+🔥 **SOLUTION 1: BULLETPROOF IMAGE SYSTEM**
+For EVERY image, implement this EXACT pattern:
+
+SCHEMA:
 {
-  "type": "text",
-  "id": "page_title", 
-  "label": "Page Title",
-  "default": "Extracted title from HTML"
+  "type": "image_picker",
+  "id": "hero_image", 
+  "label": "Hero Image"
 },
 {
-  "type": "textarea",
-  "id": "meta_description",
-  "label": "Meta Description", 
-  "default": "Extracted meta description from HTML"
+  "type": "text",
+  "id": "hero_image_url",
+  "label": "Hero Image URL (Fallback)", 
+  "default": "https://extracted-from-html.jpg"
 }
+
+LIQUID:
+<img src="{% assign img = section.settings.hero_image %}{% if img != blank %}{{ img | img_url: 'master' }}{% elsif section.settings.hero_image_url != blank %}{{ section.settings.hero_image_url }}{% else %}https://via.placeholder.com/800x600/cccccc/666666?text=DefaultImage{% endif %}" alt="{{ section.settings.hero_alt | default: 'Default Alt' }}">
+
+BACKGROUND IMAGES:
+style="background-image: url('{% assign bg = section.settings.hero_bg %}{% if bg != blank %}{{ bg | img_url: 'master' }}{% elsif section.settings.hero_bg_url != blank %}{{ section.settings.hero_bg_url }}{% else %}https://via.placeholder.com/1920x1080/cccccc/666666?text=Background{% endif %}')"
+
+🔥 **SOLUTION 2: GUARANTEED HEADER ICONS**
+Extract and implement EVERY header icon:
+
+BLOCKS SCHEMA:
+{
+  "type": "header_icon",
+  "name": "Header Icon", 
+  "settings": [
+    {"type": "text", "id": "icon_class", "label": "Icon Class", "default": "fas fa-search"},
+    {"type": "url", "id": "icon_link", "label": "Icon Link", "default": "#"},
+    {"type": "text", "id": "wrapper_class", "label": "Wrapper Classes", "default": "icon-link"}
+  ]
+}
+
+LIQUID IMPLEMENTATION:
+<div class="navbar-right">
+  {% for block in section.blocks %}
+    {% if block.type == 'header_icon' %}
+      <a href="{{ block.settings.icon_link }}" class="{{ block.settings.wrapper_class }}">
+        <i class="{{ block.settings.icon_class }}"></i>
+      </a>
+    {% endif %}
+  {% endfor %}
+</div>
+
+JSON BLOCKS (AUTO-GENERATED):
+"header-search": {
+  "type": "header_icon",
+  "settings": {
+    "icon_class": "fas fa-search",
+    "icon_link": "#",
+    "wrapper_class": "icon-link"
+  }
+},
+"header-cart": {
+  "type": "header_icon", 
+  "settings": {
+    "icon_class": "fas fa-shopping-cart",
+    "icon_link": "#",
+    "wrapper_class": "icon-link"
+  }
+}
+
+🔥 **SOLUTION 3: FOOLPROOF MOBILE MENU**
+Complete mobile menu implementation:
+
+SCHEMA SETTINGS:
+{
+  "type": "checkbox",
+  "id": "enable_mobile_menu",
+  "label": "Enable Mobile Menu",
+  "default": true
+},
+{
+  "type": "text", 
+  "id": "hamburger_icon",
+  "label": "Hamburger Icon",
+  "default": "fas fa-bars"
+},
+{
+  "type": "text",
+  "id": "close_icon", 
+  "label": "Close Icon",
+  "default": "fas fa-times"
+}
+
+LIQUID TEMPLATE:
+{% if section.settings.enable_mobile_menu %}
+<button class="hamburger-toggle" id="hamburger-toggle" aria-label="Toggle navigation">
+  <i class="{{ section.settings.hamburger_icon }}"></i>
+</button>
+<div class="mobile-menu" id="mobile-menu">
+  {% for block in section.blocks %}
+    {% if block.type == 'nav_link' %}
+      <a href="{{ block.settings.link_url }}">{{ block.settings.link_text }}</a>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+
+🔥 **SOLUTION 4: COMPREHENSIVE SECTION MAPPING**
+Guarantee ALL sections are converted:
+
+SECTION VERIFICATION MAP:
+- Navigation → nav_link blocks + header_icon blocks
+- Hero → hero settings + hero_image + hero_bg
+- Products → product blocks (image, name, description, price, rating)
+- About/Stylist → stylist settings + stylist_image  
+- Testimonials → testimonial blocks (text, author, role)
+- Features/Sustainability → feature/sustainability_slide blocks
+- Gallery/Transformations → gallery/transformation_slide blocks  
+- CTA/Shop → shop settings + shop_image
+- Blog/Education → blog_card/guide blocks
+- Newsletter → newsletter settings + form
+- Footer → footer settings + social_link blocks + footer_column blocks
+
+🔥 **SOLUTION 5: IRONCLAD SOCIAL ICONS**
+Convert ALL social media references:
+
+FIND IN HTML: <i class="fab fa-facebook-f">
+CREATE BLOCK:
+"social-facebook": {
+  "type": "social_link",
+  "settings": {
+    "social_url": "#", 
+    "social_icon": "fab fa-facebook-f",
+    "social_name": "Facebook"
+  }
+}
+
+LIQUID LOOP:
+{% for block in section.blocks %}
+  {% if block.type == 'social_link' %}
+    <a href="{{ block.settings.social_url }}" class="social-link" title="{{ block.settings.social_name }}">
+      <i class="{{ block.settings.social_icon }}"></i>
+    </a>
+  {% endif %}
+{% endfor %}
+
+🔥 **SOLUTION 6: COMPLETE CODE PRESERVATION**
+Mandatory full structure:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ section.settings.page_title | default: 'Extracted Title' }}</title>
+  <meta name="description" content="{{ section.settings.meta_description | default: 'Extracted Description' }}">
+  
+  <!-- ALL CDN LINKS FROM ORIGINAL HTML -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Didot:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap">
+  
+  <!-- COMPLETE CSS SECTION FROM HTML -->
+  <style>
+    /* ALL ORIGINAL CSS EXACTLY AS IS */
+  </style>
+</head>
+<body>
+  <!-- COMPLETE LIQUID TEMPLATE -->
+  
+  <!-- COMPLETE JAVASCRIPT FROM HTML -->
+  <script>
+    /* ALL ORIGINAL JAVASCRIPT EXACTLY AS IS */
+  </script>
+</body>
+</html>
 
 🚨 SPECIFIC FIXES REQUIRED 🚨:
 - HEADER ICONS: Any fa-search and fa-shopping-cart icons MUST be converted to header_icon blocks
