@@ -23,7 +23,7 @@ export async function POST(request) {
       );
     }
 
-    const isLargeFile = htmlContent.length > 8000 || htmlContent.split('\n').length > 400;    const prompt = `Convert the following HTML code to a professional Shopify Liquid template file with COMPLETE DOCUMENT STRUCTURE. ${isLargeFile ? 'CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''} Follow these STRICT requirements:
+    const isLargeFile = htmlContent.length > 8000 || htmlContent.split('\n').length > 400; const prompt = `Convert the following HTML code to a professional Shopify Liquid template file with COMPLETE DOCUMENT STRUCTURE. ${isLargeFile ? 'CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''} Follow these STRICT requirements:
 
 🚨 MANDATORY COMPLETE DOCUMENT STRUCTURE 🚨:
 Start with: <!DOCTYPE html><html lang="en"><head>
@@ -58,21 +58,24 @@ End with: COMPLETE <script> section exactly as in HTML</body></html>
 9. IMAGE EXTRACTION: Extract ALL img src and background-image URLs from HTML and use as default values
 
 🚨 CRITICAL IMAGE URL EXTRACTION & EDITABILITY REQUIREMENT 🚨:
-YOU MUST EXTRACT ALL IMAGE URLS AND MAKE THEM EDITABLE WITH FALLBACKS:
+YOU MUST EXTRACT ALL IMAGE URLS AND MAKE THEM EDITABLE WITH ROBUST FALLBACKS:
 - Find all img src="URL" attributes and extract actual URLs from HTML
 - Find all background-image: url('URL') in style attributes and extract URLs
 - For image_picker fields: Use image_picker type but create parallel text settings for URL fallbacks
 - For each image, create TWO settings:
   1. image_picker type: "product_image" (for new uploads)
   2. text type: "product_image_url" with default: "extracted-url-here.jpg" (for fallback)
-- Liquid template format: {% if section.settings.product_image != blank %}{{ section.settings.product_image }}{% else %}{{ section.settings.product_image_url }}{% endif %}
-- Background image format: style="background-image: url('{% if section.settings.bg_image != blank %}{{ section.settings.bg_image }}{% else %}{{ section.settings.bg_image_url }}{% endif %}')"
-- CRITICAL: Do NOT use img_url filter for external URLs - it will break them!
-- Only use img_url for Shopify-uploaded images, use direct URL for external links
+- CRITICAL LIQUID SYNTAX: Use robust triple-fallback approach:
+  {% if section.settings.product_image != blank %}{{ section.settings.product_image | img_url: 'master' }}{% elsif section.settings.product_image_url != blank %}{{ section.settings.product_image_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}
+- Background image format: 
+  style="background-image: url('{% if section.settings.bg_image != blank %}{{ section.settings.bg_image | img_url: 'master' }}{% elsif section.settings.bg_image_url != blank %}{{ section.settings.bg_image_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Background{% endif %}')"
+- CRITICAL: Only use img_url filter for Shopify-uploaded images, use direct URL for external links
 - IMPORTANT: For external images, always provide the full URL including https://
-- Schema structure for each image:  {"type": "image_picker", "id": "product_image", "label": "Product Image"},
+- PLACEHOLDER FALLBACK: Always provide placeholder image as final fallback to ensure images never break
+- Schema structure for each image:  
+  {"type": "image_picker", "id": "product_image", "label": "Product Image"},
   {"type": "text", "id": "product_image_url", "label": "Product Image URL (Fallback)", "default": "https://extracted-url-here.jpg"}
-- This allows: Upload new images OR use existing URLs OR change URLs via text field
+- This allows: Upload new images OR use existing URLs OR change URLs via text field OR show placeholder if nothing set
 
 🚨 SPECIFIC CLIENT REQUIREMENTS - MUST INCLUDE 🚨:
 1. HEADER ICONS: Convert fa-search and fa-shopping-cart to schema settings:
@@ -890,7 +893,7 @@ Return the complete fixed Shopify section with proper footer link rendering and 
         liquidContent = liquidContent.replace(unicodeStarPattern,
           `{% assign full_stars = block.settings.rating | floor %}{% for i in (1..full_stars) %}★{% endfor %}`
         );
-      }      
+      }
       console.log('✅ Star rating post-processing completed');
     }
 
@@ -898,7 +901,7 @@ Return the complete fixed Shopify section with proper footer link rendering and 
     const imageUrls = [];
     const imageRegex = /src=["']([^"']+)["']/g;
     const backgroundImageRegex = /background-image:\s*url\(['"]([^'"]+)['"]\)/g;
-    
+
     let match;
     while ((match = imageRegex.exec(htmlContent)) !== null) {
       const url = match[1];
@@ -906,14 +909,14 @@ Return the complete fixed Shopify section with proper footer link rendering and 
         imageUrls.push(url);
       }
     }
-    
+
     while ((match = backgroundImageRegex.exec(htmlContent)) !== null) {
       const url = match[1];
       if (url && !url.startsWith('data:') && !imageUrls.includes(url)) {
         imageUrls.push(url);
       }
     }
-    
+
     console.log('📸 Found image URLs:', imageUrls.length);
 
     if (htmlContent.includes('fa-search') || htmlContent.includes('fa-shopping-cart')) {
@@ -931,16 +934,16 @@ Return the complete fixed Shopify section with proper footer link rendering and 
         console.log('🔄 Converting hardcoded cart icon to header_icon block...');
         liquidContent = liquidContent.replace(
           /<a[^>]*><i[^>]*fas fa-shopping-cart[^>]*><\/i><\/a>/g,
-          '{% for block in section.blocks %}{% if block.type == "header_icon" and block.settings.icon_type == "cart" %}<a href="{{ block.settings.icon_link }}"><i class="{{ block.settings.icon_class }}"></i></a>{% endif %}{% endfor %}'        );
+          '{% for block in section.blocks %}{% if block.type == "header_icon" and block.settings.icon_type == "cart" %}<a href="{{ block.settings.icon_link }}"><i class="{{ block.settings.icon_class }}"></i></a>{% endif %}{% endfor %}');
       }
-      
+
       console.log('✅ Header icon post-processing completed');
     }
 
     if (imageUrls.length > 0) {
       console.log('🔧 Processing extracted image URLs...');
-      
-      
+
+
       console.log('✅ Image URL processing completed');
     }
 
@@ -1223,6 +1226,12 @@ Return COMPLETE HTML structure converted to Liquid - NOT just schema!`
                     });
                     if (setting.type === 'image_picker') {
                       delete setting.default;
+                    } else if (setting.type === 'text' && setting.id && setting.id.includes('image_url') && imageUrls.length > 0) {
+                      const imageUrlIndex = Math.floor(Math.random() * imageUrls.length);
+                      if (!setting.default || setting.default === 'Sample text' || setting.default === '') {
+                        setting.default = imageUrls[imageUrlIndex];
+                        console.log(`✅ Set ${setting.id} default to ${imageUrls[imageUrlIndex]}`);
+                      }
                     } else if (setting.hasOwnProperty('default')) {
                       if (setting.default === '' || setting.default === null || setting.default === undefined) {
                         switch (setting.type) {
@@ -1761,7 +1770,7 @@ CRITICAL: Use only block types that exist in the Liquid schema. Extract real con
 
 Return ONLY valid JSON:`;
 
-    const jsonCompletion = await openai.chat.completions.create({      
+    const jsonCompletion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [{
         role: "system",
@@ -1936,7 +1945,7 @@ Return ONLY valid JSON:`;
                     block.type = firstValidType;
                   }
                 }
-              }              
+              }
               if (block.settings) {
                 Object.keys(block.settings).forEach(key => {
                   const setting = block.settings[key];
@@ -1970,7 +1979,7 @@ Return ONLY valid JSON:`;
               return `"type": "${sectionType}"`;
             }
           }
-        );        correctedJsonTemplate = correctedJsonTemplate.replace(
+        ); correctedJsonTemplate = correctedJsonTemplate.replace(
           /("type":\s*"image_picker"[\s\S]*?),\s*"default":\s*"[^"]*"/g,
           '$1'
         );
@@ -2108,17 +2117,17 @@ Return ONLY valid JSON:`;
 
       if (htmlContent.includes('<script>') && !cleanedLiquidContent.includes('<script>')) {
         console.warn('⚠️ JavaScript found in HTML but missing from liquid output');
-      }      
+      }
       console.log('✅ Client feedback compliance check completed');
     }
 
     if (imageUrls && imageUrls.length > 0) {
       console.log('🖼️ Populating JSON template with extracted image URLs...');
-      
+
       try {
         const jsonData = JSON.parse(correctedJsonTemplate);
         let imageIndex = 0;
-        
+
         function updateImageSettings(obj) {
           if (typeof obj === 'object' && obj !== null) {
             for (const key in obj) {
@@ -2132,13 +2141,13 @@ Return ONLY valid JSON:`;
             }
           }
         }
-        
+
         updateImageSettings(jsonData);
         correctedJsonTemplate = JSON.stringify(jsonData, null, 2);
-        
+
       } catch (e) {
         console.log('JSON parsing error, using regex replacement for image URLs');
-        
+
         let imageIndex = 0;
         correctedJsonTemplate = correctedJsonTemplate.replace(
           /"([^"]*image_url)":\s*""/g,
@@ -2153,23 +2162,33 @@ Return ONLY valid JSON:`;
           }
         );
       }
-      
+
       console.log('✅ Image URL population completed');
     }
-
     if (imageUrls && imageUrls.length > 0) {
-      console.log('🔧 Updating Liquid template to use image fallback syntax...');
+      console.log('🔧 Updating Liquid template to use robust image fallback syntax...');
+
       cleanedLiquidContent = cleanedLiquidContent.replace(
-        /\{\{\s*section\.settings\.([a-zA-Z_][a-zA-Z0-9_]*image)\s*\}\}/g,
-        '{% if section.settings.$1 != blank %}{{ section.settings.$1 }}{% else %}{{ section.settings.$1_url }}{% endif %}'
+        /\{\{\s*section\.settings\.([a-zA-Z_][a-zA-Z0-9_]*image)\s*(\|\s*img_url[^}]*)?\s*\}\}/g,
+        '{% if section.settings.$1 != blank %}{{ section.settings.$1 | img_url: "master" }}{% elsif section.settings.$1_url != blank %}{{ section.settings.$1_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}'
       );
-      
+
       cleanedLiquidContent = cleanedLiquidContent.replace(
-        /\{\{\s*block\.settings\.([a-zA-Z_][a-zA-Z0-9_]*image)\s*\}\}/g,
-        '{% if block.settings.$1 != blank %}{{ block.settings.$1 }}{% else %}{{ block.settings.$1_url }}{% endif %}'
+        /\{\{\s*block\.settings\.([a-zA-Z_][a-zA-Z0-9_]*image)\s*(\|\s*img_url[^}]*)?\s*\}\}/g,
+        '{% if block.settings.$1 != blank %}{{ block.settings.$1 | img_url: "master" }}{% elsif block.settings.$1_url != blank %}{{ block.settings.$1_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}'
       );
-      
-      console.log('✅ Liquid template updated with dual image approach');
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /style="([^"]*?)background-image:\s*url\(['"]?\{\{\s*(section|block)\.settings\.([a-zA-Z_][a-zA-Z0-9_]*image[^}]*)\}\}['"]?\)([^"]*?)"/g,
+        'style="$1background-image: url(\'{% if $2.settings.$3 != blank %}{{ $2.settings.$3 | img_url: "master" }}{% elsif $2.settings.$3_url != blank %}{{ $2.settings.$3_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Background{% endif %}\')$4"'
+      );
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /src="\{\{\s*(section|block)\.settings\.([a-zA-Z_][a-zA-Z0-9_]*image[^}]*)\}\}"/g,
+        'src="{% if $1.settings.$2 != blank %}{{ $1.settings.$2 | img_url: \'master\' }}{% elsif $1.settings.$2_url != blank %}{{ $1.settings.$2_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}"'
+      );
+
+      console.log('✅ Liquid template updated with robust dual image approach');
     }
 
     return NextResponse.json({
