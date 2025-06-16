@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Editor from '@monaco-editor/react';
 
 export default function HtmlEditor({
@@ -5,6 +6,7 @@ export default function HtmlEditor({
     fileName,
     handleManualInput
 }) {
+    const [showPreview, setShowPreview] = useState(false);
 
     return (
         <div style={{
@@ -59,6 +61,39 @@ export default function HtmlEditor({
                 }}>
                     HTML Editor & Validator
                 </h2>
+                {fileContent && (
+                    <button
+                        onClick={() => setShowPreview(true)}
+                        style={{
+                            background: 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '10px',
+                            padding: '8px 16px',
+                            cursor: 'pointer',
+                            fontSize: 'clamp(12px, 3vw, 14px)',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 4px 12px rgba(26, 143, 58, 0.3)',
+                            transition: 'all 0.2s ease',
+                            flexShrink: 0
+                        }}
+                        onMouseOver={(e) => {
+                            e.target.style.transform = 'translateY(-1px)';
+                            e.target.style.boxShadow = '0 6px 16px rgba(26, 143, 58, 0.4)';
+                            e.target.style.background = 'linear-gradient(135deg, #0c6f30 0%, #1ea042 100%)';
+                        }}
+                        onMouseOut={(e) => {
+                            e.target.style.transform = 'translateY(0)';
+                            e.target.style.boxShadow = '0 4px 12px rgba(26, 143, 58, 0.3)';
+                            e.target.style.background = 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)';
+                        }}
+                    >
+                        👁️ Preview
+                    </button>
+                )}
             </div>
 
             <div style={{
@@ -189,6 +224,100 @@ export default function HtmlEditor({
                     </div>
                 </div>
             </div>
+
+            {showPreview && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0, 0, 0, 0.8)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    padding: '20px'
+                }}>
+                    <div style={{
+                        background: 'linear-gradient(145deg, #1e1e2e 0%, #2a2a3e 100%)',
+                        borderRadius: '20px',
+                        width: '90%',
+                        maxWidth: '1200px',
+                        height: '90%',
+                        maxHeight: '800px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{
+                            background: 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)',
+                            padding: '20px 25px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                        }}>
+                            <h3 style={{
+                                margin: 0,
+                                color: '#ffffff',
+                                fontSize: '18px',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px'
+                            }}>
+                                👁️ HTML Preview - {fileName || 'Untitled'}
+                            </h3>
+                            <button
+                                onClick={() => setShowPreview(false)}
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.2)',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '8px 12px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                                }}
+                            >
+                                ❌ Close
+                            </button>
+                        </div>
+
+                        <div style={{
+                            flex: 1,
+                            background: '#ffffff',
+                            overflow: 'auto',
+                            border: '2px solid rgba(255, 255, 255, 0.1)',
+                            margin: '20px',
+                            borderRadius: '15px'
+                        }}>
+                            <iframe
+                                srcDoc={fileContent}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    border: 'none',
+                                    borderRadius: '15px'
+                                }}
+                                title="HTML Preview"
+                                sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
