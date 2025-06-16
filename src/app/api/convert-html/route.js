@@ -21,26 +21,96 @@ export async function POST(request) {
         { error: 'OpenAI API key is not configured' },
         { status: 500 }
       );
-    }
+    }    const isLargeFile = htmlContent.length > 8000 || htmlContent.split('\n').length > 400;
+    
+    const prompt = `You are an expert Shopify Liquid developer. Convert the following HTML code to a PERFECT Shopify Liquid section following the EXACT structure and requirements below. 
 
-    const isLargeFile = htmlContent.length > 8000 || htmlContent.split('\n').length > 400; const prompt = `Convert the following HTML code to a professional Shopify Liquid template file with COMPLETE DOCUMENT STRUCTURE. ${isLargeFile ? 'CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''} Follow these STRICT requirements:
+${isLargeFile ? '🚨 CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''}
 
-🚨 MANDATORY SHOPIFY SECTION WRAPPER 🚨:
-✅ ALWAYS start with: <section id="section-{{ section.id }}" class="maertin-hair-care-section">
-✅ ALL content must be inside this section wrapper
-✅ NO DOCTYPE, html, head, body tags - ONLY section content
-✅ End with: </section>
-✅ CSS scoped with: #section-{{ section.id }} prefix
-✅ JavaScript with shopify:section:load compatibility
-✅ CDN links noted in comments for theme.liquid
+🚨 MANDATORY: FOLLOW CLIENT FEEDBACK REQUIREMENTS EXACTLY 🚨
+
+✅ **PROPER SECTION STRUCTURE**:
+- Start: <section id="section-{{ section.id }}" class="[original-classes]">
+- End: </section>
+- NO DOCTYPE, html, head, body tags - ONLY section content
+- ALL content must be inside section wrapper
+
+✅ **RENDER LIQUID BASED ON SETTINGS**:
+Convert ALL static content to dynamic Liquid using settings:
+Example: <h2>{{ section.settings.hero_heading }}</h2>
+
+✅ **LOOP THROUGH BLOCKS FOR REPEATABLE CONTENT**:
+{% for block in section.blocks %}
+  {% if block.type == 'testimonial' %}
+    <div class="testimonial">
+      <p>{{ block.settings.testimonial_text }}</p>
+      <strong>{{ block.settings.testimonial_author }}</strong>
+    </div>
+  {% endif %}
+{% endfor %}
+
+✅ **BULLETPROOF IMAGE HANDLING WITH TRIPLE FALLBACK**:
+For EVERY image, use this EXACT pattern:
+<img src="{% if block.settings.image != blank %}{{ block.settings.image | image_url }}{% elsif block.settings.image_url != blank %}{{ block.settings.image_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}" alt="{{ block.settings.alt_text | default: 'Default Alt' }}">
+
+For background images:
+style="background-image: url('{% if section.settings.bg_image != blank %}{{ section.settings.bg_image | image_url }}{% elsif section.settings.bg_image_url != blank %}{{ section.settings.bg_image_url }}{% else %}https://via.placeholder.com/1920x1080/cccccc/666666?text=Background{% endif %}')"
+
+✅ **EXTRACT ALL IMAGE URLS AND MAKE EDITABLE**:
+- Find ALL img src URLs and background-image URLs from HTML
+- Create image_picker + fallback text field for EACH image
+- Extract actual URLs and use as defaults in schema
+
+✅ **PROPER CSS SCOPING TO PREVENT CONFLICTS**:
+Wrap ALL CSS with scoped selectors:
+<style>
+#section-{{ section.id }} .original-class { 
+  /* All original styles here */ 
+}
+#section-{{ section.id }} body,
+#section-{{ section.id }} html { 
+  /* Scope even body/html styles */ 
+}
+</style>
+
+✅ **JAVASCRIPT THEME EDITOR COMPATIBILITY**:
+<script>
+// Theme editor compatibility
+document.addEventListener('shopify:section:load', function(e) {
+  if (e.detail.sectionId === '{{ section.id }}') {
+    // Re-initialize section functionality
+    console.log('Section reloaded in theme editor');
+  }
+});
+
+// Main functionality
+document.addEventListener('DOMContentLoaded', function() {
+  // All original JavaScript here
+});
+</script>
+
+✅ **SHOPIFY FORM COMPATIBILITY**:
+<form method="post" action="/contact#contact_form">
+  <input type="hidden" name="form_type" value="customer">
+  <input type="hidden" name="utf8" value="✓">
+  <!-- form fields -->
+</form>
+
+✅ **MAKE ALL CONTENT EDITABLE**:
+- NO hardcoded text should remain
+- ALL headings, paragraphs, buttons should use settings
+- ALL URLs should be editable via settings
+
+✅ **CDN LINKS AS COMMENTS**:
+Add at top:
+<!-- CDN Links: Add these to theme.liquid <head> section:
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+-->
 
 🚨 CRITICAL: Every conversion MUST start with section wrapper and end with closing section tag!
 
-🚨 CRITICAL FOOTER REQUIREMENT: For footer columns, EVERY footer_column block MUST include ALL individual link settings (link_1_url, link_1_text, link_2_url, link_2_text, etc.) based on the actual number of links in the HTML. NEVER create a footer_column block with only column_title! 🚨
-
-🚨 MANDATORY: MAKE ALL HARDCODED CONTENT EDITABLE - NO HARDCODED TEXT SHOULD REMAIN! 🚨
-
-🚨 ULTRA-CRITICAL CLIENT FEEDBACK FIXES - ZERO TOLERANCE FOR ERRORS 🚨:
+🚨 CRITICAL CLIENT FEEDBACK FIXES - FOLLOW EXACTLY 🚨:
 
 🔥 **PROPER SHOPIFY LIQUID SECTION CONVERSION** 🔥:
 1. MANDATORY SECTION WRAPPER WITH SCOPED ID:
@@ -896,47 +966,87 @@ ${htmlContent}
 Return COMPLETE liquid template: HTML structure + CSS + JavaScript + Schema. NOT just schema alone!`; const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [{
-        role: "system",
-        content: "You are a Shopify Liquid expert. 🚨 CRITICAL: Convert HTML to SHOPIFY SECTION format with ALL content made editable. Do NOT include <!DOCTYPE>, <html>, <head>, or <body> tags. Start directly with section content, include ALL CSS/JavaScript, end with {% schema %}. You MUST convert the ENTIRE HTML content completely - do not truncate. Make EVERY piece of text editable through Liquid variables."
+        role: "system",        content: `You are a Shopify Liquid expert. Based on client feedback, the current conversion system has CRITICAL BUGS that must be fixed immediately.
+
+CRITICAL FIXES REQUIRED:
+1. CSS SCOPING: Use "#section-{{ section.id }} .classname" NOT "#section-{{ section.id }} classname"
+2. LIQUID SYNTAX: Use "{% if forloop.first %}active{% endif %}" NOT "{% if forloop.first %}#section-{{ section.id }} active {% endif %}"
+3. IMAGE SYNTAX: Use proper triple fallback - image_picker OR image_url OR placeholder
+4. SECTION WRAPPER: Proper <section id="section-{{ section.id }}" class="original-classes">
+5. SHOPIFY FORMS: Use action="/contact#contact_form" with hidden form_type fields
+
+CLIENT COMPLAINTS TO FIX:
+- System generates schema correctly but NOT working Liquid markup
+- CSS selectors are malformed with invalid section IDs mixed into class names  
+- Image handling has broken syntax
+- Missing proper Shopify section structure
+- JavaScript not compatible with theme editor
+
+EXACT REQUIREMENTS:
+✅ Render content using {{ section.settings.variable_name }}
+✅ Loop blocks with {% for block in section.blocks %}{% if block.type == 'type' %}{% endif %}{% endfor %}
+✅ Image fallback: src="{% if settings.image != blank %}{{ settings.image | image_url }}{% elsif settings.image_url != blank %}{{ settings.image_url }}{% else %}placeholder{% endif %}"
+✅ CSS scoped: #section-{{ section.id }} .original-class { styles }
+✅ JavaScript with: document.addEventListener('shopify:section:load', function(e) { if (e.detail.sectionId === '{{ section.id }}') { } });
+✅ Shopify forms: <form method="post" action="/contact#contact_form"><input type="hidden" name="form_type" value="customer">
+
+Convert the ENTIRE HTML to working Shopify section format. Fix ALL the bugs mentioned above.`
       },
       {
-        role: "user",
-        content: `🚨 CRITICAL: Convert to COMPLETE SHOPIFY SECTION format.
+        role: "user",        content: `CRITICAL: Fix the current conversion bugs and convert to COMPLETE SHOPIFY SECTION format.
+
+CURRENT BUGS TO FIX:
+❌ CSS: "fas fa-#section-{{ section.id }} star" should be "fas fa-star"  
+❌ CSS: ".dot.#section-{{ section.id }} active" should be ".dot.active"
+❌ Invalid setting names with special characters like "Mäertin_alt_text"
+❌ Malformed Liquid syntax in CSS selectors
+❌ Missing proper Shopify form structure
 
 REQUIREMENTS:
-1. Convert ALL HTML content to Shopify section format (NOT complete HTML page)
-2. Remove DOCTYPE, html, head, body tags - start with section content
-3. Replace ALL hardcoded text with Liquid variables: {{ section.settings.variable_name }}
-4. Create blocks for repeating elements (products, testimonials, navigation, footer columns)
-5. Include ALL CSS exactly as written in <style> tags
-6. Include ALL JavaScript exactly as written in <script> tags
-7. End with complete {% schema %} section with ALL settings and blocks
-8. Make EVERYTHING editable - headings, paragraphs, buttons, links, images, forms
+1. Convert ALL HTML to Shopify section format (NO complete HTML page)
+2. Remove DOCTYPE, html, head, body tags - start with section content only
+3. Replace ALL hardcoded text with Liquid: {{ section.settings.variable_name }}
+4. Create blocks for repeating content (navigation, products, testimonials, footer columns)
+5. Include ALL CSS with proper scoping: #section-{{ section.id }} .classname
+6. Include ALL JavaScript with theme editor compatibility
+7. Proper image fallbacks: {% if image != blank %}{{ image | image_url }}{% elsif image_url != blank %}{{ image_url }}{% else %}placeholder{% endif %}
+8. Shopify forms: <form method="post" action="/contact#contact_form">
+9. Extract ALL image URLs and use as defaults in schema
+10. Make EVERYTHING editable - NO hardcoded content
 
-EXAMPLE FORMAT:
+EXAMPLE CORRECT FORMAT:
+<section id="section-{{ section.id }}" class="original-classes">
 <!-- Navigation -->
 <nav class="navbar">
   {% for block in section.blocks %}
-    {% if block.type == 'header_link' %}
-      <a href="{{ block.settings.link_url }}" class="nav-link">{{ block.settings.link_text }}</a>
+    {% if block.type == 'nav_link' %}
+      <a href="{{ block.settings.link_url }}">{{ block.settings.link_text }}</a>
     {% endif %}
   {% endfor %}
 </nav>
 
-<!-- All other sections with Liquid variables -->
+<!-- All content with proper Liquid syntax -->
 
 <style>
-/* ALL original CSS here */
+#section-{{ section.id }} .original-class { 
+  /* ALL original CSS properly scoped */ 
+}
 </style>
 
 <script>
-/* ALL original JavaScript here */
+document.addEventListener('shopify:section:load', function(e) {
+  if (e.detail.sectionId === '{{ section.id }}') {
+    // Re-initialize functionality
+  }
+});
+// ALL original JavaScript
 </script>
+</section>
 
 {% schema %}
 {
-  "name": "Hair Care Landing Page",
-  "settings": [...all settings...],
+  "name": "Section Name",
+  "settings": [...extracted settings...],
   "blocks": [...all block types...],
   "presets": [{"name": "Default", "category": "Custom"}]
 }
@@ -945,14 +1055,80 @@ EXAMPLE FORMAT:
 HTML to convert:
 ${htmlContent}
 
-Convert EVERYTHING to Shopify section format with complete schema!`
+Convert EVERYTHING to working Shopify section format with ALL bugs fixed!`
       }
       ],
       max_tokens: 16384,
       temperature: 0.01,
-    });
+    });    let liquidContent = completion.choices[0]?.message?.content;
 
-    let liquidContent = completion.choices[0]?.message?.content;
+    // CRITICAL BUG FIXES - Based on client feedback
+    console.log('🔧 Applying critical bug fixes...');
+    
+    // Fix CSS selector issues - malformed section ID patterns in CSS
+    liquidContent = liquidContent.replace(/fas fa-#section-\{\{ section\.id \}\} (\w+)/g, 'fas fa-$1');
+    liquidContent = liquidContent.replace(/#section-\{\{ section\.id \}\} (\w+)/g, '.$1');
+    liquidContent = liquidContent.replace(/\.(\w+)\.#section-\{\{ section\.id \}\} (\w+)/g, '.$1.$2');
+    liquidContent = liquidContent.replace(/(\w+)-#section-\{\{ section\.id \}\} (\w+)/g, '$1-$2');
+    
+    // Fix image syntax issues
+    liquidContent = liquidContent.replace(/\{\{ section\.settings\.([^_]*_alt_text) \| default: '([^']+)' \}\}/g, 
+      (match, setting, defaultText) => {
+        const cleanSetting = setting.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+        return `{{ section.settings.${cleanSetting} | default: '${defaultText}' }}`;
+      });
+    
+    // Fix invalid Liquid syntax in class attributes
+    liquidContent = liquidContent.replace(/class="([^"]*#section-\{\{ section\.id \}\}[^"]*)"/, 
+      (match, className) => {
+        const cleanClass = className.replace(/#section-\{\{ section\.id \}\}\s*/g, '');
+        return `class="${cleanClass}"`;
+      });
+    
+    // Fix star rating display issues
+    liquidContent = liquidContent.replace(/\{\% for i in \(1\.\.5\) \%\}[\s\S]*?fa-#section-\{\{ section\.id \}\} star[\s\S]*?\{\% endfor \%\}/g,
+      `{% for i in (1..5) %}
+        <i class="fas fa-star" style="color: #a13f4f;"></i>
+      {% endfor %}`);
+    
+    // Ensure proper section wrapper
+    if (!liquidContent.includes('<section id="section-{{ section.id }}"')) {
+      console.log('🚨 Adding missing section wrapper...');
+      const sectionMatch = liquidContent.match(/^(.*?)(<nav|<div|<section)/s);
+      if (sectionMatch) {
+        liquidContent = liquidContent.replace(sectionMatch[2], 
+          `<section id="section-{{ section.id }}" class="hair-care-landing-page">\n${sectionMatch[2]}`);
+      }
+    }
+    
+    // Ensure proper section closing
+    if (!liquidContent.includes('</section>') || liquidContent.lastIndexOf('</section>') < liquidContent.lastIndexOf('{% endschema %}')) {
+      console.log('🚨 Adding missing section closing tag...');
+      const schemaIndex = liquidContent.lastIndexOf('{% schema %}');
+      if (schemaIndex > -1) {
+        liquidContent = liquidContent.substring(0, schemaIndex) + '</section>\n\n' + liquidContent.substring(schemaIndex);
+      }
+    }
+    
+    // Fix CSS scoping issues
+    liquidContent = liquidContent.replace(/<style>([\s\S]*?)<\/style>/, (match, css) => {
+      let fixedCSS = css;
+      
+      // Add section scoping to selectors that don't have it
+      fixedCSS = fixedCSS.replace(/^([^{]*?\{)/gm, (match, selector) => {
+        if (!selector.includes('#section-{{ section.id }}') && !selector.includes('@keyframes') && !selector.includes('@media')) {
+          const cleanSelector = selector.replace('{', '').trim();
+          if (cleanSelector && !cleanSelector.startsWith('/*')) {
+            return `#section-{{ section.id }} ${cleanSelector} {`;
+          }
+        }
+        return match;
+      });
+      
+      return `<style>\n${fixedCSS}\n</style>`;
+    });
+    
+    console.log('✅ Critical bug fixes applied');
 
     if (htmlContent.toLowerCase().includes('<footer') && liquidContent.includes('footer_column')) {
       console.log('🔍 Checking footer conversion quality...');
