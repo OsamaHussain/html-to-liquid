@@ -25,18 +25,16 @@ export async function POST(request) {
 
     const isLargeFile = htmlContent.length > 8000 || htmlContent.split('\n').length > 400; const prompt = `Convert the following HTML code to a professional Shopify Liquid template file with COMPLETE DOCUMENT STRUCTURE. ${isLargeFile ? 'CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''} Follow these STRICT requirements:
 
-🚨 MANDATORY COMPLETE DOCUMENT STRUCTURE 🚨:
-Start with: <!DOCTYPE html><html lang="en"><head>
-Include ALL meta tags: <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-Include title: <title>{{ section.settings.page_title | default: 'Extracted Title' }}</title>
-Include description: <meta name="description" content="{{ section.settings.meta_description | default: 'Extracted Description' }}">
-Include ALL CDN links exactly as in HTML:
-- <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
-- <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Didot:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap">
-Include COMPLETE <style> section exactly as in HTML
-Close with: </head><body>
-End with: COMPLETE <script> section exactly as in HTML</body></html>
+🚨 MANDATORY SHOPIFY SECTION WRAPPER 🚨:
+✅ ALWAYS start with: <section id="section-{{ section.id }}" class="maertin-hair-care-section">
+✅ ALL content must be inside this section wrapper
+✅ NO DOCTYPE, html, head, body tags - ONLY section content
+✅ End with: </section>
+✅ CSS scoped with: #section-{{ section.id }} prefix
+✅ JavaScript with shopify:section:load compatibility
+✅ CDN links noted in comments for theme.liquid
+
+🚨 CRITICAL: Every conversion MUST start with section wrapper and end with closing section tag!
 
 🚨 CRITICAL FOOTER REQUIREMENT: For footer columns, EVERY footer_column block MUST include ALL individual link settings (link_1_url, link_1_text, link_2_url, link_2_text, etc.) based on the actual number of links in the HTML. NEVER create a footer_column block with only column_title! 🚨
 
@@ -44,60 +42,90 @@ End with: COMPLETE <script> section exactly as in HTML</body></html>
 
 🚨 ULTRA-CRITICAL CLIENT FEEDBACK FIXES - ZERO TOLERANCE FOR ERRORS 🚨:
 
+🔥 **PROPER SHOPIFY LIQUID SECTION CONVERSION** 🔥:
+1. MANDATORY SECTION WRAPPER WITH SCOPED ID:
+   - Start with: <section id="section-{{ section.id }}" class="original-classes">
+   - All content goes inside this section wrapper
+   - End with: </section>
+   - NO DOCTYPE, html, head, or body tags allowed!
+
+🔥 **SHOPIFY-COMPATIBLE CSS HANDLING** 🔥:
+2. CSS MUST BE SCOPED TO PREVENT CONFLICTS:
+   - Wrap CSS: <style>
+   - Scope all styles: #section-{{ section.id }} .class-name { styles }
+   - Include within section, not in <head>
+   - CDN links go in theme.liquid (mention in comments)
+
+🔥 **SHOPIFY-COMPATIBLE JAVASCRIPT** 🔥:  
+3. JAVASCRIPT THEME EDITOR COMPATIBILITY:
+   - Wrap JS: <script>
+   - Add theme editor support:
+     document.addEventListener('shopify:section:load', function(e) {
+       if (e.detail.sectionId === '{{ section.id }}') {
+         // Re-initialize functionality
+       }
+     });
+   - Include within section, works in customizer
+
 🔥 **BULLETPROOF IMAGE HANDLING** 🔥:
-1. MANDATORY TRIPLE-FALLBACK IMAGE SYSTEM:
+4. MANDATORY TRIPLE-FALLBACK IMAGE SYSTEM:
    - Extract EVERY img src and background-image URL from HTML
    - Create image_picker + image_url + default_placeholder for EACH image
    - NEVER leave any image field empty - always provide working URL as default
-   - Liquid syntax: {% assign img_src = block.settings.image | default: block.settings.image_url | default: 'https://via.placeholder.com/800x600/cccccc/666666?text=DefaultImage' %}{% if img_src contains 'http' %}{{ img_src }}{% else %}{{ img_src | img_url: 'master' }}{% endif %}
+   - Liquid syntax: {% if block.settings.image != blank %}{{ block.settings.image | image_url }}{% elsif block.settings.image_url != blank %}{{ block.settings.image_url }}{% else %}https://via.placeholder.com/800x600/cccccc/666666?text=DefaultImage{% endif %}
 
 🔥 **FOOLPROOF HEADER ICONS IMPLEMENTATION** 🔥:
-2. CONVERT ALL HEADER ICONS TO DEDICATED BLOCKS:
+5. CONVERT ALL HEADER ICONS TO DEDICATED BLOCKS:
    - Find <i class="fas fa-search"> → Create header_search_icon block
    - Find <i class="fas fa-shopping-cart"> → Create header_cart_icon block  
    - Schema: {"type": "header_icon", "name": "Header Icon", "settings": [{"type": "text", "id": "icon_class", "default": "extracted-icon-class"}, {"type": "url", "id": "icon_link", "default": "#"}, {"type": "text", "id": "icon_text", "default": ""}]}
    - Liquid: {% for block in section.blocks %}{% if block.type == 'header_icon' %}<a href="{{ block.settings.icon_link }}" class="icon-link"><i class="{{ block.settings.icon_class }}"></i>{{ block.settings.icon_text }}</a>{% endif %}{% endfor %}
 
 🔥 **BULLETPROOF MOBILE MENU SYSTEM** 🔥:
-3. MANDATORY MOBILE MENU CONTROLS:
+6. MANDATORY MOBILE MENU CONTROLS:
    - Schema settings: {"type": "checkbox", "id": "enable_mobile_menu", "label": "Enable Mobile Menu", "default": true}
    - {"type": "text", "id": "hamburger_icon", "label": "Hamburger Icon Class", "default": "fas fa-bars"}
    - {"type": "text", "id": "close_icon", "label": "Close Icon Class", "default": "fas fa-times"}
    - Liquid: <button class="hamburger-toggle" {% if section.settings.enable_mobile_menu %}id="hamburger-toggle"{% endif %}><i class="{{ section.settings.hamburger_icon }}"></i></button>
 
 🔥 **GUARANTEED SECTION COMPLETION** 🔥:
-4. MANDATORY SECTION VERIFICATION CHECKLIST:
+7. MANDATORY SECTION VERIFICATION CHECKLIST:
    - Hero Section ✓ - Navigation ✓ - Products/Services ✓ - About/Stylist ✓
    - Testimonials ✓ - Sustainability/Features ✓ - Transformations/Gallery ✓
    - CTA/Shop ✓ - Education/Blog ✓ - Newsletter ✓ - Footer ✓
    - EACH section must have corresponding schema settings
    - EACH section must have proper block structure where applicable
+   - WRAP ALL IN: <section id="section-{{ section.id }}" class="...">...content...</section>
 
 🔥 **IRONCLAD SOCIAL ICONS SYSTEM** 🔥:
-5. CONVERT ALL SOCIAL ICONS TO BLOCKS:
+8. CONVERT ALL SOCIAL ICONS TO BLOCKS:
    - Find <i class="fab fa-facebook-f"> → Create social_facebook block
    - Find <i class="fab fa-instagram"> → Create social_instagram block
    - Schema: {"type": "social_link", "name": "Social Link", "settings": [{"type": "url", "id": "social_url", "default": "#"}, {"type": "text", "id": "social_icon", "default": "extracted-icon-class"}, {"type": "text", "id": "social_name", "default": "Social Platform"}]}
 
 🔥 **COMPLETE CODE PRESERVATION GUARANTEE** 🔥:
-6. MANDATORY FULL HTML STRUCTURE:
-   - Start: <!DOCTYPE html><html lang="en"><head>
-   - Include: ALL <meta> tags, <title>, <link> tags for CDN
-   - Include: COMPLETE <style> section - ZERO modifications
-   - Include: COMPLETE <script> section - ZERO modifications  
-   - End: </body></html>
+9. MANDATORY SHOPIFY SECTION STRUCTURE:
+   - Start: <section id="section-{{ section.id }}" class="maertin-hair-care-section">
+   - Include: ALL content properly converted to Liquid
+   - Include: <style> block with scoped CSS (#section-{{ section.id }} prefix)
+   - Include: <script> block with theme editor compatibility
+   - End: </section>
+   - NO full HTML document structure (no DOCTYPE, html, head, body)
+   - CDN links mentioned in comments for theme.liquid inclusion
+   - ALL styles scoped to prevent conflicts: #section-{{ section.id }} .original-class
 
 🔥 **ERROR-PROOF EXTRACTION SYSTEM** 🔥:
-7. EXTRACTION VERIFICATION PROTOCOL:
+10. EXTRACTION VERIFICATION PROTOCOL:
    - Scan HTML for ALL img src="..." and extract URLs
    - Scan HTML for ALL background-image: url('...') and extract URLs
    - Scan HTML for ALL <i class="fa..." and extract icon classes
    - Scan HTML for ALL href="..." and extract link URLs
    - Scan HTML for ALL text content and make editable via settings
    - VERIFY: Every extracted element has corresponding schema setting
+   - CONVERT TO: Proper Shopify Liquid section (no full HTML document)
 
 🔥 **CLIENT COMPLAINT PREVENTION SYSTEM** 🔥:
-8. MANDATORY PRE-DELIVERY CHECKLIST:
+11. MANDATORY PRE-DELIVERY CHECKLIST:
    - ✓ ALL images display properly (no blanks)
    - ✓ ALL icons render correctly  
    - ✓ Mobile menu functions perfectly
@@ -106,6 +134,9 @@ End with: COMPLETE <script> section exactly as in HTML</body></html>
    - ✓ ALL CSS styling preserved
    - ✓ ALL content editable via settings
    - ✓ Perfect visual match to original HTML
+   - ✓ PROPER SHOPIFY SECTION FORMAT (no full HTML document)
+   - ✓ Scoped CSS to prevent conflicts
+   - ✓ Theme editor compatibility
 
 🚨 CRITICAL IMAGE URL EXTRACTION & EDITABILITY REQUIREMENT 🚨:
 YOU MUST EXTRACT ALL IMAGE URLS AND MAKE THEM EDITABLE WITH ROBUST FALLBACKS:
@@ -116,10 +147,10 @@ YOU MUST EXTRACT ALL IMAGE URLS AND MAKE THEM EDITABLE WITH ROBUST FALLBACKS:
   1. image_picker type: "product_image" (for new uploads)
   2. text type: "product_image_url" with default: "extracted-url-here.jpg" (for fallback)
 - CRITICAL LIQUID SYNTAX: Use robust triple-fallback approach:
-  {% if section.settings.product_image != blank %}{{ section.settings.product_image | img_url: 'master' }}{% elsif section.settings.product_image_url != blank %}{{ section.settings.product_image_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}
+  {% if section.settings.product_image != blank %}{{ section.settings.product_image | image_url }}{% elsif section.settings.product_image_url != blank %}{{ section.settings.product_image_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}
 - Background image format: 
-  style="background-image: url('{% if section.settings.bg_image != blank %}{{ section.settings.bg_image | img_url: 'master' }}{% elsif section.settings.bg_image_url != blank %}{{ section.settings.bg_image_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Background{% endif %}')"
-- CRITICAL: Only use img_url filter for Shopify-uploaded images, use direct URL for external links
+  style="background-image: url('{% if section.settings.bg_image != blank %}{{ section.settings.bg_image | image_url }}{% elsif section.settings.bg_image_url != blank %}{{ section.settings.bg_image_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Background{% endif %}')"
+- CRITICAL: Use image_url filter (modern Shopify) instead of img_url
 - IMPORTANT: For external images, always provide the full URL including https://
 - PLACEHOLDER FALLBACK: Always provide placeholder image as final fallback to ensure images never break
 - Schema structure for each image:  
@@ -131,13 +162,21 @@ YOU MUST EXTRACT ALL IMAGE URLS AND MAKE THEM EDITABLE WITH ROBUST FALLBACKS:
 
 BEFORE RETURNING ANY CONVERSION, RUN THIS CHECKLIST:
 
+📋 **SHOPIFY SECTION FORMAT CHECKLIST**:
+- [ ] Starts with <section id="section-{{ section.id }}" class="...">
+- [ ] Ends with </section>
+- [ ] NO DOCTYPE, html, head, or body tags
+- [ ] CSS properly scoped with #section-{{ section.id }}
+- [ ] JavaScript includes shopify:section:load compatibility
+- [ ] CDN links mentioned in comments for theme.liquid
+
 📋 **IMAGE VERIFICATION CHECKLIST**:
 - [ ] Every img src URL extracted and added as default in schema
 - [ ] Every background-image URL extracted and added as default  
 - [ ] NO image field left as empty string ""
 - [ ] All image URLs start with https:// (full URLs)
 - [ ] Fallback placeholder provided for every image
-- [ ] Test: {% if image != blank %}{{ image | img_url: 'master' }}{% elsif image_url != blank %}{{ image_url }}{% else %}placeholder{% endif %}
+- [ ] Test: {% if image != blank %}{{ image | image_url }}{% elsif image_url != blank %}{{ image_url }}{% else %}placeholder{% endif %}
 
 📋 **ICON VERIFICATION CHECKLIST**:
 - [ ] fa-search converted to searchable block or setting
@@ -167,13 +206,14 @@ BEFORE RETURNING ANY CONVERSION, RUN THIS CHECKLIST:
 - [ ] Footer section ✓
 
 📋 **CODE PRESERVATION CHECKLIST**:
-- [ ] DOCTYPE html declaration included
-- [ ] Complete <head> section with all meta tags
-- [ ] ALL CDN links preserved (Tailwind, FontAwesome, Google Fonts)
-- [ ] COMPLETE <style> section included unchanged
-- [ ] COMPLETE <script> section included unchanged
+- [ ] Section wrapper with unique ID included
+- [ ] Complete content converted to Liquid markup 
+- [ ] ALL CDN links noted for theme.liquid inclusion
+- [ ] COMPLETE <style> section included with scoping
+- [ ] COMPLETE <script> section included with theme editor support
 - [ ] All CSS classes and IDs preserved
 - [ ] All JavaScript functions preserved
+- [ ] Proper Shopify section format (no full HTML document)
 
 📋 **FUNCTIONALITY CHECKLIST**:
 - [ ] Slideshow/carousel functionality preserved
@@ -204,10 +244,10 @@ SCHEMA:
 }
 
 LIQUID:
-<img src="{% assign img = section.settings.hero_image %}{% if img != blank %}{{ img | img_url: 'master' }}{% elsif section.settings.hero_image_url != blank %}{{ section.settings.hero_image_url }}{% else %}https://via.placeholder.com/800x600/cccccc/666666?text=DefaultImage{% endif %}" alt="{{ section.settings.hero_alt | default: 'Default Alt' }}">
+<img src="{% if section.settings.hero_image != blank %}{{ section.settings.hero_image | image_url }}{% elsif section.settings.hero_image_url != blank %}{{ section.settings.hero_image_url }}{% else %}https://via.placeholder.com/800x600/cccccc/666666?text=DefaultImage{% endif %}" alt="{{ section.settings.hero_alt | default: 'Default Alt' }}">
 
 BACKGROUND IMAGES:
-style="background-image: url('{% assign bg = section.settings.hero_bg %}{% if bg != blank %}{{ bg | img_url: 'master' }}{% elsif section.settings.hero_bg_url != blank %}{{ section.settings.hero_bg_url }}{% else %}https://via.placeholder.com/1920x1080/cccccc/666666?text=Background{% endif %}')"
+style="background-image: url('{% if section.settings.hero_bg != blank %}{{ section.settings.hero_bg | image_url }}{% elsif section.settings.hero_bg_url != blank %}{{ section.settings.hero_bg_url }}{% else %}https://via.placeholder.com/1920x1080/cccccc/666666?text=Background{% endif %}')"
 
 🔥 **SOLUTION 2: GUARANTEED HEADER ICONS**
 Extract and implement EVERY header icon:
@@ -328,43 +368,58 @@ LIQUID LOOP:
   {% endif %}
 {% endfor %}
 
-🔥 **SOLUTION 6: COMPLETE CODE PRESERVATION**
-Mandatory full structure:
+🔥 **SOLUTION 6: PROPER SHOPIFY SECTION STRUCTURE**
+Complete section format with scoped CSS and theme editor support:
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ section.settings.page_title | default: 'Extracted Title' }}</title>
-  <meta name="description" content="{{ section.settings.meta_description | default: 'Extracted Description' }}">
+<!-- CDN Links: Add these to theme.liquid <head> section:
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Didot:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap">
+-->
+
+<section id="section-{{ section.id }}" class="hair-care-landing-page">
+  <!-- ALL LIQUID TEMPLATE CONTENT HERE -->
   
-  <!-- ALL CDN LINKS FROM ORIGINAL HTML -->
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Didot:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap">
-  
-  <!-- COMPLETE CSS SECTION FROM HTML -->
   <style>
-    /* ALL ORIGINAL CSS EXACTLY AS IS */
+    /* Scope all CSS to this section */
+    #section-{{ section.id }} body,
+    #section-{{ section.id }} html {
+      /* ALL ORIGINAL CSS SCOPED */
+    }
+    
+    #section-{{ section.id }} .luxehair-velvet {
+      /* ALL ORIGINAL CSS SCOPED */
+    }
+    
+    /* ... ALL OTHER CSS SCOPED ... */
   </style>
-</head>
-<body>
-  <!-- COMPLETE LIQUID TEMPLATE -->
   
-  <!-- COMPLETE JAVASCRIPT FROM HTML -->
   <script>
-    /* ALL ORIGINAL JAVASCRIPT EXACTLY AS IS */
+    // Theme editor compatibility
+    document.addEventListener('shopify:section:load', function(e) {
+      if (e.detail.sectionId === '{{ section.id }}') {
+        // Re-initialize sliders, mobile menu, etc.
+        initializeMobileMenu();
+        initializeSliders();
+      }
+    });
+    
+    // Original functionality wrapped in DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', function() {
+      // ALL ORIGINAL JAVASCRIPT HERE
+    });
   </script>
-</body>
-</html>
+</section>
 
 🚨 SPECIFIC FIXES REQUIRED 🚨:
+- SECTION FORMAT: Wrap everything in <section id="section-{{ section.id }}" class="...">
 - HEADER ICONS: Any fa-search and fa-shopping-cart icons MUST be converted to header_icon blocks
 - MOBILE MENU: Any hamburger menu or mobile navigation MUST have hamburger_toggle settings in schema
 - BLOG/EDUCATION: Any "Hair Care Wisdom", "blog", or education cards MUST be converted to blog_card blocks
-- ALL IMAGES: Every img tag must use {{ block.settings.image_name | img_url: 'master' }} - NO blank images!
+- ALL IMAGES: Every img tag must use {{ block.settings.image_name | image_url }} - NO blank images!
 - NEVER leave any image setting as empty string - use placeholder text instead
+- SCOPED CSS: All CSS must be scoped with #section-{{ section.id }}
+- THEME EDITOR: JavaScript must include shopify:section:load compatibility
 
 🚨 HEADER ICON IMPLEMENTATION REQUIREMENT 🚨:
 If you see <i class="fas fa-search"> or <i class="fas fa-shopping-cart"> in HTML:
@@ -400,7 +455,7 @@ Include rating number and review count as separate settings.
    - ALL span/div text content → {{ section.settings.label_1 }}, {{ section.settings.label_2 }}, etc.
    - ALL list items text → {{ section.settings.list_item_1 }}, {{ section.settings.list_item_2 }}, etc.
    - ALL image alt text → {{ section.settings.image_alt }}, {{ section.settings.image_1_alt }}, etc.
-   - ALL image src URLs → {{ section.settings.image | img_url: 'master' }}
+   - ALL image src URLs → {{ section.settings.image | image_url }}
    - ALL anchor tag hrefs → {{ section.settings.link_url }} or {{ block.settings.link_url }}
    - ALL anchor tag text → {{ section.settings.link_text }} or {{ block.settings.link_text }}
    - ALL form placeholder text → {{ section.settings.placeholder_text }}
@@ -449,7 +504,7 @@ Include rating number and review count as separate settings.
    - Use "text" type for short text (under 100 characters)
    - Use "textarea" type for long text (over 100 characters)
    - Use "image_picker" for ALL images (NO default values for image_picker)
-   - Convert ALL img src to {{ block.settings.image_name | img_url: 'master' }} format
+   - Convert ALL img src to {{ block.settings.image_name | image_url }} format
    - Extract actual image filenames from HTML src as schema labels for clarity
    - Use "url" for ALL anchor tag links with actual href as default value
    - Use "text" for ALL anchor tag text content as editable settings
@@ -1260,10 +1315,55 @@ Return section content only with schema!`
 
     cleanedLiquidContent = cleanedLiquidContent.replace(/```\s*$/g, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/^```.*?\n/g, '');
-    cleanedLiquidContent = cleanedLiquidContent.trim();
-
-    cleanedLiquidContent = cleanedLiquidContent.replace(/^<html[\s\S]*?<\/html>$/gm, '');
+    cleanedLiquidContent = cleanedLiquidContent.trim();    cleanedLiquidContent = cleanedLiquidContent.replace(/^<html[\s\S]*?<\/html>$/gm, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/^<!DOCTYPE[\s\S]*?>\s*/gm, '');
+      // 🚨 CRITICAL: Enforce section wrapper requirement
+    if (!cleanedLiquidContent.includes('<section id="section-{{ section.id }}')) {
+      console.log('🔧 CRITICAL: Section wrapper missing - adding mandatory wrapper');
+      
+      // Find where schema starts to split content and schema
+      const schemaIndex = cleanedLiquidContent.indexOf('{% schema %}');
+      if (schemaIndex !== -1) {
+        const htmlContent = cleanedLiquidContent.substring(0, schemaIndex).trim();
+        const schemaContent = cleanedLiquidContent.substring(schemaIndex);
+        
+        // Wrap all content in section wrapper with scoped CSS
+        const scopedCSS = htmlContent.replace(/<style>/g, '<style>\n#section-{{ section.id }} ').replace(/(\w+)\s*{/g, (match, selector) => {
+          if (selector.includes('#section-{{ section.id }}')) return match;
+          return `#section-{{ section.id }} ${selector} {`;
+        });
+        
+        const wrappedContent = `<section id="section-{{ section.id }}" class="maertin-hair-care-section">\n${scopedCSS}\n</section>\n\n${schemaContent}`;
+        cleanedLiquidContent = wrappedContent;
+        console.log('✅ Section wrapper added successfully with scoped CSS');
+      } else {
+        console.error('⚠️ No schema found - cannot properly wrap content');
+      }    } else {
+      console.log('✅ Section wrapper already present');
+        // Ensure CSS is properly scoped even if section wrapper exists
+      if (cleanedLiquidContent.includes('<style>') && !cleanedLiquidContent.includes('#section-{{ section.id }}')) {
+        console.log('🔧 Adding CSS scoping to existing styles');
+        cleanedLiquidContent = cleanedLiquidContent.replace(/<style>\s*/g, '<style>\n/* Scoped styles for section */\n');
+        cleanedLiquidContent = cleanedLiquidContent.replace(/([.#]?[\w\-]+)\s*{/g, (match, selector) => {
+          // Skip if already scoped or is a keyframe/media query
+          if (selector.includes('#section-{{ section.id }}') || selector.includes('@') || selector.includes('keyframes')) {
+            return match;
+          }
+          return `#section-{{ section.id }} ${selector} {`;
+        });
+        console.log('✅ CSS scoping applied');
+      }
+        // Ensure theme editor JavaScript compatibility
+      if (cleanedLiquidContent.includes('<script>') && !cleanedLiquidContent.includes('shopify:section:load')) {
+        console.log('🔧 Adding theme editor JavaScript compatibility');
+        cleanedLiquidContent = cleanedLiquidContent.replace(
+          /(<script>\s*)/g, 
+          '$1  // Theme editor compatibility\n  document.addEventListener(\'shopify:section:load\', function(e) {\n    if (e.detail.sectionId === \'{{ section.id }}\') {\n      // Re-initialize section functionality\n      console.log(\'Section reloaded in theme editor\');\n    }\n  });\n\n  '
+        );
+        console.log('✅ Theme editor JS compatibility added');
+      }
+    }
+    
     if (!cleanedLiquidContent.includes('{% schema %}')) {
       console.error('Missing schema in Liquid template');
     }
@@ -2409,32 +2509,81 @@ Return ONLY valid JSON:`;
       }
 
       console.log('✅ Image URL population completed');
-    }
-    if (imageUrls && imageUrls.length > 0) {
+    }    if (imageUrls && imageUrls.length > 0) {
       console.log('🔧 Updating Liquid template to use robust image fallback syntax...');
 
       cleanedLiquidContent = cleanedLiquidContent.replace(
         /\{\{\s*section\.settings\.([a-zA-Z_][a-zA-Z0-9_]*image)\s*(\|\s*img_url[^}]*)?\s*\}\}/g,
-        '{% if section.settings.$1 != blank %}{{ section.settings.$1 | img_url: "master" }}{% elsif section.settings.$1_url != blank %}{{ section.settings.$1_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}'
+        '{% if section.settings.$1 != blank %}{{ section.settings.$1 | image_url }}{% elsif section.settings.$1_url != blank %}{{ section.settings.$1_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}'
       );
 
       cleanedLiquidContent = cleanedLiquidContent.replace(
         /\{\{\s*block\.settings\.([a-zA-Z_][a-zA-Z0-9_]*image)\s*(\|\s*img_url[^}]*)?\s*\}\}/g,
-        '{% if block.settings.$1 != blank %}{{ block.settings.$1 | img_url: "master" }}{% elsif block.settings.$1_url != blank %}{{ block.settings.$1_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}'
+        '{% if block.settings.$1 != blank %}{{ block.settings.$1 | image_url }}{% elsif block.settings.$1_url != blank %}{{ block.settings.$1_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}'
       );
 
       cleanedLiquidContent = cleanedLiquidContent.replace(
         /style="([^"]*?)background-image:\s*url\(['"]?\{\{\s*(section|block)\.settings\.([a-zA-Z_][a-zA-Z0-9_]*image[^}]*)\}\}['"]?\)([^"]*?)"/g,
-        'style="$1background-image: url(\'{% if $2.settings.$3 != blank %}{{ $2.settings.$3 | img_url: "master" }}{% elsif $2.settings.$3_url != blank %}{{ $2.settings.$3_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Background{% endif %}\')$4"'
+        'style="$1background-image: url(\'{% if $2.settings.$3 != blank %}{{ $2.settings.$3 | image_url }}{% elsif $2.settings.$3_url != blank %}{{ $2.settings.$3_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Background{% endif %}\')$4"'
       );
 
       cleanedLiquidContent = cleanedLiquidContent.replace(
         /src="\{\{\s*(section|block)\.settings\.([a-zA-Z_][a-zA-Z0-9_]*image[^}]*)\}\}"/g,
-        'src="{% if $1.settings.$2 != blank %}{{ $1.settings.$2 | img_url: \'master\' }}{% elsif $1.settings.$2_url != blank %}{{ $1.settings.$2_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}"'
+        'src="{% if $1.settings.$2 != blank %}{{ $1.settings.$2 | image_url }}{% elsif $1.settings.$2_url != blank %}{{ $1.settings.$2_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}"'
+      );      console.log('✅ Liquid template updated with robust dual image approach');
+    }    // 🚨 FINAL COMPLIANCE ENFORCEMENT
+    console.log('🔧 Final client compliance enforcement...');
+    
+    // Fix CSS scoping issues
+    if (cleanedLiquidContent.includes('<style>')) {
+      console.log('🔧 FINAL: Fixing CSS scoping syntax');
+      // Fix malformed scoping like ".luxehair-#section-{{ section.id }} velvet"
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /\.([a-zA-Z-]+)-#section-\{\{ section\.id \}\}\s+([a-zA-Z-]+)/g,
+        '#section-{{ section.id }} .$1-$2'
       );
-
-      console.log('✅ Liquid template updated with robust dual image approach');
+      // Fix general scoping issues  
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /([.#][\w-]+):#section-\{\{ section\.id \}\}/g,
+        '#section-{{ section.id }} $1'
+      );
     }
+    
+    // Fix Shopify form structure for newsletter
+    if (cleanedLiquidContent.includes('<form') && !cleanedLiquidContent.includes('form_type')) {
+      console.log('🔧 FINAL: Adding Shopify form structure');
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /<form([^>]*?)>/g,
+        '<form method="post" action="/contact#contact_form"$1>\n  <input type="hidden" name="form_type" value="customer">\n  <input type="hidden" name="utf8" value="✓">'
+      );
+    }
+    
+    // Add proper alt text to images
+    cleanedLiquidContent = cleanedLiquidContent.replace(
+      /alt="([^"]*?)"/g,
+      'alt="{{ section.settings.$1_alt_text | default: \'$1\' }}"'
+    );
+    
+    // Ensure theme editor JavaScript compatibility
+    if (cleanedLiquidContent.includes('<script>') && !cleanedLiquidContent.includes('shopify:section:load')) {
+      console.log('🔧 FINAL: Adding missing theme editor JS compatibility');
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /(<script>\s*)/g, 
+        '$1  // Theme editor compatibility\n  document.addEventListener(\'shopify:section:load\', function(e) {\n    if (e.detail.sectionId === \'{{ section.id }}\') {\n      // Re-initialize section functionality\n      console.log(\'Section reloaded in theme editor\');\n    }\n  });\n\n  '
+      );
+    }
+    
+    // Ensure CDN links are commented for theme.liquid
+    if (!cleanedLiquidContent.includes('Add these to theme.liquid')) {
+      const cdnComment = `<!-- CDN Links: Add these to theme.liquid <head> section:
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Didot:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap">
+-->\n\n`;
+      cleanedLiquidContent = cdnComment + cleanedLiquidContent;
+    }
+    
+    console.log('✅ Final compliance enforcement completed');
 
     return NextResponse.json({
       success: true,

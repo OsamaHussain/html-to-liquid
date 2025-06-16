@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
+    "axios": "^1.10.0",
     "htmlhint": "^1.2.0",
     "next": "15.3.2",
     "openai": "^5.0.1",
