@@ -99,6 +99,24 @@ NEVER nest Liquid variables inside other Liquid variables!
 
 Use simple, direct variable references only!
 
+🚨 **CRITICAL: PRESERVE ALL COLORS EXACTLY** 🚨
+NEVER change, modify, or alter ANY colors from the original HTML!
+- Keep ALL hex colors EXACTLY as they are: #a13f4f, #ffe0dc, #3d1017, etc.
+- Keep ALL RGB/RGBA colors EXACTLY as they are
+- Keep ALL color names EXACTLY as they are  
+- Keep ALL gradients EXACTLY as they are
+- Keep ALL background colors EXACTLY as they are
+- Keep ALL text colors EXACTLY as they are
+- Keep ALL border colors EXACTLY as they are
+
+❌ WRONG: Changing #a13f4f to #ff0000
+❌ WRONG: Changing color schemes or palettes
+❌ WRONG: "Improving" or "updating" colors
+✅ CORRECT: Copy ALL colors exactly as written in original HTML
+✅ CORRECT: Preserve the exact color scheme
+
+NO COMPROMISE ON COLORS - EXACT PRESERVATION REQUIRED!
+
 ✅ **EXTRACT ALL IMAGE URLS AND MAKE EDITABLE**:
 - Find ALL img src URLs and background-image URLs from HTML
 - Create image_picker + fallback text field for EACH image
@@ -180,6 +198,22 @@ Add at top:
      });
    - Include within section, works in customizer
 
+🔥 **LIQUID SYNTAX RULES** 🔥:
+4. 🚨 CRITICAL: PIPE OPERATORS ONLY IN OUTPUT, NEVER IN CONDITIONS:
+   - CORRECT: {% if block.settings.slide_image != blank %}{{ block.settings.slide_image | image_url }}{% endif %}
+   - WRONG: {% if block.settings.slide_image | image_url != blank %}
+   - CORRECT: {% if section.settings.hero_bg != blank %}{{ section.settings.hero_bg | image_url }}{% endif %}
+   - WRONG: {% if section.settings.hero_bg | image_url != blank %}
+   - Pipes (|) are for filters in OUTPUT {{ }}, never in conditions {% %}
+
+🔥 **SCHEMA VALIDATION REQUIREMENTS** 🔥:
+5. 🚨 CRITICAL: ALL SCHEMA FIELDS MUST HAVE PROPER VALIDATION:
+   - URL fields: {"type": "url", "id": "hero_button_link", "default": "/"}
+   - Range fields: {"type": "range", "id": "product_rating", "min": 1, "max": 5, "default": 5}
+   - Number fields: {"type": "number", "id": "product_rating", "min": 1, "max": 5, "default": 5}
+   - NEVER leave min/max undefined for range/number fields
+   - NEVER leave default undefined for URL fields
+
 🔥 **BULLETPROOF IMAGE HANDLING** 🔥:
 4. MANDATORY TRIPLE-FALLBACK IMAGE SYSTEM:
    - Extract EVERY img src and background-image URL from HTML
@@ -191,7 +225,7 @@ Add at top:
 5. CONVERT ALL HEADER ICONS TO DEDICATED BLOCKS:
    - Find <i class="fas fa-search"> → Create header_search_icon block
    - Find <i class="fas fa-shopping-cart"> → Create header_cart_icon block  
-   - Schema: {"type": "header_icon", "name": "Header Icon", "settings": [{"type": "text", "id": "icon_class", "default": "extracted-icon-class"}, {"type": "url", "id": "icon_link", "default": "#"}, {"type": "text", "id": "icon_text", "default": ""}]}
+   - Schema: {"type": "header_icon", "name": "Header Icon", "settings": [{"type": "text", "id": "icon_class", "default": "extracted-icon-class"}, {"type": "url", "id": "icon_link", "default": "/"}, {"type": "text", "id": "icon_text", "default": ""}]}
    - Liquid: {% for block in section.blocks %}{% if block.type == 'header_icon' %}<a href="{{ block.settings.icon_link }}" class="icon-link"><i class="{{ block.settings.icon_class }}"></i>{{ block.settings.icon_text }}</a>{% endif %}{% endfor %}
 
 🔥 **BULLETPROOF MOBILE MENU SYSTEM** 🔥:
@@ -214,7 +248,7 @@ Add at top:
 8. CONVERT ALL SOCIAL ICONS TO BLOCKS:
    - Find <i class="fab fa-facebook-f"> → Create social_facebook block
    - Find <i class="fab fa-instagram"> → Create social_instagram block
-   - Schema: {"type": "social_link", "name": "Social Link", "settings": [{"type": "url", "id": "social_url", "default": "#"}, {"type": "text", "id": "social_icon", "default": "extracted-icon-class"}, {"type": "text", "id": "social_name", "default": "Social Platform"}]}
+   - Schema: {"type": "social_link", "name": "Social Link", "settings": [{"type": "url", "id": "social_url", "default": "/"}, {"type": "text", "id": "social_icon", "default": "extracted-icon-class"}, {"type": "text", "id": "social_name", "default": "Social Platform"}]}
 
 🔥 **COMPLETE CODE PRESERVATION GUARANTEE** 🔥:
 9. MANDATORY SHOPIFY SECTION STRUCTURE:
@@ -378,7 +412,7 @@ BLOCKS SCHEMA:
   "name": "Header Icon", 
   "settings": [
     {"type": "text", "id": "icon_class", "label": "Icon Class", "default": "fas fa-search"},
-    {"type": "url", "id": "icon_link", "label": "Icon Link", "default": "#"},
+    {"type": "url", "id": "icon_link", "label": "Icon Link", "default": "/"},
     {"type": "text", "id": "wrapper_class", "label": "Wrapper Classes", "default": "icon-link"}
   ]
 }
@@ -399,7 +433,7 @@ JSON BLOCKS (AUTO-GENERATED):
   "type": "header_icon",
   "settings": {
     "icon_class": "fas fa-search",
-    "icon_link": "#",
+    "icon_link": "/",
     "wrapper_class": "icon-link"
   }
 },
@@ -407,7 +441,7 @@ JSON BLOCKS (AUTO-GENERATED):
   "type": "header_icon", 
   "settings": {
     "icon_class": "fas fa-shopping-cart",
-    "icon_link": "#",
+    "icon_link": "/",
     "wrapper_class": "icon-link"
   }
 }
@@ -473,7 +507,7 @@ CREATE BLOCK:
 "social-facebook": {
   "type": "social_link",
   "settings": {
-    "social_url": "#", 
+    "social_url": "/", 
     "social_icon": "fab fa-facebook-f",
     "social_name": "Facebook"
   }
@@ -545,7 +579,7 @@ Complete section format with scoped CSS and theme editor support:
 If you see <i class="fas fa-search"> or <i class="fas fa-shopping-cart"> in HTML:
 1. Extract exact icon classes and create header_icon blocks in schema
 2. Liquid template: {% for block in section.blocks %}{% if block.type == 'header_icon' %}<a href="{{ block.settings.icon_link }}" class="{{ block.settings.icon_wrapper_class }}"><i class="{{ block.settings.icon_class }}"></i></a>{% endif %}{% endfor %}
-3. Schema must include blocks: { "type": "header_icon", "name": "Header Icon", "settings": [{"type": "text", "id": "icon_class", "label": "Icon Class", "default": "fas fa-search"}, {"type": "url", "id": "icon_link", "label": "Icon Link", "default": "#"}, {"type": "text", "id": "icon_wrapper_class", "label": "Wrapper Class", "default": "icon-link"}]}
+3. Schema must include blocks: { "type": "header_icon", "name": "Header Icon", "settings": [{"type": "text", "id": "icon_class", "label": "Icon Class", "default": "fas fa-search"}, {"type": "url", "id": "icon_link", "label": "Icon Link", "default": "/"}, {"type": "text", "id": "icon_wrapper_class", "label": "Wrapper Class", "default": "icon-link"}]}
 4. Create separate header_icon blocks for EACH icon found in HTML
 5. JSON must include header_icon blocks for each icon with actual extracted classes
 
@@ -1690,12 +1724,18 @@ Return section content only with schema!`
       .replace(/alt="[^"]*\{\{\s*section\.settings\.([^}|]*[äöüÄÖÜßñç][^}|]*)/g, 'alt="Image"')
       .replace(/default:\s*'[^']*[äöüÄÖÜßñç][^']*'/g, "")
       .replace(/\|\s*default:\s*'[^']*'/g, "")
-      .replace(/\|\s*default:\s*"[^"]*"/g, "")
-
-      .replace(/([a-zA-Z_]+)\s+_url/g, '$1_url')
+      .replace(/\|\s*default:\s*"[^"]*"/g, "").replace(/([a-zA-Z_]+)\s+_url/g, '$1_url')
 
       .replace(/\{\%\s*if\s+([^}]*)\s*\|\s*image_url\s*!=\s*blank\s*\%\}/g, '{% if $1 != blank %}')
-      .replace(/\{\%\s*elsif\s+([^}]*)\s*\|\s*image_url\s*!=\s*blank\s*\%\}/g, '{% elsif $1 != blank %}');
+      .replace(/\{\%\s*elsif\s+([^}]*)\s*\|\s*image_url\s*!=\s*blank\s*\%\}/g, '{% elsif $1 != blank %}')
+
+      .replace(/\{\%\s*if\s+([^}]*?\bsettings\.[^}]*?)\s*\|\s*image_url\s*(!=|==)\s*blank\s*\%\}/g, '{% if $1 $2 blank %}')
+      .replace(/\{\%\s*elsif\s+([^}]*?\bsettings\.[^}]*?)\s*\|\s*image_url\s*(!=|==)\s*blank\s*\%\}/g, '{% elsif $1 $2 blank %}')
+      .replace(/\{\%\s*if\s+([^}]*?\bsettings\.[^}]*?)\s*\|\s*img_url\s*(!=|==)\s*blank\s*\%\}/g, '{% if $1 $2 blank %}')
+      .replace(/\{\%\s*elsif\s+([^}]*?\bsettings\.[^}]*?)\s*\|\s*img_url\s*(!=|==)\s*blank\s*\%\}/g, '{% elsif $1 $2 blank %}')
+
+      .replace(/\{\%\s*if\s+([^}]*?)\s*\|\s*([a-zA-Z_]+)\s*(!=|==)\s*blank\s*\%\}/g, '{% if $1 $3 blank %}')
+      .replace(/\{\%\s*elsif\s+([^}]*?)\s*\|\s*([a-zA-Z_]+)\s*(!=|==)\s*blank\s*\%\}/g, '{% elsif $1 $3 blank %}');
 
     console.log('✅ Special character cleanup on processed content completed');
 
@@ -2813,10 +2853,50 @@ Return ONLY valid JSON:`;
       correctedJsonTemplate = correctedJsonTemplate.replace(/^```json\s*/, '').replace(/\s*```$/, '');
       correctedJsonTemplate = correctedJsonTemplate.replace(/```\s*$/g, '');
       correctedJsonTemplate = correctedJsonTemplate.replace(/^```.*?\n/g, '');
-      correctedJsonTemplate = correctedJsonTemplate.trim();
-
-      try {
+      correctedJsonTemplate = correctedJsonTemplate.trim(); try {
         const jsonData = JSON.parse(correctedJsonTemplate);
+
+        console.log('🔧 Applying comprehensive schema validation fixes...');
+
+        function fixSchemaSettings(settings) {
+          if (!Array.isArray(settings)) return;
+
+          settings.forEach(setting => {
+            if (!setting || typeof setting !== 'object') return;
+
+            if (setting.type === 'url') {
+              if (!setting.default || typeof setting.default !== 'string' ||
+                setting.default.trim() === '' || setting.default === 'null' ||
+                setting.default === 'undefined') {
+                setting.default = "/";
+                console.log(`✅ Fixed URL field ${setting.id}: default set to "/"`);
+              }
+            }
+            if (setting.type === 'range' || setting.type === 'number') {
+              if (setting.id && (setting.id.includes('rating') || setting.id.includes('product_rating'))) {
+                if (typeof setting.min === 'undefined' || setting.min === null || setting.min === '') {
+                  setting.min = 1;
+                  console.log(`✅ Fixed rating field ${setting.id}: min set to 1`);
+                }
+                if (typeof setting.max === 'undefined' || setting.max === null || setting.max === '') {
+                  setting.max = 5;
+                  console.log(`✅ Fixed rating field ${setting.id}: max set to 5`);
+                }
+                if (typeof setting.default === 'undefined' || setting.default === null || setting.default === '') {
+                  setting.default = 5;
+                  console.log(`✅ Fixed rating field ${setting.id}: default set to 5`);
+                }
+              } else {
+                if (typeof setting.min === 'undefined' || setting.min === null) {
+                  setting.min = 0;
+                }
+                if (typeof setting.max === 'undefined' || setting.max === null) {
+                  setting.max = 100;
+                }
+              }
+            }
+          });
+        }
 
         if (jsonData.sections && jsonData.sections.main) {
           jsonData.sections.main.type = sectionType;
@@ -2828,13 +2908,15 @@ Return ONLY valid JSON:`;
               "padding_bottom": 36,
               "margin_top": 0,
               "margin_bottom": 0
-            };
-
-            Object.keys(defaultStyleSettings).forEach(key => {
+            }; Object.keys(defaultStyleSettings).forEach(key => {
               if (!jsonData.sections.main.settings.hasOwnProperty(key)) {
                 jsonData.sections.main.settings[key] = defaultStyleSettings[key];
               }
             });
+
+            if (Array.isArray(jsonData.sections.main.settings)) {
+              fixSchemaSettings(jsonData.sections.main.settings);
+            }
 
             Object.keys(jsonData.sections.main.settings).forEach(key => {
               const setting = jsonData.sections.main.settings[key];
@@ -2906,6 +2988,10 @@ Return ONLY valid JSON:`;
                 }
               }
               if (block.settings) {
+                if (Array.isArray(block.settings)) {
+                  fixSchemaSettings(block.settings);
+                }
+
                 Object.keys(block.settings).forEach(key => {
                   const setting = block.settings[key];
                   if (typeof setting === 'object' && setting.type === 'image_picker' && setting.default) {
@@ -2921,6 +3007,36 @@ Return ONLY valid JSON:`;
             });
           }
         }
+
+        function scanAndFixAllSettings(obj) {
+          if (!obj || typeof obj !== 'object') return;
+
+          if (Array.isArray(obj)) {
+            obj.forEach(item => scanAndFixAllSettings(item));
+            return;
+          }
+
+          if (obj.blocks && Array.isArray(obj.blocks)) {
+            obj.blocks.forEach(block => {
+              if (block && block.settings && Array.isArray(block.settings)) {
+                fixSchemaSettings(block.settings);
+              }
+            });
+          }
+
+          if (obj.settings && Array.isArray(obj.settings)) {
+            fixSchemaSettings(obj.settings);
+          }
+
+          Object.keys(obj).forEach(key => {
+            if (typeof obj[key] === 'object') {
+              scanAndFixAllSettings(obj[key]);
+            }
+          });
+        }
+
+        scanAndFixAllSettings(jsonData);
+        console.log('✅ Schema validation fixes completed');
 
         correctedJsonTemplate = JSON.stringify(jsonData, null, 2);
       } catch (e) {
@@ -3235,15 +3351,145 @@ Return ONLY valid JSON:`;
 
       .replace(/([a-zA-Z_]+)\s+_url/g, '$1_url')
 
-      .replace(/\|\s*image_url\s*\|\s*image_url/g, '| image_url')
-
-      .replace(/\{\%\s*if\s+([^}]*\.settings\.[^}]*?)\s+_url\s*!=\s*blank\s*\%\}/g, '{% if $1_url != blank %}')
+      .replace(/\|\s*image_url\s*\|\s*image_url/g, '| image_url').replace(/\{\%\s*if\s+([^}]*\.settings\.[^}]*?)\s+_url\s*!=\s*blank\s*\%\}/g, '{% if $1_url != blank %}')
       .replace(/\{\%\s*elsif\s+([^}]*\.settings\.[^}]*?)\s+_url\s*!=\s*blank\s*\%\}/g, '{% elsif $1_url != blank %}')
+
+      .replace(/\{\%\s*if\s+([^}]*?\bsettings\.[^}]*?)\s*\|\s*image_url\s*(!=|==)\s*blank\s*\%\}/g, '{% if $1 $2 blank %}')
+      .replace(/\{\%\s*elsif\s+([^}]*?\bsettings\.[^}]*?)\s*\|\s*image_url\s*(!=|==)\s*blank\s*\%\}/g, '{% elsif $1 $2 blank %}')
+      .replace(/\{\%\s*if\s+([^}]*?\bsettings\.[^}]*?)\s*\|\s*img_url\s*(!=|==)\s*blank\s*\%\}/g, '{% if $1 $2 blank %}')
+      .replace(/\{\%\s*elsif\s+([^}]*?\bsettings\.[^}]*?)\s*\|\s*img_url\s*(!=|==)\s*blank\s*\%\}/g, '{% elsif $1 $2 blank %}')
+
+      .replace(/\{\%\s*if\s+([^}]*?)\s*\|\s*([a-zA-Z_]+)\s*(!=|==)\s*blank\s*\%\}/g, '{% if $1 $3 blank %}')
+      .replace(/\{\%\s*elsif\s+([^}]*?)\s*\|\s*([a-zA-Z_]+)\s*(!=|==)\s*blank\s*\%\}/g, '{% elsif $1 $3 blank %}')
 
       .replace(/alt="[^"]*[äöüÄÖÜßñç][^"]*"/g, 'alt="Image"')
       .replace(/default:\s*'[^']*[äöüÄÖÜßñç][^']*'/g, "default: 'Image'");
-
     console.log('✅ Final special character cleanup completed');
+    console.log('🔧 Final schema string validation...');
+    if (correctedJsonTemplate) {
+      correctedJsonTemplate = correctedJsonTemplate
+        .replace(/"type":\s*"url"[^}]*"default":\s*(null|undefined|""|''|"#")/g, '"type": "url", "default": "/"')
+        .replace(/("type":\s*"url"[^}]*?)(\s*\})/g, (match, beforeEnd, end) => {
+          if (!beforeEnd.includes('"default"')) {
+            return beforeEnd + ', "default": "/"' + end;
+          }
+          return match;
+        })
+
+        .replace(/"id":\s*"hero_button_link"[^}]*"default":\s*"[^"]*"/g, '"id": "hero_button_link", "default": "/"')
+        .replace(/"id":\s*"stylist_button_link"[^}]*"default":\s*"[^"]*"/g, '"id": "stylist_button_link", "default": "/"')
+        .replace(/"id":\s*"shop_button_link"[^}]*"default":\s*"[^"]*"/g, '"id": "shop_button_link", "default": "/"')
+        .replace(/"id":\s*"education_button_link"[^}]*"default":\s*"[^"]*"/g, '"id": "education_button_link", "default": "/"')
+
+        .replace(/("type":\s*"url"[^}]*"default":\s*)"#"/g, '$1"/"')
+
+        .replace(/"type":\s*"url"[^}]*(?!"default":)[^}]*\}/g, (match) => {
+          return match.replace(/\}$/, ', "default": "/"}');
+        })
+        .replace(/"id":\s*"product_rating"[^}]*(?!"min":)[^}]*\}/g, (match) => {
+          let fixed = match;
+          if (!match.includes('"min":')) {
+            fixed = fixed.replace(/(\}$)/, ', "min": 1$1');
+          }
+          if (!match.includes('"max":')) {
+            fixed = fixed.replace(/(\}$)/, ', "max": 5$1');
+          }
+          if (!match.includes('"default":')) {
+            fixed = fixed.replace(/(\}$)/, ', "default": 5$1');
+          }
+          return fixed;
+        })
+        .replace(/"type":\s*"range"[^}]*"id":\s*"[^"]*rating[^"]*"[^}]*\}/g, (match) => {
+          let fixed = match;
+          if (!match.includes('"min":')) {
+            fixed = fixed.replace(/(\}$)/, ', "min": 1$1');
+          }
+          if (!match.includes('"max":')) {
+            fixed = fixed.replace(/(\}$)/, ', "max": 5$1');
+          }
+          if (!match.includes('"default":')) {
+            fixed = fixed.replace(/(\}$)/, ', "default": 5$1');
+          }
+          return fixed;
+        })
+        .replace(/"type":\s*"number"[^}]*"id":\s*"[^"]*rating[^"]*"[^}]*\}/g, (match) => {
+          let fixed = match;
+          if (!match.includes('"min":')) {
+            fixed = fixed.replace(/(\}$)/, ', "min": 1$1');
+          }
+          if (!match.includes('"max":')) {
+            fixed = fixed.replace(/(\}$)/, ', "max": 5$1');
+          }
+          if (!match.includes('"default":')) {
+            fixed = fixed.replace(/(\}$)/, ', "default": 5$1');
+          }
+          return fixed;
+        });
+      console.log('✅ Final schema validation completed');
+      try {
+        const finalCheck = JSON.parse(correctedJsonTemplate);
+        let fixCount = 0;
+
+        function ultimateFix(obj) {
+          if (!obj || typeof obj !== 'object') return;
+
+          if (Array.isArray(obj)) {
+            obj.forEach(item => ultimateFix(item));
+            return;
+          }
+
+          if (Array.isArray(obj.settings)) {
+            obj.settings.forEach(setting => {
+              if (!setting) return;
+
+              if (setting.type === 'url') {
+                if (!setting.default || setting.default !== "/") {
+                  setting.default = "/";
+                  fixCount++;
+                  console.log(`🔧 ULTIMATE FIX: ${setting.id || 'unknown'} URL default → "/"`);
+                }
+              }
+
+              if ((setting.type === 'range' || setting.type === 'number') &&
+                setting.id && (setting.id.includes('rating') || setting.id === 'product_rating')) {
+                if (typeof setting.min === 'undefined' || setting.min === null) {
+                  setting.min = 1;
+                  fixCount++;
+                  console.log(`🔧 ULTIMATE FIX: ${setting.id} min → 1`);
+                }
+                if (typeof setting.max === 'undefined' || setting.max === null) {
+                  setting.max = 5;
+                  fixCount++;
+                  console.log(`🔧 ULTIMATE FIX: ${setting.id} max → 5`);
+                }
+                if (typeof setting.default === 'undefined' || setting.default === null) {
+                  setting.default = 5;
+                  fixCount++;
+                  console.log(`🔧 ULTIMATE FIX: ${setting.id} default → 5`);
+                }
+              }
+            });
+          }
+
+          Object.keys(obj).forEach(key => {
+            if (typeof obj[key] === 'object') {
+              ultimateFix(obj[key]);
+            }
+          });
+        }
+
+        ultimateFix(finalCheck);
+
+        if (fixCount > 0) {
+          correctedJsonTemplate = JSON.stringify(finalCheck, null, 2);
+          console.log(`🔧 ULTIMATE FIX: Applied ${fixCount} final corrections`);
+        }
+      } catch (e) {
+        console.warn('Ultimate URL fix failed, using string fallback');
+        correctedJsonTemplate = correctedJsonTemplate
+          .replace(/("type":\s*"url"[^}]*"default":\s*)"[^"]*"/g, '$1"/"');
+      }
+    }
 
     return NextResponse.json({
       success: true,
