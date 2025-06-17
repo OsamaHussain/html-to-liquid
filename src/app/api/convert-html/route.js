@@ -36,13 +36,18 @@ export async function POST(request) {
         .replace(/[^\w\s\-_]/g, '')
         .replace(/\s+/g, '_')
         .toLowerCase();
-    } const isLargeFile = htmlContent.length > 8000 || htmlContent.split('\n').length > 400;
+    } const isLargeFile = htmlContent.length > 8000 || htmlContent.split('\n').length > 400; const prompt = `You are an expert Shopify Liquid developer. Convert the following HTML code to a PERFECT Shopify Liquid section that looks EXACTLY like the original HTML.
 
-    const prompt = `You are an expert Shopify Liquid developer. Convert the following HTML code to a PERFECT Shopify Liquid section following the EXACT structure and requirements below. 
+🚨 CRITICAL VISUAL PRESERVATION REQUIREMENT 🚨
+The converted Shopify section MUST be visually and functionally IDENTICAL to the original HTML file!
+- Same colors, fonts, spacing, layout, animations
+- Same JavaScript functionality and interactions
+- Same responsive design behavior
+- Same visual styling and appearance
 
 ${isLargeFile ? '🚨 CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''}
 
-🚨 MANDATORY: FOLLOW CLIENT FEEDBACK REQUIREMENTS EXACTLY 🚨
+🚨 MANDATORY: FOLLOW ALL REQUIREMENTS EXACTLY 🚨
 
 ✅ **PROPER SECTION STRUCTURE**:
 - Start: <section id="section-{{ section.id }}" class="[original-classes]">
@@ -99,8 +104,8 @@ NEVER nest Liquid variables inside other Liquid variables!
 
 Use simple, direct variable references only!
 
-🚨 **CRITICAL: PRESERVE ALL COLORS EXACTLY** 🚨
-NEVER change, modify, or alter ANY colors from the original HTML!
+🚨 **CRITICAL: PRESERVE ALL COLORS AND STYLING EXACTLY** 🚨
+CRITICAL: The converted Shopify section MUST look IDENTICAL to the original HTML!
 - Keep ALL hex colors EXACTLY as they are: #a13f4f, #ffe0dc, #3d1017, etc.
 - Keep ALL RGB/RGBA colors EXACTLY as they are
 - Keep ALL color names EXACTLY as they are  
@@ -108,14 +113,21 @@ NEVER change, modify, or alter ANY colors from the original HTML!
 - Keep ALL background colors EXACTLY as they are
 - Keep ALL text colors EXACTLY as they are
 - Keep ALL border colors EXACTLY as they are
+- Keep ALL fonts and font families EXACTLY as they are
+- Keep ALL spacing, margins, padding EXACTLY as they are
+- Keep ALL animations and transitions EXACTLY as they are
+- Keep ALL CSS classes and their definitions EXACTLY as they are
+- Keep ALL JavaScript functionality for sliders, mobile menu, interactions
 
-❌ WRONG: Changing #a13f4f to #ff0000
-❌ WRONG: Changing color schemes or palettes
-❌ WRONG: "Improving" or "updating" colors
-✅ CORRECT: Copy ALL colors exactly as written in original HTML
-✅ CORRECT: Preserve the exact color scheme
+❌ WRONG: Changing any colors, fonts, or styling
+❌ WRONG: Modifying CSS properties or values
+❌ WRONG: Breaking JavaScript functionality
+✅ CORRECT: Copy ALL styles exactly as written in original HTML
+✅ CORRECT: Preserve exact visual appearance and functionality
+✅ CORRECT: Include ALL custom CSS classes and their complete definitions
+✅ CORRECT: Include ALL JavaScript with proper scoping
 
-NO COMPROMISE ON COLORS - EXACT PRESERVATION REQUIRED!
+VISUAL PRESERVATION REQUIREMENT: The final Shopify section must be visually and functionally identical to the original HTML!
 
 ✅ **EXTRACT ALL IMAGE URLS AND MAKE EDITABLE**:
 - Find ALL img src URLs and background-image URLs from HTML
@@ -123,16 +135,32 @@ NO COMPROMISE ON COLORS - EXACT PRESERVATION REQUIRED!
 - Extract actual URLs and use as defaults in schema
 
 ✅ **PROPER CSS SCOPING TO PREVENT CONFLICTS**:
-Wrap ALL CSS with scoped selectors:
+Wrap ALL CSS with scoped selectors EXACTLY like this:
 <style>
+/* CRITICAL: Scope ALL CSS to prevent conflicts while preserving exact styling */
 #section-{{ section.id }} .original-class { 
-  /* All original styles here */ 
+  /* Copy ALL original styles here exactly as written - NO modifications */ 
 }
 #section-{{ section.id }} body,
 #section-{{ section.id }} html { 
-  /* Scope even body/html styles */ 
+  /* Scope even body/html styles if present in original */ 
 }
+/* PRESERVE ALL ORIGINAL CSS: */
+/* - Copy every single CSS rule from the original HTML */
+/* - Keep ALL colors, fonts, spacing, animations EXACTLY the same */
+/* - Keep ALL custom CSS classes and their complete definitions */
+/* - Include ALL media queries for responsive design */
+/* - Include ALL keyframes and animations */
+/* - Include ALL pseudo-elements and pseudo-classes */
+/* - DO NOT modify any CSS values or properties */
 </style>
+
+🚨 CRITICAL CSS RULES:
+- The scoped CSS must produce IDENTICAL visual results to the original HTML
+- Every single CSS rule from the original must be included with proper scoping
+- Colors, fonts, spacing, animations must be EXACTLY the same
+- Custom CSS classes like .luxehair-velvet, .maroon-shadow must be preserved
+- Responsive design and media queries must be maintained exactly
 
 ✅ **JAVASCRIPT THEME EDITOR COMPATIBILITY**:
 <script>
@@ -193,9 +221,20 @@ Add at top:
    - Add theme editor support:
      document.addEventListener('shopify:section:load', function(e) {
        if (e.detail.sectionId === '{{ section.id }}') {
-         // Re-initialize functionality
+         // Re-initialize ALL functionality exactly as in original
+         initializeSliders();
+         initializeMobileMenu();
+         initializeCarousels();
+         initializeTooltips();
+         initializeModals();
+         // Preserve ALL original JavaScript functionality
        }
      });
+   - Include COMPLETE original JavaScript within section
+   - Preserve ALL slider functionality, mobile menu toggles, carousels
+   - Preserve ALL click handlers, hover effects, animations
+   - Preserve ALL automatic transitions and timers
+   - DO NOT modify any JavaScript logic - copy exactly as written
    - Include within section, works in customizer
 
 🔥 **LIQUID SYNTAX RULES** 🔥:
@@ -1011,13 +1050,17 @@ Include rating number and review count as separate settings.
 
 CRITICAL: The liquid template should look IDENTICAL to the original HTML when rendered. Do NOT modify any CSS or styling. CONVERT THE ENTIRE HTML - ALL SECTIONS MUST BE INCLUDED. MAKE EVERY SINGLE PIECE OF TEXT CONTENT EDITABLE!
 
-🚨 VISUAL PRESERVATION REQUIREMENTS:
-- The converted Liquid template must be visually indistinguishable from the original HTML
-- ALL CSS classes, IDs, and styling must remain exactly the same
-- Colors, fonts, spacing, layout must be preserved perfectly
-- Responsive design and media queries must remain intact
-- Grid layouts, flexbox, and positioning must be maintained exactly
-- The end result should render identically to the original HTML file
+🚨 FINAL QUALITY ASSURANCE REQUIREMENTS 🚨:
+1. VISUAL IDENTITY: The Shopify section must be visually indistinguishable from the original HTML
+2. FUNCTIONAL IDENTITY: All JavaScript interactions must work exactly the same
+3. RESPONSIVE IDENTITY: Mobile and desktop layouts must match the original exactly
+4. COLOR PRESERVATION: Every single color value must be copied exactly
+5. TYPOGRAPHY PRESERVATION: All fonts, sizes, weights must be identical
+6. SPACING PRESERVATION: All margins, padding, spacing must be exact
+7. ANIMATION PRESERVATION: All transitions, animations, effects must work identically
+8. INTERACTION PRESERVATION: All clicks, hovers, mobile menu toggles must function exactly the same
+
+The end result should render identically to the original HTML file with full functionality!
 
 🚨 MANDATORY OUTPUT FORMAT RULES:
 1. MUST include COMPLETE HTML structure converted to Liquid (NOT just schema)
@@ -1057,12 +1100,25 @@ Return COMPLETE liquid template: HTML structure + CSS + JavaScript + Schema. NOT
         role: "system",
         content: `You are a Shopify Liquid expert. Based on client feedback, the current conversion system has CRITICAL BUGS that must be fixed immediately.
 
+🚨 CRITICAL CLIENT COMPLAINT: "Colors are not the same and JavaScript is not applying properly!" 🚨
+
+VISUAL PRESERVATION REQUIREMENTS:
+1. The converted Shopify section MUST look EXACTLY like the original HTML
+2. ALL colors must be preserved exactly - no changes to color values
+3. ALL fonts and typography must be identical
+4. ALL spacing, margins, padding must be exact
+5. ALL animations and transitions must work identically
+6. ALL JavaScript functionality must be preserved completely
+7. ALL CSS classes and their definitions must be included exactly
+
 CRITICAL FIXES REQUIRED:
 1. CSS SCOPING: Use "#section-{{ section.id }} .classname" NOT "#section-{{ section.id }} classname"
 2. LIQUID SYNTAX: Use "{% if forloop.first %}active{% endif %}" NOT "{% if forloop.first %}#section-{{ section.id }} active {% endif %}"
 3. IMAGE SYNTAX: Use proper triple fallback - image_picker OR image_url OR placeholder
 4. SECTION WRAPPER: Proper <section id="section-{{ section.id }}" class="original-classes">
 5. SHOPIFY FORMS: Use action="/contact#contact_form" with hidden form_type fields
+6. COMPLETE CSS PRESERVATION: Include ALL original CSS with proper scoping only
+7. COMPLETE JAVASCRIPT PRESERVATION: Include ALL original JavaScript with theme editor compatibility
 
 CLIENT COMPLAINTS TO FIX:
 - System generates schema correctly but NOT working Liquid markup
@@ -1070,39 +1126,44 @@ CLIENT COMPLAINTS TO FIX:
 - Image handling has broken syntax
 - Missing proper Shopify section structure
 - JavaScript not compatible with theme editor
+- Visual appearance doesn't match original HTML exactly
+- Colors and styling are different from original
 
 EXACT REQUIREMENTS:
 ✅ Render content using {{ section.settings.variable_name }}
 ✅ Loop blocks with {% for block in section.blocks %}{% if block.type == 'type' %}{% endif %}{% endfor %}
 ✅ Image fallback: src="{% if settings.image != blank %}{{ settings.image | image_url }}{% elsif settings.image_url != blank %}{{ settings.image_url }}{% else %}placeholder{% endif %}"
-✅ CSS scoped: #section-{{ section.id }} .original-class { styles }
-✅ JavaScript with: document.addEventListener('shopify:section:load', function(e) { if (e.detail.sectionId === '{{ section.id }}') { } });
+✅ CSS scoped: #section-{{ section.id }} .original-class { /* ALL original styles exactly */ }
+✅ JavaScript with: document.addEventListener('shopify:section:load', function(e) { if (e.detail.sectionId === '{{ section.id }}') { /* reinitialize ALL functionality */ } });
 ✅ Shopify forms: <form method="post" action="/contact#contact_form"><input type="hidden" name="form_type" value="customer">
+✅ PRESERVE ALL COLORS, FONTS, SPACING, ANIMATIONS EXACTLY AS IN ORIGINAL HTML
 
 Convert the ENTIRE HTML to working Shopify section format. Fix ALL the bugs mentioned above.`
       },
       {
         role: "user",
-        content: `CRITICAL: Fix the current conversion bugs and convert to COMPLETE SHOPIFY SECTION format.
+        content: `🚨 CRITICAL: The conversion is not preserving the original HTML's visual appearance and functionality! 🚨
 
-CURRENT BUGS TO FIX:
-❌ CSS: "fas fa-#section-{{ section.id }} star" should be "fas fa-star"  
-❌ CSS: ".dot.#section-{{ section.id }} active" should be ".dot.active"
-❌ Invalid setting names with special characters like "Mäertin_alt_text"
-❌ Malformed Liquid syntax in CSS selectors
-❌ Missing proper Shopify form structure
+CLIENT COMPLAINTS:
+❌ Colors are different from original HTML
+❌ JavaScript is not working (sliders, mobile menu, interactions)
+❌ Styling doesn't match original appearance
+❌ CSS classes are being modified incorrectly
+❌ Visual layout is broken compared to original
 
-REQUIREMENTS:
+REQUIREMENTS FOR PERFECT CONVERSION:
 1. Convert ALL HTML to Shopify section format (NO complete HTML page)
 2. Remove DOCTYPE, html, head, body tags - start with section content only
 3. Replace ALL hardcoded text with Liquid: {{ section.settings.variable_name }}
 4. Create blocks for repeating content (navigation, products, testimonials, footer columns)
-5. Include ALL CSS with proper scoping: #section-{{ section.id }} .classname
-6. Include ALL JavaScript with theme editor compatibility
+5. Include ALL CSS with proper scoping: #section-{{ section.id }} .classname { /* exact original styles */ }
+6. Include ALL JavaScript with theme editor compatibility and preserve ALL functionality
 7. Proper image fallbacks: {% if image != blank %}{{ image | image_url }}{% elsif image_url != blank %}{{ image_url }}{% else %}placeholder{% endif %}
 8. Shopify forms: <form method="post" action="/contact#contact_form">
 9. Extract ALL image URLs and use as defaults in schema
 10. Make EVERYTHING editable - NO hardcoded content
+11. PRESERVE ALL COLORS, FONTS, SPACING, ANIMATIONS EXACTLY - NO MODIFICATIONS
+12. PRESERVE ALL JAVASCRIPT FUNCTIONALITY EXACTLY - NO MODIFICATIONS
 
 EXAMPLE CORRECT FORMAT:
 <section id="section-{{ section.id }}" class="original-classes">
@@ -1115,21 +1176,38 @@ EXAMPLE CORRECT FORMAT:
   {% endfor %}
 </nav>
 
-<!-- All content with proper Liquid syntax -->
+<!-- All content with proper Liquid syntax and EXACT original styling -->
 
 <style>
+/* CRITICAL: ALL original CSS must be included exactly with proper scoping */
 #section-{{ section.id }} .original-class { 
-  /* ALL original CSS properly scoped */ 
+  /* Copy ALL original CSS properties exactly - NO modifications to colors, fonts, spacing */
+  color: #a13f4f; /* Preserve exact color values */
+  font-family: 'Montserrat', sans-serif; /* Preserve exact fonts */
+  /* ALL other original properties exactly as written */
 }
+#section-{{ section.id }} .another-original-class {
+  /* ALL original styles preserved exactly */
+}
+/* Include ALL original media queries, keyframes, animations */
 </style>
 
 <script>
+// Theme editor compatibility for Shopify
 document.addEventListener('shopify:section:load', function(e) {
   if (e.detail.sectionId === '{{ section.id }}') {
-    // Re-initialize functionality
+    // Re-initialize ALL functionality exactly as in original
+    initializeSliders();
+    initializeMobileMenu();
+    initializeCarousels();
   }
 });
-// ALL original JavaScript
+
+// ALL original JavaScript preserved exactly - NO modifications
+/* Include ALL original slider code, mobile menu code, interaction code */
+document.addEventListener('DOMContentLoaded', function() {
+  // ALL original JavaScript functionality here exactly as written
+});
 </script>
 </section>
 
@@ -1268,7 +1346,6 @@ Convert EVERYTHING to working Shopify section format with ALL bugs fixed!`
       console.log('🚨 Adding missing section wrapper...');
       liquidContent = liquidContent.replace(/^([^<]*)</, '<section id="section-{{ section.id }}" class="hair-care-landing-page">\n$1<');
     }
-
     liquidContent = liquidContent.replace(/<style>([\s\S]*?)<\/style>/, (match, css) => {
       let fixedCSS = css;
 
@@ -1285,25 +1362,28 @@ Convert EVERYTHING to working Shopify section format with ALL bugs fixed!`
         return match;
       });
 
-      return `<style>\n${fixedCSS}\n</style>`;
+      return `<style>\n/* CRITICAL: All original CSS preserved with proper scoping */\n${fixedCSS}\n</style>`;
     });
-
     liquidContent = liquidContent.replace(/<script>([\s\S]*?)<\/script>/, (match, js) => {
       if (!js.includes("shopify:section:load")) {
         const wrappedJS = `
+// Theme editor compatibility for Shopify customizer
 document.addEventListener('shopify:section:load', function(e) {
   if (e.detail.sectionId === '{{ section.id }}') {
     console.log('Section reloaded in theme editor');
-    // Re-initialize section functionality
+    // Re-initialize ALL section functionality exactly as in original
     initializeSection();
   }
 });
 
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
   initializeSection();
 });
 
+// CRITICAL: Preserve ALL original JavaScript functionality exactly
 function initializeSection() {
+  // ALL original JavaScript preserved below - NO modifications
 ${js.trim()}
 }`;
         return `<script>${wrappedJS}\n</script>`;
@@ -1791,22 +1871,27 @@ Return section content only with schema!`
     } else {
       console.log('✅ Section wrapper already present');
       if (cleanedLiquidContent.includes('<style>') && !cleanedLiquidContent.includes('#section-{{ section.id }}')) {
-        console.log('🔧 Adding CSS scoping to existing styles');
-        cleanedLiquidContent = cleanedLiquidContent.replace(/<style>\s*/g, '<style>\n/* Scoped styles for section */\n');
+        console.log('🔧 Adding CSS scoping while preserving all original styles');
+        cleanedLiquidContent = cleanedLiquidContent.replace(/<style>\s*/g, '<style>\n/* CRITICAL: All original CSS preserved with proper scoping for Shopify */\n');
         cleanedLiquidContent = cleanedLiquidContent.replace(/([.#]?[\w\-]+)\s*{/g, (match, selector) => {
           if (selector.includes('#section-{{ section.id }}') || selector.includes('@') || selector.includes('keyframes')) {
             return match;
           }
           return `#section-{{ section.id }} ${selector} {`;
         });
-        console.log('✅ CSS scoping applied');
+        console.log('✅ CSS scoping applied while preserving all original styles');
       }
       if (cleanedLiquidContent.includes('<script>') && !cleanedLiquidContent.includes('shopify:section:load')) {
-        console.log('🔧 Adding theme editor JavaScript compatibility');
+        console.log('🔧 Adding theme editor JavaScript compatibility while preserving all functionality');
         cleanedLiquidContent = cleanedLiquidContent.replace(
           /(<script>\s*)/g,
-          '$1  // Theme editor compatibility\n  document.addEventListener(\'shopify:section:load\', function(e) {\n    if (e.detail.sectionId === \'{{ section.id }}\') {\n      // Re-initialize section functionality\n      console.log(\'Section reloaded in theme editor\');\n    }\n  });\n\n  '
-        ); console.log('✅ Theme editor JS compatibility added');
+          '$1  // Theme editor compatibility for Shopify customizer\n  document.addEventListener(\'shopify:section:load\', function(e) {\n    if (e.detail.sectionId === \'{{ section.id }}\') {\n      // Re-initialize ALL section functionality exactly as in original\n      console.log(\'Section reloaded in theme editor\');\n      initializeAllFunctionality();\n    }\n  });\n\n  function initializeAllFunctionality() {\n    // ALL original JavaScript functionality preserved below\n  '
+        );
+        cleanedLiquidContent = cleanedLiquidContent.replace(
+          /(<\/script>)/g,
+          '  }\n\n  // Initialize on page load\n  document.addEventListener(\'DOMContentLoaded\', initializeAllFunctionality);\n$1'
+        );
+        console.log('✅ Theme editor JS compatibility added while preserving all functionality');
       }
     }
 
