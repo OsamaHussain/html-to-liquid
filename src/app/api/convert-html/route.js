@@ -3375,11 +3375,10 @@ Return ONLY valid JSON:`;
           }
           return match;
         })
-
-        .replace(/"id":\s*"hero_button_link"[^}]*"default":\s*"[^"]*"/g, '"id": "hero_button_link", "default": "/"')
-        .replace(/"id":\s*"stylist_button_link"[^}]*"default":\s*"[^"]*"/g, '"id": "stylist_button_link", "default": "/"')
-        .replace(/"id":\s*"shop_button_link"[^}]*"default":\s*"[^"]*"/g, '"id": "shop_button_link", "default": "/"')
-        .replace(/"id":\s*"education_button_link"[^}]*"default":\s*"[^"]*"/g, '"id": "education_button_link", "default": "/"')
+        .replace(/"id":\s*"hero_button_link"(?:[^}]*?"default":\s*[^",}][^",}]*)?/g, '"id": "hero_button_link", "default": "/"')
+        .replace(/"id":\s*"stylist_button_link"(?:[^}]*?"default":\s*[^",}][^",}]*)?/g, '"id": "stylist_button_link", "default": "/"')
+        .replace(/"id":\s*"shop_button_link"(?:[^}]*?"default":\s*[^",}][^",}]*)?/g, '"id": "shop_button_link", "default": "/"')
+        .replace(/"id":\s*"education_button_link"(?:[^}]*?"default":\s*[^",}][^",}]*)?/g, '"id": "education_button_link", "default": "/"')
 
         .replace(/("type":\s*"url"[^}]*"default":\s*)"#"/g, '$1"/"')
 
@@ -3441,12 +3440,19 @@ Return ONLY valid JSON:`;
           if (Array.isArray(obj.settings)) {
             obj.settings.forEach(setting => {
               if (!setting) return;
-
               if (setting.type === 'url') {
-                if (!setting.default || setting.default !== "/") {
+                if (!setting.default || setting.default !== "/" || typeof setting.default !== 'string') {
                   setting.default = "/";
                   fixCount++;
                   console.log(`🔧 ULTIMATE FIX: ${setting.id || 'unknown'} URL default → "/"`);
+                }
+              }
+
+              if (setting.id && ['hero_button_link', 'stylist_button_link', 'shop_button_link', 'education_button_link'].includes(setting.id)) {
+                if (!setting.default || typeof setting.default !== 'string') {
+                  setting.default = "/";
+                  fixCount++;
+                  console.log(`🔧 ULTIMATE FIX: ${setting.id} button link default → "/"`);
                 }
               }
 
@@ -3487,7 +3493,11 @@ Return ONLY valid JSON:`;
       } catch (e) {
         console.warn('Ultimate URL fix failed, using string fallback');
         correctedJsonTemplate = correctedJsonTemplate
-          .replace(/("type":\s*"url"[^}]*"default":\s*)"[^"]*"/g, '$1"/"');
+          .replace(/("type":\s*"url"[^}]*"default":\s*)"[^"]*"/g, '$1"/"')
+          .replace(/("id":\s*"hero_button_link"[^}]*"default":\s*)[^",}][^",}]*/g, '$1"/"')
+          .replace(/("id":\s*"stylist_button_link"[^}]*"default":\s*)[^",}][^",}]*/g, '$1"/"')
+          .replace(/("id":\s*"shop_button_link"[^}]*"default":\s*)[^",}][^",}]*/g, '$1"/"')
+          .replace(/("id":\s*"education_button_link"[^}]*"default":\s*)[^",}][^",}]*/g, '$1"/"');
       }
     }
 
