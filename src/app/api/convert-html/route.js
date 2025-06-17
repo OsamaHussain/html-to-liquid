@@ -21,8 +21,23 @@ export async function POST(request) {
         { error: 'OpenAI API key is not configured' },
         { status: 500 }
       );
-    }    const isLargeFile = htmlContent.length > 8000 || htmlContent.split('\n').length > 400;
-    
+    }
+
+    function sanitizeForLiquid(text) {
+      return text
+        .replace(/[äöüÄÖÜßñç]/g, (char) => {
+          const charMap = {
+            'ä': 'ae', 'ö': 'oe', 'ü': 'ue',
+            'Ä': 'Ae', 'Ö': 'Oe', 'Ü': 'Ue',
+            'ß': 'ss', 'ñ': 'n', 'ç': 'c'
+          };
+          return charMap[char] || char;
+        })
+        .replace(/[^\w\s\-_]/g, '')
+        .replace(/\s+/g, '_')
+        .toLowerCase();
+    } const isLargeFile = htmlContent.length > 8000 || htmlContent.split('\n').length > 400;
+
     const prompt = `You are an expert Shopify Liquid developer. Convert the following HTML code to a PERFECT Shopify Liquid section following the EXACT structure and requirements below. 
 
 ${isLargeFile ? '🚨 CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''}
@@ -49,12 +64,40 @@ Example: <h2>{{ section.settings.hero_heading }}</h2>
   {% endif %}
 {% endfor %}
 
-✅ **BULLETPROOF IMAGE HANDLING WITH TRIPLE FALLBACK**:
-For EVERY image, use this EXACT pattern:
-<img src="{% if block.settings.image != blank %}{{ block.settings.image | image_url }}{% elsif block.settings.image_url != blank %}{{ block.settings.image_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}" alt="{{ block.settings.alt_text | default: 'Default Alt' }}">
+✅ **SIMPLE IMAGE HANDLING** 🚨 KEEP IT SIMPLE:
+For EVERY image, use this EXACT simple pattern:
+<img src="{% if block.settings.image != blank %}{{ block.settings.image | image_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}" alt="Image">
 
 For background images:
-style="background-image: url('{% if section.settings.bg_image != blank %}{{ section.settings.bg_image | image_url }}{% elsif section.settings.bg_image_url != blank %}{{ section.settings.bg_image_url }}{% else %}https://via.placeholder.com/1920x1080/cccccc/666666?text=Background{% endif %}')"
+style="background-image: url('{% if section.settings.bg_image != blank %}{{ section.settings.bg_image | image_url }}{% else %}https://via.placeholder.com/1920x1080/cccccc/666666?text=Background{% endif %}')"
+
+🚨 **CRITICAL: SIMPLE ALT TEXT ONLY** 🚨
+ALWAYS use simple alt text - NO dynamic alt text generation!
+❌ WRONG: alt="{{ section.settings.something_alt_text }}"
+❌ WRONG: alt="{{ block.settings.dynamic_alt }}"
+✅ CORRECT: alt="Image"
+✅ CORRECT: alt="Background"
+
+🚨 **CRITICAL: NO SPECIAL CHARACTERS IN LIQUID VARIABLES** 🚨
+NEVER use special characters (ä, ö, ü, ß, ñ, ç, etc.) in Liquid variable names!
+❌ WRONG: {{ section.settings.Mäertin_alt_text }}
+❌ WRONG: {{ section.settings.naïve_setting }}
+✅ CORRECT: {{ section.settings.maertin_alt_text }}
+✅ CORRECT: {{ section.settings.naive_setting }}
+
+ALL variable names must be:
+- Only lowercase letters, numbers, and underscores
+- No spaces, no special characters, no accents
+- Replace ä→ae, ö→oe, ü→ue, ß→ss, ñ→n, ç→c
+
+🚨 **CRITICAL: NO NESTED LIQUID TEMPLATES** 🚨
+NEVER nest Liquid variables inside other Liquid variables!
+❌ WRONG: {{ section.settings.{{ block.settings.product_name }} }}
+❌ WRONG: {{ section.settings.{{ section.settings.something }}_alt_text }}
+✅ CORRECT: {{ block.settings.product_name }}
+✅ CORRECT: {{ section.settings.something_alt_text }}
+
+Use simple, direct variable references only!
 
 ✅ **EXTRACT ALL IMAGE URLS AND MAKE EDITABLE**:
 - Find ALL img src URLs and background-image URLs from HTML
@@ -227,6 +270,13 @@ YOU MUST EXTRACT ALL IMAGE URLS AND MAKE THEM EDITABLE WITH ROBUST FALLBACKS:
   {"type": "image_picker", "id": "product_image", "label": "Product Image"},
   {"type": "text", "id": "product_image_url", "label": "Product Image URL (Fallback)", "default": "https://extracted-url-here.jpg"}
 - This allows: Upload new images OR use existing URLs OR change URLs via text field OR show placeholder if nothing set
+
+🚨 CRITICAL ALT TEXT REQUIREMENT 🚨:
+- ALT TEXT MUST BE SIMPLE: alt="{{ section.settings.image_alt_text }}" - NO NESTED LIQUID!
+- NEVER USE: alt="{{ section.settings.{{ section.settings.something }}..." 
+- ALWAYS USE: alt="{{ section.settings.hero_image_alt }}" (simple, clean, single Liquid variable)
+- Extract actual alt text from HTML alt="..." attributes
+- Create simple text setting: {"type": "text", "id": "hero_image_alt", "label": "Image Alt Text", "default": "extracted-alt-text"}
 
 🚨 MANDATORY QUALITY ASSURANCE PROTOCOL 🚨:
 
@@ -700,7 +750,9 @@ Include rating number and review count as separate settings.
     - FOOTER COLUMN STRUCTURE: Each footer column block should contain:
       * Column title/heading as editable text setting
       * Multiple footer links as sub-blocks or array of links
-      * Preserve exact CSS classes and structure for each column    - 🚨 MANDATORY FOOTER LIQUID STRUCTURE - COPY THIS EXACTLY 🚨:
+      * Preserve exact CSS classes and structure for each column    
+      * - 🚨 MANDATORY FOOTER LIQUID STRUCTURE - COPY THIS EXACTLY 
+      * 🚨:
       <footer class="footer-container">
         <div class="footer-columns">
           {% for block in section.blocks %}
@@ -894,7 +946,8 @@ Include rating number and review count as separate settings.
     - For headings: { "type": "text", "id": "heading_1", "label": "Heading Text", "default": "actual_heading_text" }
     - For paragraphs: { "type": "textarea", "id": "description_1", "label": "Description", "default": "actual_paragraph_text" }
     - For images: { "type": "image_picker", "id": "image_1", "label": "Image" } (NO default value for image_picker)
-    - For all other text: { "type": "text", "id": "text_content_1", "label": "Text Content", "default": "actual_text" }    - 🚨 CRITICAL DEFAULT VALUES: ALL settings with "default" attribute MUST have non-empty values:
+    - For all other text: { "type": "text", "id": "text_content_1", "label": "Text Content", "default": "actual_text" }    
+    - 🚨 CRITICAL DEFAULT VALUES: ALL settings with "default" attribute MUST have non-empty values:
       * Text/textarea settings: Use actual text content from HTML as default (never empty strings)
       * URL settings: Use "/" or actual URL from HTML (never empty strings)
       * Number settings: Use actual numbers or 1 (never empty)
@@ -903,7 +956,8 @@ Include rating number and review count as separate settings.
       * Phone settings: Use "+1 (555) 123-4567" or actual phone
       * Image_picker settings: NEVER include default attribute
       * NEVER use empty strings (""), null, or undefined as default values
-      * 🚨 FOOTER LINKS: Extract ACTUAL link text from HTML - use "All Products", "Contact Us", "Our Story" etc. as defaults, not generic "Link 1", "Link 2"- 🚨 CRITICAL SCHEMA VALIDATION: NEVER use invalid attributes in schema settings:
+      * 🚨 FOOTER LINKS: Extract ACTUAL link text from HTML - use "All Products", "Contact Us", "Our Story" etc. as defaults, not generic "Link 1", "Link 2"
+      * - 🚨 CRITICAL SCHEMA VALIDATION: NEVER use invalid attributes in schema settings:
       * STRICTLY FORBIDDEN IDs: "column_links", "footer_links", "links_array", "link_items" - these cause validation errors
       * STRICTLY FORBIDDEN TYPES: "column_links", "links", "array", "list", "items", "collection" - these don't exist in Shopify
       * Do NOT use "min", "max", "step", or "item" attributes - these are invalid in Shopify schema
@@ -966,7 +1020,8 @@ ${htmlContent}
 Return COMPLETE liquid template: HTML structure + CSS + JavaScript + Schema. NOT just schema alone!`; const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [{
-        role: "system",        content: `You are a Shopify Liquid expert. Based on client feedback, the current conversion system has CRITICAL BUGS that must be fixed immediately.
+        role: "system",
+        content: `You are a Shopify Liquid expert. Based on client feedback, the current conversion system has CRITICAL BUGS that must be fixed immediately.
 
 CRITICAL FIXES REQUIRED:
 1. CSS SCOPING: Use "#section-{{ section.id }} .classname" NOT "#section-{{ section.id }} classname"
@@ -993,7 +1048,8 @@ EXACT REQUIREMENTS:
 Convert the ENTIRE HTML to working Shopify section format. Fix ALL the bugs mentioned above.`
       },
       {
-        role: "user",        content: `CRITICAL: Fix the current conversion bugs and convert to COMPLETE SHOPIFY SECTION format.
+        role: "user",
+        content: `CRITICAL: Fix the current conversion bugs and convert to COMPLETE SHOPIFY SECTION format.
 
 CURRENT BUGS TO FIX:
 ❌ CSS: "fas fa-#section-{{ section.id }} star" should be "fas fa-star"  
@@ -1060,75 +1116,216 @@ Convert EVERYTHING to working Shopify section format with ALL bugs fixed!`
       ],
       max_tokens: 16384,
       temperature: 0.01,
-    });    let liquidContent = completion.choices[0]?.message?.content;
+    });
+    let liquidContent = completion.choices[0]?.message?.content;
+    console.log('🔧 Applying comprehensive special character and Liquid syntax fixes...');
 
-    // CRITICAL BUG FIXES - Based on client feedback
-    console.log('🔧 Applying critical bug fixes...');
-    
-    // Fix CSS selector issues - malformed section ID patterns in CSS
-    liquidContent = liquidContent.replace(/fas fa-#section-\{\{ section\.id \}\} (\w+)/g, 'fas fa-$1');
-    liquidContent = liquidContent.replace(/#section-\{\{ section\.id \}\} (\w+)/g, '.$1');
-    liquidContent = liquidContent.replace(/\.(\w+)\.#section-\{\{ section\.id \}\} (\w+)/g, '.$1.$2');
-    liquidContent = liquidContent.replace(/(\w+)-#section-\{\{ section\.id \}\} (\w+)/g, '$1-$2');
-    
-    // Fix image syntax issues
-    liquidContent = liquidContent.replace(/\{\{ section\.settings\.([^_]*_alt_text) \| default: '([^']+)' \}\}/g, 
-      (match, setting, defaultText) => {
-        const cleanSetting = setting.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
-        return `{{ section.settings.${cleanSetting} | default: '${defaultText}' }}`;
-      });
-    
-    // Fix invalid Liquid syntax in class attributes
-    liquidContent = liquidContent.replace(/class="([^"]*#section-\{\{ section\.id \}\}[^"]*)"/, 
-      (match, className) => {
-        const cleanClass = className.replace(/#section-\{\{ section\.id \}\}\s*/g, '');
-        return `class="${cleanClass}"`;
-      });
-    
-    // Fix star rating display issues
-    liquidContent = liquidContent.replace(/\{\% for i in \(1\.\.5\) \%\}[\s\S]*?fa-#section-\{\{ section\.id \}\} star[\s\S]*?\{\% endfor \%\}/g,
-      `{% for i in (1..5) %}
-        <i class="fas fa-star" style="color: #a13f4f;"></i>
-      {% endfor %}`);
-    
-    // Ensure proper section wrapper
-    if (!liquidContent.includes('<section id="section-{{ section.id }}"')) {
-      console.log('🚨 Adding missing section wrapper...');
-      const sectionMatch = liquidContent.match(/^(.*?)(<nav|<div|<section)/s);
-      if (sectionMatch) {
-        liquidContent = liquidContent.replace(sectionMatch[2], 
-          `<section id="section-{{ section.id }}" class="hair-care-landing-page">\n${sectionMatch[2]}`);
-      }
-    }
-    
-    // Ensure proper section closing
-    if (!liquidContent.includes('</section>') || liquidContent.lastIndexOf('</section>') < liquidContent.lastIndexOf('{% endschema %}')) {
-      console.log('🚨 Adding missing section closing tag...');
-      const schemaIndex = liquidContent.lastIndexOf('{% schema %}');
-      if (schemaIndex > -1) {
-        liquidContent = liquidContent.substring(0, schemaIndex) + '</section>\n\n' + liquidContent.substring(schemaIndex);
-      }
-    }
-    
-    // Fix CSS scoping issues
-    liquidContent = liquidContent.replace(/<style>([\s\S]*?)<\/style>/, (match, css) => {
-      let fixedCSS = css;
-      
-      // Add section scoping to selectors that don't have it
-      fixedCSS = fixedCSS.replace(/^([^{]*?\{)/gm, (match, selector) => {
-        if (!selector.includes('#section-{{ section.id }}') && !selector.includes('@keyframes') && !selector.includes('@media')) {
-          const cleanSelector = selector.replace('{', '').trim();
-          if (cleanSelector && !cleanSelector.startsWith('/*')) {
-            return `#section-{{ section.id }} ${cleanSelector} {`;
-          }
+    liquidContent = liquidContent
+      .replace(/\{\{\s*section\.settings\.\{\{\s*block\.settings\.([^}]+)\s*\}\}/g, '{{ block.settings.$1 }}')
+      .replace(/\{\{\s*section\.settings\.\{\{\s*section\.settings\.([^}]+)\s*\}\}/g, '{{ section.settings.$1 }}')
+
+      .replace(/alt="\{\{\s*section\.settings\.\{\{\s*([^}]+)\s*\}\}[^"]*"/g, 'alt="{{ $1 }}"')
+      .replace(/alt="\{\{\s*section\.settings\.\{\{\s*block\.settings\.([^}]+)\s*\}\}[^"]*"/g, 'alt="{{ block.settings.$1 }}"')
+
+      .replace(/\{\{\s*section\.settings\.\{\{\s*section\.settings\.([^}]+)\s*\}\}_alt_text[^}]*\}\}/g, '"Image"')
+
+      .replace(/\{\{\s*section\.settings\.\{\{\s*section\.settings\.\{\{[^}]*\}\}[^}]*\}\}/g, '"Image"')
+
+      .replace(/\{\%\s*if\s+([^}]*\.settings\.[^}]*?)\s+_url\s*!=\s*blank\s*\%\}/g, '{% if $1_url != blank %}')
+      .replace(/\{\%\s*elsif\s+([^}]*\.settings\.[^}]*?)\s+_url\s*!=\s*blank\s*\%\}/g, '{% elsif $1_url != blank %}')
+      .replace(/\{\%\s*elseif\s+([^}]*\.settings\.[^}]*?)\s+_url\s*!=\s*blank\s*\%\}/g, '{% elsif $1_url != blank %}')
+
+      .replace(/\{\%\s*if\s+([^}]*)\s*\|\s*image_url\s*!=\s*blank\s*\%\}/g, '{% if $1 != blank %}')
+      .replace(/\{\%\s*elsif\s+([^}]*)\s*\|\s*image_url\s*!=\s*blank\s*\%\}/g, '{% elsif $1 != blank %}')
+
+      .replace(/\|\s*image_url\s*\|\s*image_url/g, '| image_url')
+      .replace(/\{\{\s*([^}]*)\s*\|\s*image_url\s*\|\s*image_url\s*\}\}/g, '{{ $1 | image_url }}')
+
+      .replace(/([a-zA-Z_]+)\s+_url/g, '$1_url')
+
+      .replace(/section\.settings\.([^}]*[äöüÄÖÜßñç][^}]*)/g, (match, setting) => {
+        const cleanSetting = sanitizeForLiquid(setting.replace(/_alt_text$/, '')) + (setting.includes('_alt_text') ? '_alt_text' : '');
+        return `section.settings.${cleanSetting}`;
+      })
+
+      .replace(/\{\{\s*section\.settings\.([^}]*[äöüÄÖÜßñç][^}]*)_alt_text[^}]*\}\}/g, (match, setting) => {
+        const cleanSetting = sanitizeForLiquid(setting);
+        return `{{ section.settings.${cleanSetting}_alt_text | default: '${setting}' }}`;
+      })
+
+      .replace(/block\.settings\.([^}]*[äöüÄÖÜßñç][^}]*)/g, (match, setting) => {
+        const cleanSetting = sanitizeForLiquid(setting);
+        return `block.settings.${cleanSetting}`;
+      })
+
+      .replace(/\{\{\s*([^}]*[äöüÄÖÜßñç][^}]*)\s*\}\}/g, (match, content) => {
+        if (content.includes('|') || content.includes(' default:')) {
+          const parts = content.split('|');
+          const varPart = parts[0].trim();
+          const filterPart = parts.slice(1).join('|');
+          const cleanVar = varPart.replace(/([a-zA-Z_]+\.[a-zA-Z_]*[äöüÄÖÜßñç][a-zA-Z_]*)/g, (match) => {
+            const sanitized = match.replace(/[äöüÄÖÜßñç]/g, (char) => {
+              const charMap = { 'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'Ä': 'Ae', 'Ö': 'Oe', 'Ü': 'Ue', 'ß': 'ss', 'ñ': 'n', 'ç': 'c' };
+              return charMap[char] || char;
+            }).replace(/[^\w.]/g, '_').toLowerCase();
+            return sanitized;
+          });
+          return `{{ ${cleanVar}${filterPart ? ' | ' + filterPart : ''} }}`;
         }
         return match;
       });
-      
+
+    console.log('🔧 Simplifying all alt text to remove validation errors...');
+    liquidContent = liquidContent
+      .replace(/alt="\{\{\s*[^}]*_alt_text[^}]*\}\}"/g, 'alt="Image"')
+      .replace(/alt="\{\{\s*section\.settings\.[^}]*\}\}"/g, 'alt="Image"')
+      .replace(/alt="\{\{\s*block\.settings\.[^}]*\}\}"/g, 'alt="Image"')
+      .replace(/alt="[^"]*\{\{[^}]*\}\}[^"]*"/g, 'alt="Image"')
+      .replace(/alt="[^"]*[äöüÄÖÜßñç][^"]*"/g, 'alt="Image"')
+      .replace(/alt="[^"]*\s+[^"]*"/g, 'alt="Image"')
+
+      .replace(/\|\s*default:\s*'[^']*'/g, '')
+      .replace(/\|\s*default:\s*"[^"]*"/g, '');
+
+    console.log('✅ All alt text simplified to "Image"');
+
+    console.log('✅ Special character and Liquid syntax cleanup completed');
+
+    console.log('🔧 Applying critical bug fixes...');
+    console.log('🔧 Applying advanced CSS and Liquid fixes...');
+
+    liquidContent = liquidContent.replace(/#section-\{\{ section\.id \}\} #section-\s*\{\{ section\.id \}\}\s+/g, '#section-{{ section.id }} ');
+    liquidContent = liquidContent.replace(/#section-\s*\{\{ section\.id \}\}\s+/g, '#section-{{ section.id }} ');
+    liquidContent = liquidContent.replace(/fas fa-#section-\{\{ section\.id \}\} (\w+)/g, 'fas fa-$1');
+    liquidContent = liquidContent.replace(/fab fa-#section-\{\{ section\.id \}\} (\w+)/g, 'fab fa-$1');
+
+    liquidContent = liquidContent.replace(/#section-\{\{ section\.id \}\} (#section-\{\{ section\.id \}\})/g, '#section-{{ section.id }}');
+
+    console.log('🔧 Fixing nested Liquid patterns in main processing...');
+    liquidContent = liquidContent
+      .replace(/\{\{\s*section\.settings\.\{\{\s*block\.settings\.([^}]+)\s*\}\}/g, '{{ block.settings.$1 }}')
+      .replace(/\{\{\s*section\.settings\.\{\{\s*section\.settings\.([^}]+)\s*\}\}/g, '{{ section.settings.$1 }}').replace(/\{\{\s*section\.settings\.\{\{\s*block\.settings\.([^}]+)\s*\}\}_alt_text/g, '"Image"')
+      .replace(/\{\{\s*section\.settings\.\{\{\s*section\.settings\.([^}]+)\s*\}\}_alt_text/g, '"Image"');
+
+    liquidContent = liquidContent.replace(/\{\{ section\.settings\.\{\{ block\.settings\.([^}]+) \}\}_alt_text/g, '{{ block.settings.$1_alt_text');
+
+    liquidContent = liquidContent.replace(/\{\{ section\.settings\.([^}]*[äöüßÄÖÜñç][^}]*)_alt_text/g, (match, setting) => {
+      const cleanSetting = sanitizeForLiquid(setting);
+      return `{{ section.settings.${cleanSetting}_alt_text`;
+    });
+
+    liquidContent = liquidContent.replace(/section\.settings\.([^}\s]*[äöüßÄÖÜñç][^}\s]*)/g, (match, setting) => {
+      const cleanSetting = sanitizeForLiquid(setting);
+      return `section.settings.${cleanSetting}`;
+    });
+
+    liquidContent = liquidContent.replace(/\{\{\s*section\.settings\.([^}|]*[äöüßÄÖÜñç][^}|]*)/g, (match, setting) => {
+      const cleanSetting = sanitizeForLiquid(setting.replace(/_alt_text$/, '')) + (setting.includes('_alt_text') ? '_alt_text' : '');
+      return `{{ section.settings.${cleanSetting}`;
+    });
+
+    liquidContent = liquidContent.replace(/src="{% if ([^}]+\.image) != blank %}{{ \1 \| image_url }}{% else %}([^"]+){% endif %}"/g,
+      'src="{% if $1 != blank %}{{ $1 | image_url }}{% elsif $1_url != blank %}{{ $1_url }}{% else %}$2{% endif %}"');
+
+    liquidContent = liquidContent.replace(/background-image: url\('{% if ([^}]+\.image) != blank %}{{ \1 \| image_url }}{% else %}([^']+){% endif %}'\)/g,
+      "background-image: url('{% if $1 != blank %}{{ $1 | image_url }}{% elsif $1_url != blank %}{{ $1_url }}{% else %}$2{% endif %}')");
+
+    if (!liquidContent.includes('<section id="section-{{ section.id }}"')) {
+      console.log('🚨 Adding missing section wrapper...');
+      liquidContent = liquidContent.replace(/^([^<]*)</, '<section id="section-{{ section.id }}" class="hair-care-landing-page">\n$1<');
+    }
+
+    liquidContent = liquidContent.replace(/<style>([\s\S]*?)<\/style>/, (match, css) => {
+      let fixedCSS = css;
+
+      fixedCSS = fixedCSS.replace(/#section-\{\{ section\.id \}\} #section-\s*\{\{ section\.id \}\}/g, '#section-{{ section.id }}');
+
+      fixedCSS = fixedCSS.replace(/^(\s*)([.#]?[a-zA-Z][^{]*?)(\s*\{)/gm, (match, indent, selector, bracket) => {
+        if (!selector.includes('#section-{{ section.id }}') &&
+          !selector.includes('@keyframes') &&
+          !selector.includes('@media') &&
+          !selector.startsWith('/*') &&
+          selector.trim() !== '') {
+          return `${indent}#section-{{ section.id }} ${selector.trim()}${bracket}`;
+        }
+        return match;
+      });
+
       return `<style>\n${fixedCSS}\n</style>`;
     });
-    
-    console.log('✅ Critical bug fixes applied');
+
+    liquidContent = liquidContent.replace(/<script>([\s\S]*?)<\/script>/, (match, js) => {
+      if (!js.includes("shopify:section:load")) {
+        const wrappedJS = `
+document.addEventListener('shopify:section:load', function(e) {
+  if (e.detail.sectionId === '{{ section.id }}') {
+    console.log('Section reloaded in theme editor');
+    // Re-initialize section functionality
+    initializeSection();
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  initializeSection();
+});
+
+function initializeSection() {
+${js.trim()}
+}`;
+        return `<script>${wrappedJS}\n</script>`;
+      }
+      return match;
+    });
+
+    const schemaMatch = liquidContent.match(/{% schema %}([\s\S]*?){% endschema %}/);
+    if (schemaMatch) {
+      try {
+        const schemaObj = JSON.parse(schemaMatch[1].trim());
+
+        if (schemaObj.settings) {
+          const enhanced = [];
+          schemaObj.settings.forEach(s => {
+            enhanced.push(s);
+            if (s.type === 'image_picker') {
+              enhanced.push({
+                "type": "text",
+                "id": s.id + "_url",
+                "label": s.label + " URL",
+                "default": "https://via.placeholder.com/800x600?text=Image"
+              });
+            }
+          });
+          schemaObj.settings = enhanced;
+        }
+
+        if (schemaObj.blocks) {
+          schemaObj.blocks.forEach(block => {
+            if (block.settings) {
+              const enhanced = [];
+              block.settings.forEach(s => {
+                enhanced.push(s);
+                if (s.type === 'image_picker') {
+                  enhanced.push({
+                    "type": "text",
+                    "id": s.id + "_url",
+                    "label": s.label + " URL",
+                    "default": "https://via.placeholder.com/400x300?text=Image"
+                  });
+                }
+              });
+              block.settings = enhanced;
+            }
+          });
+        }
+
+        liquidContent = liquidContent.replace(schemaMatch[0],
+          `{% schema %}\n${JSON.stringify(schemaObj, null, 2)}\n{% endschema %}`);
+      } catch (e) {
+        console.log('Schema parse error:', e.message);
+      }
+    }
+
+    console.log('✅ Advanced bug fixes and schema enhancements applied');
 
     if (htmlContent.toLowerCase().includes('<footer') && liquidContent.includes('footer_column')) {
       console.log('🔍 Checking footer conversion quality...');
@@ -1463,6 +1660,45 @@ Return section content only with schema!`
       }
     } let cleanedLiquidContent = liquidContent;
 
+    console.log('🔧 Applying comprehensive special character cleanup to processed content...');
+    cleanedLiquidContent = cleanedLiquidContent
+      .replace(/\{\{\s*section\.settings\.\{\{\s*block\.settings\.([^}]+)\s*\}\}/g, '{{ block.settings.$1 }}')
+      .replace(/\{\{\s*section\.settings\.\{\{\s*section\.settings\.([^}]+)\s*\}\}/g, '{{ section.settings.$1 }}')
+      .replace(/alt="\{\{\s*section\.settings\.\{\{\s*([^}]+)\s*\}\}[^"]*"/g, 'alt="{{ $1 }}"')
+      .replace(/alt="\{\{\s*section\.settings\.\{\{\s*block\.settings\.([^}]+)\s*\}\}[^"]*"/g, 'alt="{{ block.settings.$1 }}"').replace(/\{\{\s*section\.settings\.\{\{\s*block\.settings\.([^}]+)\s*\}\}_alt_text[^}]*\}\}/g, '"Image"')
+      .replace(/\{\{\s*section\.settings\.\{\{\s*section\.settings\.([^}]+)\s*\}\}_alt_text[^}]*\}\}/g, '"Image"').replace(/\{\{\s*section\.settings\.\{\{\s*section\.settings\.\{\{[^}]*\}\}[^}]*\}\}/g, '"Image"')
+
+      .replace(/alt="\{\{\s*[^}]*_alt_text[^}]*\}\}"/g, 'alt="Image"')
+      .replace(/alt="\{\{\s*section\.settings\.[^}]*\}\}"/g, 'alt="Image"')
+      .replace(/alt="\{\{\s*block\.settings\.[^}]*\}\}"/g, 'alt="Image"')
+      .replace(/alt="[^"]*\{\{[^}]*\}\}[^"]*"/g, 'alt="Image"')
+      .replace(/alt="[^"]*[äöüÄÖÜßñç][^"]*"/g, 'alt="Image"')
+      .replace(/alt="[^"]*\s+[^"]*"/g, 'alt="Image"')
+
+      .replace(/\{\%\s*if\s+([^}]*\.settings\.[^}]*?)\s+_url\s*!=\s*blank\s*\%\}/g, '{% if $1_url != blank %}')
+      .replace(/\{\%\s*elsif\s+([^}]*\.settings\.[^}]*?)\s+_url\s*!=\s*blank\s*\%\}/g, '{% elsif $1_url != blank %}')
+      .replace(/\{\%\s*elseif\s+([^}]*\.settings\.[^}]*?)\s+_url\s*!=\s*blank\s*\%\}/g, '{% elsif $1_url != blank %}')
+
+      .replace(/\{\{\s*section\.settings\.([^}|]*[äöüÄÖÜßñç][^}|]*)/g, (match, setting) => {
+        const cleanSetting = sanitizeForLiquid(setting.replace(/_alt_text$/, '')) + (setting.includes('_alt_text') ? '_alt_text' : '');
+        return `{{ section.settings.${cleanSetting}`;
+      })
+      .replace(/\{\{\s*block\.settings\.([^}|]*[äöüÄÖÜßñç][^}|]*)/g, (match, setting) => {
+        const cleanSetting = sanitizeForLiquid(setting.replace(/_alt_text$/, '')) + (setting.includes('_alt_text') ? '_alt_text' : '');
+        return `{{ block.settings.${cleanSetting}`;
+      })
+      .replace(/alt="[^"]*\{\{\s*section\.settings\.([^}|]*[äöüÄÖÜßñç][^}|]*)/g, 'alt="Image"')
+      .replace(/default:\s*'[^']*[äöüÄÖÜßñç][^']*'/g, "")
+      .replace(/\|\s*default:\s*'[^']*'/g, "")
+      .replace(/\|\s*default:\s*"[^"]*"/g, "")
+
+      .replace(/([a-zA-Z_]+)\s+_url/g, '$1_url')
+
+      .replace(/\{\%\s*if\s+([^}]*)\s*\|\s*image_url\s*!=\s*blank\s*\%\}/g, '{% if $1 != blank %}')
+      .replace(/\{\%\s*elsif\s+([^}]*)\s*\|\s*image_url\s*!=\s*blank\s*\%\}/g, '{% elsif $1 != blank %}');
+
+    console.log('✅ Special character cleanup on processed content completed');
+
     cleanedLiquidContent = cleanedLiquidContent.replace(/^```liquid\s*/, '').replace(/\s*```$/, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/^```html\s*/, '').replace(/\s*```$/, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
@@ -1491,37 +1727,33 @@ Return section content only with schema!`
 
     cleanedLiquidContent = cleanedLiquidContent.replace(/```\s*$/g, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/^```.*?\n/g, '');
-    cleanedLiquidContent = cleanedLiquidContent.trim();    cleanedLiquidContent = cleanedLiquidContent.replace(/^<html[\s\S]*?<\/html>$/gm, '');
+    cleanedLiquidContent = cleanedLiquidContent.trim(); cleanedLiquidContent = cleanedLiquidContent.replace(/^<html[\s\S]*?<\/html>$/gm, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/^<!DOCTYPE[\s\S]*?>\s*/gm, '');
-      // 🚨 CRITICAL: Enforce section wrapper requirement
     if (!cleanedLiquidContent.includes('<section id="section-{{ section.id }}')) {
       console.log('🔧 CRITICAL: Section wrapper missing - adding mandatory wrapper');
-      
-      // Find where schema starts to split content and schema
+
       const schemaIndex = cleanedLiquidContent.indexOf('{% schema %}');
       if (schemaIndex !== -1) {
         const htmlContent = cleanedLiquidContent.substring(0, schemaIndex).trim();
         const schemaContent = cleanedLiquidContent.substring(schemaIndex);
-        
-        // Wrap all content in section wrapper with scoped CSS
+
         const scopedCSS = htmlContent.replace(/<style>/g, '<style>\n#section-{{ section.id }} ').replace(/(\w+)\s*{/g, (match, selector) => {
           if (selector.includes('#section-{{ section.id }}')) return match;
           return `#section-{{ section.id }} ${selector} {`;
         });
-        
+
         const wrappedContent = `<section id="section-{{ section.id }}" class="maertin-hair-care-section">\n${scopedCSS}\n</section>\n\n${schemaContent}`;
         cleanedLiquidContent = wrappedContent;
         console.log('✅ Section wrapper added successfully with scoped CSS');
       } else {
         console.error('⚠️ No schema found - cannot properly wrap content');
-      }    } else {
+      }
+    } else {
       console.log('✅ Section wrapper already present');
-        // Ensure CSS is properly scoped even if section wrapper exists
       if (cleanedLiquidContent.includes('<style>') && !cleanedLiquidContent.includes('#section-{{ section.id }}')) {
         console.log('🔧 Adding CSS scoping to existing styles');
         cleanedLiquidContent = cleanedLiquidContent.replace(/<style>\s*/g, '<style>\n/* Scoped styles for section */\n');
         cleanedLiquidContent = cleanedLiquidContent.replace(/([.#]?[\w\-]+)\s*{/g, (match, selector) => {
-          // Skip if already scoped or is a keyframe/media query
           if (selector.includes('#section-{{ section.id }}') || selector.includes('@') || selector.includes('keyframes')) {
             return match;
           }
@@ -1529,17 +1761,223 @@ Return section content only with schema!`
         });
         console.log('✅ CSS scoping applied');
       }
-        // Ensure theme editor JavaScript compatibility
       if (cleanedLiquidContent.includes('<script>') && !cleanedLiquidContent.includes('shopify:section:load')) {
         console.log('🔧 Adding theme editor JavaScript compatibility');
         cleanedLiquidContent = cleanedLiquidContent.replace(
-          /(<script>\s*)/g, 
+          /(<script>\s*)/g,
           '$1  // Theme editor compatibility\n  document.addEventListener(\'shopify:section:load\', function(e) {\n    if (e.detail.sectionId === \'{{ section.id }}\') {\n      // Re-initialize section functionality\n      console.log(\'Section reloaded in theme editor\');\n    }\n  });\n\n  '
-        );
-        console.log('✅ Theme editor JS compatibility added');
+        ); console.log('✅ Theme editor JS compatibility added');
       }
     }
-    
+
+    console.log('🔧 Applying critical post-processing fixes...');
+
+    if (cleanedLiquidContent.includes('<style>')) {
+      console.log('🔧 Fixing CSS scoping issues...');
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /#section-\{\{ section\.id \}\}\s+#section-\{\{ section\.id \}\}/g,
+        '#section-{{ section.id }}'
+      );
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /#section-\{\{ section\.id \}\}\s+([a-z-]+):\s*([^;]+);/g,
+        '$1: $2;'
+      );
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /(\{[^{}]*)(#section-\{\{ section\.id \}\})\s*([a-z-]+):\s*([^;]+);([^}]*\})/g,
+        '$1$3: $4;$5'
+      );
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /^\s*#section-\{\{ section\.id \}\}\s+([a-z-]+):\s*([^;]+);?\s*$/gm,
+        ''
+      );
+
+      console.log('✅ CSS scoping issues fixed');
+    }
+    if (cleanedLiquidContent.includes('{{ section.settings.{{ section.settings.')) {
+      console.log('🔧 Fixing broken alt text syntax...');
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /\{\{ section\.settings\.\{\{ section\.settings\.([^}]+) \}\}_alt_text \| default: '\{\{ section\.settings\.([^}]+) \}\}' \}\}/g,
+        '{{ section.settings.$1 }}'
+      );
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /\{\{ section\.settings\.\{\{ section\.settings\.([^}]+_alt_text) \}\}_alt_text[^}]*\}\}/g,
+        '{{ section.settings.$1 }}'
+      );
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /alt="\{\{ section\.settings\.\{\{[^}]+\}\}[^"]*"/g,
+        'alt="{{ section.settings.hero_image_alt }}"'
+      );
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /alt="\{\{ section\.settings\.\{\{ section\.settings\.([^}]+) \}\}[^"]*"/g,
+        'alt="{{ section.settings.$1 }}"'
+      );
+      console.log('✅ Alt text syntax fixed');
+    }
+    console.log('🔧 Fixing nested Liquid syntax issues...');
+
+    if (cleanedLiquidContent.includes('{{ section.settings.{{ section.settings.hero_image_alt }}_alt_text | default: \'{{ section.settings.hero_image_alt }}\' }}')) {
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        '{{ section.settings.{{ section.settings.hero_image_alt }}_alt_text | default: \'{{ section.settings.hero_image_alt }}\' }}',
+        '{{ section.settings.hero_image_alt }}'
+      );
+      console.log('✅ Fixed specific broken alt text pattern');
+    }
+
+    cleanedLiquidContent = cleanedLiquidContent.replace(
+      /\{\{ section\.settings\.\{\{ section\.settings\.([^}]+) \}\}([^}]*)\}\}/g,
+      '{{ section.settings.$1 }}'
+    );
+
+    cleanedLiquidContent = cleanedLiquidContent.replace(
+      /alt="\{\{ section\.settings\.\{\{ section\.settings\.([^}]+) \}\}[^"]*"/g,
+      'alt="{{ section.settings.$1 }}"'
+    );
+
+    cleanedLiquidContent = cleanedLiquidContent.replace(
+      /alt="\{\{ section\.settings\.\{\{[^"]+"/g,
+      'alt="{{ section.settings.hero_image_alt }}"'
+    );
+
+    console.log('✅ Nested Liquid syntax issues fixed');
+
+    if (cleanedLiquidContent.includes('{% else %}placeholder{% endif %}')) {
+      console.log('🔧 Fixing placeholder image URLs...');
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /\{% else %\}placeholder\{% endif %\}/g,
+        '{% else %}https://via.placeholder.com/800x600/cccccc/666666?text=Image{% endif %}'
+      );
+
+      console.log('✅ Placeholder URLs fixed');
+    }
+
+    if (cleanedLiquidContent.includes('{% schema %}')) {
+      console.log('🔧 Removing duplicate schema settings...');
+
+      const schemaMatch = cleanedLiquidContent.match(/{% schema %}([\s\S]*?){% endschema %}/);
+      if (schemaMatch) {
+        try {
+          let schemaContent = schemaMatch[1].trim();
+          let schemaObj = JSON.parse(schemaContent);
+
+          if (schemaObj.settings && Array.isArray(schemaObj.settings)) {
+            const seenIds = new Set();
+            schemaObj.settings = schemaObj.settings.filter(setting => {
+              if (seenIds.has(setting.id)) {
+                console.log(`Removing duplicate setting: ${setting.id}`);
+                return false;
+              }
+              seenIds.add(setting.id);
+              return true;
+            });
+
+            cleanedLiquidContent = cleanedLiquidContent.replace(
+              /{% schema %}[\s\S]*?{% endschema %}/,
+              `{% schema %}\n${JSON.stringify(schemaObj, null, 2)}\n{% endschema %}`
+            );
+          }
+        } catch (e) {
+          console.warn('Could not parse schema for duplicate removal:', e.message);
+        }
+      }
+      console.log('✅ Duplicate schema settings removed');
+    }
+
+    if (cleanedLiquidContent.includes('{% schema %}')) {
+      console.log('🔧 Adding image URL defaults from HTML...');
+
+      const imageUrlMatches = htmlContent.match(/src="([^"]+)"/g) || [];
+      const backgroundImageMatches = htmlContent.match(/background-image:\s*url\(['"]([^'"]+)['"]\)/g) || [];
+
+      const allImageUrls = [
+        ...imageUrlMatches.map(match => match.replace(/src="([^"]+)"/, '$1')),
+        ...backgroundImageMatches.map(match => match.replace(/background-image:\s*url\(['"]([^'"]+)['"]\)/, '$1'))
+      ].filter(url => url.startsWith('http'));
+
+      if (allImageUrls.length > 0) {
+        const schemaMatch = cleanedLiquidContent.match(/{% schema %}([\s\S]*?){% endschema %}/);
+        if (schemaMatch) {
+          try {
+            let schemaContent = schemaMatch[1].trim();
+            let schemaObj = JSON.parse(schemaContent);
+
+            if (schemaObj.settings && Array.isArray(schemaObj.settings)) {
+              schemaObj.settings.forEach((setting, index) => {
+                if (setting.id && setting.id.includes('image_url') && !setting.default && allImageUrls[0]) {
+                  setting.default = allImageUrls[0];
+                  console.log(`Added default URL for ${setting.id}: ${allImageUrls[0]}`);
+                }
+              });
+
+              cleanedLiquidContent = cleanedLiquidContent.replace(
+                /{% schema %}[\s\S]*?{% endschema %}/,
+                `{% schema %}\n${JSON.stringify(schemaObj, null, 2)}\n{% endschema %}`
+              );
+            }
+          } catch (e) {
+            console.warn('Could not parse schema for image URL defaults:', e.message);
+          }
+        }
+      }
+
+      console.log('✅ Image URL defaults added');
+    }
+
+    if (cleanedLiquidContent.includes('<style>')) {
+      console.log('🔧 Cleaning up CSS structure...');
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /[^{}]*\{\s*\}/g,
+        ''
+      );
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /(<style>[\s\S]*?)(#section-\{\{ section\.id \}\}[^{]*)\{([^}]*)\}/g,
+        (match, styleStart, selector, properties) => {
+          const cleanProperties = properties
+            .split(';')
+            .filter(prop => prop.trim() && !prop.includes('#section-{{ section.id }}'))
+            .map(prop => prop.trim())
+            .join(';\n            ');
+
+          return `${styleStart}${selector.trim()} {\n            ${cleanProperties}${cleanProperties ? ';' : ''}\n        }`;
+        }
+      );
+
+      console.log('✅ CSS structure cleaned up');
+    } console.log('✅ All critical post-processing fixes applied');
+    console.log('🔧 Applying final aggressive alt text fix...');
+
+    const brokenAltPattern = '{{ section.settings.{{ section.settings.hero_image_alt }}_alt_text | default: \'{{ section.settings.hero_image_alt }}\' }}';
+    const fixedAltPattern = '{{ section.settings.hero_image_alt }}';
+
+    if (cleanedLiquidContent.includes(brokenAltPattern)) {
+      console.log('🚨 Found exact broken alt pattern - fixing it');
+      cleanedLiquidContent = cleanedLiquidContent.replace(brokenAltPattern, fixedAltPattern);
+      console.log('✅ Exact broken alt pattern fixed');
+    }
+
+    if (cleanedLiquidContent.includes('alt="{{') && cleanedLiquidContent.includes('{{ section.settings.{{ section.settings.')) {
+      console.log('🚨 Detected broken alt text with nested Liquid - applying aggressive fix');
+
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        /alt="[^"]*\{\{ section\.settings\.\{\{[^"]*"/g,
+        'alt="{{ section.settings.hero_image_alt }}"'
+      );
+
+      console.log('✅ Aggressive alt text fix applied');
+    }
+
+    console.log('✅ All fixes completed successfully');
+
     if (!cleanedLiquidContent.includes('{% schema %}')) {
       console.error('Missing schema in Liquid template');
     }
@@ -2685,7 +3123,8 @@ Return ONLY valid JSON:`;
       }
 
       console.log('✅ Image URL population completed');
-    }    if (imageUrls && imageUrls.length > 0) {
+    }
+    if (imageUrls && imageUrls.length > 0) {
       console.log('🔧 Updating Liquid template to use robust image fallback syntax...');
 
       cleanedLiquidContent = cleanedLiquidContent.replace(
@@ -2706,26 +3145,22 @@ Return ONLY valid JSON:`;
       cleanedLiquidContent = cleanedLiquidContent.replace(
         /src="\{\{\s*(section|block)\.settings\.([a-zA-Z_][a-zA-Z0-9_]*image[^}]*)\}\}"/g,
         'src="{% if $1.settings.$2 != blank %}{{ $1.settings.$2 | image_url }}{% elsif $1.settings.$2_url != blank %}{{ $1.settings.$2_url }}{% else %}https://via.placeholder.com/400x300/cccccc/666666?text=Image{% endif %}"'
-      );      console.log('✅ Liquid template updated with robust dual image approach');
-    }    // 🚨 FINAL COMPLIANCE ENFORCEMENT
+      ); console.log('✅ Liquid template updated with robust dual image approach');
+    }
     console.log('🔧 Final client compliance enforcement...');
-    
-    // Fix CSS scoping issues
+
     if (cleanedLiquidContent.includes('<style>')) {
       console.log('🔧 FINAL: Fixing CSS scoping syntax');
-      // Fix malformed scoping like ".luxehair-#section-{{ section.id }} velvet"
       cleanedLiquidContent = cleanedLiquidContent.replace(
         /\.([a-zA-Z-]+)-#section-\{\{ section\.id \}\}\s+([a-zA-Z-]+)/g,
         '#section-{{ section.id }} .$1-$2'
       );
-      // Fix general scoping issues  
       cleanedLiquidContent = cleanedLiquidContent.replace(
         /([.#][\w-]+):#section-\{\{ section\.id \}\}/g,
         '#section-{{ section.id }} $1'
       );
     }
-    
-    // Fix Shopify form structure for newsletter
+
     if (cleanedLiquidContent.includes('<form') && !cleanedLiquidContent.includes('form_type')) {
       console.log('🔧 FINAL: Adding Shopify form structure');
       cleanedLiquidContent = cleanedLiquidContent.replace(
@@ -2733,23 +3168,20 @@ Return ONLY valid JSON:`;
         '<form method="post" action="/contact#contact_form"$1>\n  <input type="hidden" name="form_type" value="customer">\n  <input type="hidden" name="utf8" value="✓">'
       );
     }
-    
-    // Add proper alt text to images
+
     cleanedLiquidContent = cleanedLiquidContent.replace(
       /alt="([^"]*?)"/g,
       'alt="{{ section.settings.$1_alt_text | default: \'$1\' }}"'
     );
-    
-    // Ensure theme editor JavaScript compatibility
+
     if (cleanedLiquidContent.includes('<script>') && !cleanedLiquidContent.includes('shopify:section:load')) {
       console.log('🔧 FINAL: Adding missing theme editor JS compatibility');
       cleanedLiquidContent = cleanedLiquidContent.replace(
-        /(<script>\s*)/g, 
+        /(<script>\s*)/g,
         '$1  // Theme editor compatibility\n  document.addEventListener(\'shopify:section:load\', function(e) {\n    if (e.detail.sectionId === \'{{ section.id }}\') {\n      // Re-initialize section functionality\n      console.log(\'Section reloaded in theme editor\');\n    }\n  });\n\n  '
       );
     }
-    
-    // Ensure CDN links are commented for theme.liquid
+
     if (!cleanedLiquidContent.includes('Add these to theme.liquid')) {
       const cdnComment = `<!-- CDN Links: Add these to theme.liquid <head> section:
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
@@ -2758,8 +3190,60 @@ Return ONLY valid JSON:`;
 -->\n\n`;
       cleanedLiquidContent = cdnComment + cleanedLiquidContent;
     }
-    
     console.log('✅ Final compliance enforcement completed');
+
+    console.log('🔧 Applying ultimate alt text fix before return...');
+
+    if (cleanedLiquidContent.includes('{{ section.settings.{{ section.settings.hero_image_alt }}_alt_text | default: \'{{ section.settings.hero_image_alt }}\' }}')) {
+      console.log('🚨 FOUND THE EXACT BROKEN ALT PATTERN - FIXING NOW!');
+      cleanedLiquidContent = cleanedLiquidContent.replace(
+        '{{ section.settings.{{ section.settings.hero_image_alt }}_alt_text | default: \'{{ section.settings.hero_image_alt }}\' }}',
+        '{{ section.settings.hero_image_alt }}'
+      );
+      console.log('✅ FIXED THE BROKEN ALT PATTERN!');
+    }
+
+    cleanedLiquidContent = cleanedLiquidContent.replace(
+      /alt="[^"]*\{\{ section\.settings\.\{\{ section\.settings\.[^"]*"/g,
+      'alt="{{ section.settings.hero_image_alt }}"'
+    ); console.log('✅ Ultimate alt text fix completed');
+
+    console.log('🔧 Final special character and Liquid syntax validation...');
+    cleanedLiquidContent = cleanedLiquidContent
+      .replace(/alt="\{\{\s*[^}]*_alt_text[^}]*\}\}"/g, 'alt="Image"')
+      .replace(/alt="\{\{\s*section\.settings\.[^}]*\}\}"/g, 'alt="Image"')
+      .replace(/alt="\{\{\s*block\.settings\.[^}]*\}\}"/g, 'alt="Image"')
+      .replace(/alt="[^"]*\{\{[^}]*\}\}[^"]*"/g, 'alt="Image"')
+      .replace(/alt="[^"]*[äöüÄÖÜßñç][^"]*"/g, 'alt="Image"')
+      .replace(/alt="[^"]*\s+[^"]*"/g, 'alt="Image"')
+
+      .replace(/\{\{\s*section\.settings\.\{\{\s*block\.settings\.([^}]+)\s*\}\}/g, '{{ block.settings.$1 }}')
+      .replace(/\{\{\s*section\.settings\.\{\{\s*section\.settings\.([^}]+)\s*\}\}/g, '{{ section.settings.$1 }}')
+      .replace(/alt="\{\{\s*section\.settings\.\{\{\s*([^}]+)\s*\}\}[^"]*"/g, 'alt="{{ $1 }}"')
+      .replace(/alt="\{\{\s*section\.settings\.\{\{\s*block\.settings\.([^}]+)\s*\}\}[^"]*"/g, 'alt="{{ block.settings.$1 }}"').replace(/\{\{\s*section\.settings\.\{\{\s*block\.settings\.([^}]+)\s*\}\}_alt_text[^}]*\}\}/g, '"Image"')
+      .replace(/\{\{\s*section\.settings\.\{\{\s*section\.settings\.([^}]+)\s*\}\}_alt_text[^}]*\}\}/g, '"Image"')
+      .replace(/\{\{\s*section\.settings\.\{\{\s*section\.settings\.\{\{[^}]*\}\}[^}]*\}\}/g, '"Image"')
+
+      .replace(/\{\{\s*section\.settings\.([^}|]*[äöüÄÖÜßñç][^}|]*)/g, (match, setting) => {
+        const cleanSetting = sanitizeForLiquid(setting.replace(/_alt_text$/, '')) + (setting.includes('_alt_text') ? '_alt_text' : '');
+        return `{{ section.settings.${cleanSetting}`;
+      })
+      .replace(/\{\{\s*block\.settings\.([^}|]*[äöüÄÖÜßñç][^}|]*)/g, (match, setting) => {
+        const cleanSetting = sanitizeForLiquid(setting.replace(/_alt_text$/, '')) + (setting.includes('_alt_text') ? '_alt_text' : '');
+        return `{{ block.settings.${cleanSetting}`;
+      })
+
+      .replace(/([a-zA-Z_]+)\s+_url/g, '$1_url')
+
+      .replace(/\|\s*image_url\s*\|\s*image_url/g, '| image_url')
+
+      .replace(/\{\%\s*if\s+([^}]*\.settings\.[^}]*?)\s+_url\s*!=\s*blank\s*\%\}/g, '{% if $1_url != blank %}')
+      .replace(/\{\%\s*elsif\s+([^}]*\.settings\.[^}]*?)\s+_url\s*!=\s*blank\s*\%\}/g, '{% elsif $1_url != blank %}')
+
+      .replace(/alt="[^"]*[äöüÄÖÜßñç][^"]*"/g, 'alt="Image"')
+      .replace(/default:\s*'[^']*[äöüÄÖÜßñç][^']*'/g, "default: 'Image'");
+
+    console.log('✅ Final special character cleanup completed');
 
     return NextResponse.json({
       success: true,

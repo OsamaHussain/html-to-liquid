@@ -195,7 +195,6 @@ export default function Home() {
           handleFileUpload={handleFileUpload}
           clearContent={clearContent}
         />
-osama bhai
         <HtmlEditor
           fileContent={fileContent}
           fileName={fileName}
