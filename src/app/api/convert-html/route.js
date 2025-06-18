@@ -1838,12 +1838,19 @@ Return section content only with schema!`
     if (cleanedLiquidContent.includes('This Liquid template preserves')) {
       const explanationIndex = cleanedLiquidContent.indexOf('This Liquid template preserves');
       cleanedLiquidContent = cleanedLiquidContent.substring(0, explanationIndex).trim();
-    }
-    cleanedLiquidContent = cleanedLiquidContent.replace(/\n\nThis Liquid template[\s\S]*$/i, '');
+    } cleanedLiquidContent = cleanedLiquidContent.replace(/\n\nThis Liquid template[\s\S]*$/i, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/\n\nThe above[\s\S]*$/i, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/\n\nNote:[\s\S]*$/i, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/\n\n\*\*[\s\S]*$/i, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/\n\nExplanation:[\s\S]*$/i, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/\n\nThis conversion includes[\s\S]*$/i, ''); cleanedLiquidContent = cleanedLiquidContent.replace(/\nThis conversion includes[\s\S]*$/i, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/This conversion includes all the necessary elements[\s\S]*$/i, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/to ensure the Shopify section matches[\s\S]*$/i, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/It uses Liquid syntax to make content[\s\S]*$/i, ''); cleanedLiquidContent = cleanedLiquidContent.replace(/includes all CSS with proper scoping[\s\S]*$/i, '');
+
+    cleanedLiquidContent = cleanedLiquidContent.replace(/\n\n[A-Z][^{%]*preservation[\s\S]*$/i, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/\n\n[A-Z][^{%]*functionality[\s\S]*$/i, '');
+    cleanedLiquidContent = cleanedLiquidContent.replace(/\n\n[A-Z][^{%]*compatibility[\s\S]*$/i, '');
 
     cleanedLiquidContent = cleanedLiquidContent.replace(/```\s*$/g, '');
     cleanedLiquidContent = cleanedLiquidContent.replace(/^```.*?\n/g, '');
@@ -2942,12 +2949,17 @@ Return ONLY valid JSON:`;
         const jsonData = JSON.parse(correctedJsonTemplate);
 
         console.log('🔧 Applying comprehensive schema validation fixes...');
-
         function fixSchemaSettings(settings) {
           if (!Array.isArray(settings)) return;
 
           settings.forEach(setting => {
             if (!setting || typeof setting !== 'object') return;
+
+            if (setting.id && ['hero_button_link', 'stylist_button_link', 'shop_button_link', 'education_button_link'].includes(setting.id)) {
+              setting.type = 'url';
+              setting.default = "/";
+              console.log(`✅ Fixed specific button link ${setting.id}: type set to "url", default set to "/"`);
+            }
 
             if (setting.type === 'url') {
               if (!setting.default || typeof setting.default !== 'string' ||
@@ -3079,6 +3091,18 @@ Return ONLY valid JSON:`;
 
                 Object.keys(block.settings).forEach(key => {
                   const setting = block.settings[key];
+
+                  if (['hero_button_link', 'stylist_button_link', 'shop_button_link', 'education_button_link'].includes(key)) {
+                    if (typeof setting === 'object') {
+                      setting.type = 'url';
+                      setting.default = '/';
+                      console.log(`✅ Fixed button link in block: ${key}`);
+                    } else if (typeof setting === 'string' && (setting.startsWith('http') || setting === '')) {
+                      block.settings[key] = '/';
+                      console.log(`✅ Fixed button link value in block: ${key}`);
+                    }
+                  }
+
                   if (typeof setting === 'object' && setting.type === 'image_picker' && setting.default) {
                     delete setting.default;
                   }
@@ -3459,11 +3483,50 @@ Return ONLY valid JSON:`;
             return beforeEnd + ', "default": "/"' + end;
           }
           return match;
+        }).replace(/"id":\s*"hero_button_link"[^}]*\}/g, (match) => {
+          if (!match.includes('"type"')) {
+            match = match.replace(/\}$/, ', "type": "url"}');
+          }
+          if (!match.includes('"default"')) {
+            match = match.replace(/\}$/, ', "default": "/"}');
+          } else {
+            match = match.replace(/"default":\s*[^",}]+/g, '"default": "/"');
+          }
+          return match;
         })
-        .replace(/"id":\s*"hero_button_link"(?:[^}]*?"default":\s*[^",}][^",}]*)?/g, '"id": "hero_button_link", "default": "/"')
-        .replace(/"id":\s*"stylist_button_link"(?:[^}]*?"default":\s*[^",}][^",}]*)?/g, '"id": "stylist_button_link", "default": "/"')
-        .replace(/"id":\s*"shop_button_link"(?:[^}]*?"default":\s*[^",}][^",}]*)?/g, '"id": "shop_button_link", "default": "/"')
-        .replace(/"id":\s*"education_button_link"(?:[^}]*?"default":\s*[^",}][^",}]*)?/g, '"id": "education_button_link", "default": "/"')
+        .replace(/"id":\s*"stylist_button_link"[^}]*\}/g, (match) => {
+          if (!match.includes('"type"')) {
+            match = match.replace(/\}$/, ', "type": "url"}');
+          }
+          if (!match.includes('"default"')) {
+            match = match.replace(/\}$/, ', "default": "/"}');
+          } else {
+            match = match.replace(/"default":\s*[^",}]+/g, '"default": "/"');
+          }
+          return match;
+        })
+        .replace(/"id":\s*"shop_button_link"[^}]*\}/g, (match) => {
+          if (!match.includes('"type"')) {
+            match = match.replace(/\}$/, ', "type": "url"}');
+          }
+          if (!match.includes('"default"')) {
+            match = match.replace(/\}$/, ', "default": "/"}');
+          } else {
+            match = match.replace(/"default":\s*[^",}]+/g, '"default": "/"');
+          }
+          return match;
+        })
+        .replace(/"id":\s*"education_button_link"[^}]*\}/g, (match) => {
+          if (!match.includes('"type"')) {
+            match = match.replace(/\}$/, ', "type": "url"}');
+          }
+          if (!match.includes('"default"')) {
+            match = match.replace(/\}$/, ', "default": "/"}');
+          } else {
+            match = match.replace(/"default":\s*[^",}]+/g, '"default": "/"');
+          }
+          return match;
+        })
 
         .replace(/("type":\s*"url"[^}]*"default":\s*)"#"/g, '$1"/"')
 
@@ -3579,11 +3642,47 @@ Return ONLY valid JSON:`;
         console.warn('Ultimate URL fix failed, using string fallback');
         correctedJsonTemplate = correctedJsonTemplate
           .replace(/("type":\s*"url"[^}]*"default":\s*)"[^"]*"/g, '$1"/"')
-          .replace(/("id":\s*"hero_button_link"[^}]*"default":\s*)[^",}][^",}]*/g, '$1"/"')
-          .replace(/("id":\s*"stylist_button_link"[^}]*"default":\s*)[^",}][^",}]*/g, '$1"/"')
-          .replace(/("id":\s*"shop_button_link"[^}]*"default":\s*)[^",}][^",}]*/g, '$1"/"')
-          .replace(/("id":\s*"education_button_link"[^}]*"default":\s*)[^",}][^",}]*/g, '$1"/"');
+          .replace(/("id":\s*"hero_button_link"[^}]*"default":\s*)[^",}]+/g, '$1"/"')
+          .replace(/("id":\s*"stylist_button_link"[^}]*"default":\s*)[^",}]+/g, '$1"/"')
+          .replace(/("id":\s*"shop_button_link"[^}]*"default":\s*)[^",}]+/g, '$1"/"')
+          .replace(/("id":\s*"education_button_link"[^}]*"default":\s*)[^",}]+/g, '$1"/"');
       }
+
+      correctedJsonTemplate = correctedJsonTemplate
+        .replace(/"id":\s*"hero_button_link"[^}]*"default":\s*(?!")[^,}]*/g, match => {
+          return match.replace(/("default":\s*)[^,}]*/, '$1"/"');
+        })
+        .replace(/"id":\s*"stylist_button_link"[^}]*"default":\s*(?!")[^,}]*/g, match => {
+          return match.replace(/("default":\s*)[^,}]*/, '$1"/"');
+        })
+        .replace(/"id":\s*"shop_button_link"[^}]*"default":\s*(?!")[^,}]*/g, match => {
+          return match.replace(/("default":\s*)[^,}]*/, '$1"/"');
+        }).replace(/"id":\s*"education_button_link"[^}]*"default":\s*(?!")[^,}]*/g, match => {
+          return match.replace(/("default":\s*)[^,}]*/, '$1"/"');
+        });
+
+      console.log('🔧 Applying final button link validation...');
+      const buttonLinkIds = ['hero_button_link', 'stylist_button_link', 'shop_button_link', 'education_button_link'];
+
+      buttonLinkIds.forEach(id => {
+        const idPattern = new RegExp(`"id":\\s*"${id}"[^}]*`, 'g');
+        correctedJsonTemplate = correctedJsonTemplate.replace(idPattern, match => {
+          if (!match.includes('"type"')) {
+            match = match.replace(/\}?$/, ', "type": "url"}');
+          } else if (!match.includes('"type": "url"')) {
+            match = match.replace(/"type":\s*"[^"]*"/, '"type": "url"');
+          }
+
+          if (!match.includes('"default"')) {
+            match = match.replace(/\}?$/, ', "default": "/"}');
+          } else {
+            match = match.replace(/"default":\s*[^",}]+/, '"default": "/"');
+          }
+
+          console.log(`✅ Validated button link: ${id}`);
+          return match;
+        });
+      });
     }
 
     return NextResponse.json({
