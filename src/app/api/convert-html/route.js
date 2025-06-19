@@ -105,9 +105,25 @@ NEVER nest Liquid variables inside other Liquid variables!
 Use simple, direct variable references only!
 
 🚨 **CRITICAL: PRESERVE ALL COLORS AND STYLING EXACTLY** 🚨
+🎨 ABSOLUTE COLOR PRESERVATION RULE: 
+- If the original HTML has a burgundy/maroon header (e.g., background-color: #7a2c2c), the converted Liquid MUST have the exact same color
+- NEVER change, darken, lighten, or modify ANY color values
+- COPY EVERY color value character-for-character from the original HTML
+- Background colors, text colors, border colors, shadow colors - ALL must be identical
+
+🚨 **CRITICAL GLOBAL BACKGROUND PRESERVATION** 🚨
+⚠️ SPECIAL ATTENTION: Global background styles (applied to body, html) MUST be preserved in section:
+- If original HTML has body { background: linear-gradient(...) }, apply this to the section root
+- If original HTML has html, body { background-color: #color }, apply this to the section root
+- Global backgrounds MUST be applied to #section-{{ section.id }} in the scoped CSS
+- Example: If HTML has "body { background: linear-gradient(135deg, #7a2c2c, #a13f4f) }"
+- Then CSS must include: "#section-{{ section.id }} { background: linear-gradient(135deg, #7a2c2c, #a13f4f) }"
+- This ensures section has same background as original full-page HTML
+
 CRITICAL: The converted Shopify section MUST look IDENTICAL to the original HTML!
-- Keep ALL hex colors EXACTLY as they are: #a13f4f, #ffe0dc, #3d1017, etc.
-- Keep ALL RGB/RGBA colors EXACTLY as they are
+- Keep ALL hex colors EXACTLY as they are: #a13f4f, #ffe0dc, #3d1017, #7a2c2c, etc.
+- Keep ALL RGB/RGBA colors EXACTLY as they are: rgb(122, 44, 44), rgba(255, 224, 220, 0.8)
+- Keep ALL HSL colors EXACTLY as they are
 - Keep ALL color names EXACTLY as they are  
 - Keep ALL gradients EXACTLY as they are
 - Keep ALL background colors EXACTLY as they are
@@ -122,10 +138,12 @@ CRITICAL: The converted Shopify section MUST look IDENTICAL to the original HTML
 ❌ WRONG: Changing any colors, fonts, or styling
 ❌ WRONG: Modifying CSS properties or values
 ❌ WRONG: Breaking JavaScript functionality
+❌ WRONG: Losing global body/html background styles in section conversion
 ✅ CORRECT: Copy ALL styles exactly as written in original HTML
 ✅ CORRECT: Preserve exact visual appearance and functionality
 ✅ CORRECT: Include ALL custom CSS classes and their complete definitions
 ✅ CORRECT: Include ALL JavaScript with proper scoping
+✅ CORRECT: Apply global background styles to section root element
 
 VISUAL PRESERVATION REQUIREMENT: The final Shopify section must be visually and functionally identical to the original HTML!
 
@@ -145,6 +163,12 @@ Wrap ALL CSS with scoped selectors EXACTLY like this:
 #section-{{ section.id }} html { 
   /* Scope even body/html styles if present in original */ 
 }
+/* CRITICAL GLOBAL BACKGROUND PRESERVATION: */
+/* If original HTML has body/html background styles, apply them to section root: */
+#section-{{ section.id }} {
+  /* Apply any body/html background styles here to preserve global appearance */
+  /* Example: background: linear-gradient(135deg, #7a2c2c, #a13f4f); */
+}
 /* PRESERVE ALL ORIGINAL CSS: */
 /* - Copy every single CSS rule from the original HTML */
 /* - Keep ALL colors, fonts, spacing, animations EXACTLY the same */
@@ -153,6 +177,7 @@ Wrap ALL CSS with scoped selectors EXACTLY like this:
 /* - Include ALL keyframes and animations */
 /* - Include ALL pseudo-elements and pseudo-classes */
 /* - DO NOT modify any CSS values or properties */
+/* - Apply global body/html background styles to section root */
 </style>
 
 🚨 CRITICAL CSS RULES:
@@ -161,6 +186,7 @@ Wrap ALL CSS with scoped selectors EXACTLY like this:
 - Colors, fonts, spacing, animations must be EXACTLY the same
 - Custom CSS classes like .luxehair-velvet, .maroon-shadow must be preserved
 - Responsive design and media queries must be maintained exactly
+- GLOBAL BACKGROUNDS from body/html must be applied to #section-{{ section.id }} root element
 
 ✅ **JAVASCRIPT THEME EDITOR COMPATIBILITY**:
 <script>
@@ -1104,12 +1130,25 @@ Return COMPLETE liquid template: HTML structure + CSS + JavaScript + Schema. NOT
 
 VISUAL PRESERVATION REQUIREMENTS:
 1. The converted Shopify section MUST look EXACTLY like the original HTML
-2. ALL colors must be preserved exactly - no changes to color values
+2. 🎨 ALL colors must be preserved exactly - COPY EVERY SINGLE COLOR VALUE WITHOUT CHANGE
+   - Background colors: Copy exact hex/rgb/rgba values (e.g., #7a2c2c, rgb(122, 44, 44))
+   - Text colors: Copy exact color values from original HTML
+   - Border colors: Copy exact color values from original HTML
+   - Hover colors: Copy exact color values from original HTML
+   - Shadow colors: Copy exact color values from original HTML
 3. ALL fonts and typography must be identical
 4. ALL spacing, margins, padding must be exact
 5. ALL animations and transitions must work identically
 6. ALL JavaScript functionality must be preserved completely
 7. ALL CSS classes and their definitions must be included exactly
+
+🚨 CRITICAL COLOR PRESERVATION RULES 🚨:
+- DO NOT change any color values (hex, rgb, rgba, hsl, named colors)
+- DO NOT darken or lighten colors
+- DO NOT convert between color formats
+- COPY colors exactly as they appear in the original HTML/CSS
+- If original has background-color: #7a2c2c, converted MUST have background-color: #7a2c2c
+- Burgundy/maroon colors MUST remain burgundy/maroon in output
 
 CRITICAL FIXES REQUIRED:
 1. CSS SCOPING: Use "#section-{{ section.id }} .classname" NOT "#section-{{ section.id }} classname"
@@ -1345,8 +1384,7 @@ Convert EVERYTHING to working Shopify section format with ALL bugs fixed!`
     if (!liquidContent.includes('<section id="section-{{ section.id }}"')) {
       console.log('🚨 Adding missing section wrapper...');
       liquidContent = liquidContent.replace(/^([^<]*)</, '<section id="section-{{ section.id }}" class="hair-care-landing-page">\n$1<');
-    }
-    liquidContent = liquidContent.replace(/<style>([\s\S]*?)<\/style>/, (match, css) => {
+    } liquidContent = liquidContent.replace(/<style>([\s\S]*?)<\/style>/, (match, css) => {
       let fixedCSS = css;
 
       fixedCSS = fixedCSS.replace(/#section-\{\{ section\.id \}\} #section-\s*\{\{ section\.id \}\}/g, '#section-{{ section.id }}');
@@ -1361,6 +1399,44 @@ Convert EVERYTHING to working Shopify section format with ALL bugs fixed!`
         }
         return match;
       });
+
+      console.log('🔍 Extracting global background styles from original HTML...');
+
+      const htmlBodyMatch = htmlContent.match(/<style[^>]*>[\s\S]*?<\/style>/gi);
+      let globalBackgroundStyles = '';
+
+      if (htmlBodyMatch) {
+        htmlBodyMatch.forEach(styleBlock => {
+          const styleContent = styleBlock.replace(/<\/?style[^>]*>/gi, '');
+
+          const bodyBgMatch = styleContent.match(/(?:body|html)(?:\s*,\s*(?:body|html))?\s*\{[^}]*?background[^}]*?\}/gi);
+          if (bodyBgMatch) {
+            bodyBgMatch.forEach(rule => {
+              const backgroundProps = rule.match(/background[^;}]*(?:;|$)/gi);
+              if (backgroundProps) {
+                backgroundProps.forEach(prop => {
+                  if (prop.trim()) {
+                    globalBackgroundStyles += `  ${prop.trim()}\n`;
+                    console.log(`✅ Extracted global background style: ${prop.trim()}`);
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+
+      if (globalBackgroundStyles.trim()) {
+        const sectionRootStyle = `
+/* CRITICAL: Global background styles applied to section root for visual preservation */
+#section-{{ section.id }} {
+${globalBackgroundStyles}  /* Ensures section matches original HTML global background */
+}`;
+        fixedCSS = sectionRootStyle + '\n' + fixedCSS;
+        console.log('✅ Applied global background styles to section root');
+      } else {
+        console.log('ℹ️ No global body/html background styles found in original HTML');
+      }
 
       return `<style>\n/* CRITICAL: All original CSS preserved with proper scoping */\n${fixedCSS}\n</style>`;
     });
@@ -1440,6 +1516,80 @@ ${js.trim()}
     }
 
     console.log('✅ Advanced bug fixes and schema enhancements applied');
+
+    console.log('🧹 Removing unwanted AI-generated explanation text from output...');
+
+    const aiExplanationPatterns = [
+      /This conversion includes all the necessary elements[^.]*\./gi,
+      /This liquid template includes[^.]*\./gi,
+      /The converted shopify section[^.]*\./gi,
+      /This section includes[^.]*\./gi,
+      /The template includes[^.]*\./gi,
+      /This implementation[^.]*\./gi,
+      /Note that[^.]*\./gi,
+      /Please note[^.]*\./gi,
+      /<!-- This[^>]*-->/gi,
+      /\/\* This[^*]*\*\//gi,
+      /^\s*This conversion[^\n]*$/gmi,
+      /^\s*The converted[^\n]*$/gmi,
+      /^\s*This template[^\n]*$/gmi,
+      /^\s*This implementation[^\n]*$/gmi,
+      /^\s*Note:[^\n]*$/gmi,
+      /^\s*Please note:[^\n]*$/gmi
+    ];
+
+    aiExplanationPatterns.forEach((pattern, index) => {
+      const beforeCount = (liquidContent.match(pattern) || []).length;
+      liquidContent = liquidContent.replace(pattern, '');
+      const afterCount = (liquidContent.match(pattern) || []).length;
+      if (beforeCount > afterCount) {
+        console.log(`✅ Removed ${beforeCount - afterCount} AI explanation text instances (pattern ${index + 1})`);
+      }
+    });
+    console.log('🎨 Performing critical color preservation validation...');
+
+    const htmlOriginalColors = [];
+    const liquidConvertedColors = [];
+
+    const htmlColorMatches = htmlContent.match(/#[0-9a-fA-F]{3,6}|rgb\([^)]+\)|rgba\([^)]+\)|hsl\([^)]+\)|hsla\([^)]+\)/gi);
+    if (htmlColorMatches) {
+      htmlColorMatches.forEach(color => {
+        if (!htmlOriginalColors.includes(color.toLowerCase())) {
+          htmlOriginalColors.push(color.toLowerCase());
+        }
+      });
+    }
+
+    const liquidColorMatches = liquidContent.match(/#[0-9a-fA-F]{3,6}|rgb\([^)]+\)|rgba\([^)]+\)|hsl\([^)]+\)|hsla\([^)]+\)/gi);
+    if (liquidColorMatches) {
+      liquidColorMatches.forEach(color => {
+        if (!liquidConvertedColors.includes(color.toLowerCase())) {
+          liquidConvertedColors.push(color.toLowerCase());
+        }
+      });
+    }
+
+    console.log(`📊 Original HTML contains ${htmlOriginalColors.length} unique colors`);
+    console.log(`📊 Converted Liquid contains ${liquidConvertedColors.length} unique colors`);
+
+    const criticalColors = ['#7a2c2c', '#a13f4f', '#3d1017', 'rgb(122, 44, 44)', 'rgba(122, 44, 44'];
+    const missingCriticalColors = [];
+
+    criticalColors.forEach(criticalColor => {
+      const foundInOriginal = htmlOriginalColors.some(color => color.includes(criticalColor.toLowerCase()));
+      const foundInConverted = liquidConvertedColors.some(color => color.includes(criticalColor.toLowerCase()));
+
+      if (foundInOriginal && !foundInConverted) {
+        missingCriticalColors.push(criticalColor);
+      }
+    });
+
+    if (missingCriticalColors.length > 0) {
+      console.warn(`⚠️ CRITICAL COLOR WARNING: Missing important colors in conversion: ${missingCriticalColors.join(', ')}`);
+      console.warn('🎨 The converted section may not match the original visual appearance!');
+    } else {
+      console.log('✅ Color preservation validation passed - critical colors preserved');
+    }
 
     if (htmlContent.toLowerCase().includes('<footer') && liquidContent.includes('footer_column')) {
       console.log('🔍 Checking footer conversion quality...');
@@ -3682,6 +3832,43 @@ Return ONLY valid JSON:`;
           console.log(`✅ Validated button link: ${id}`);
           return match;
         });
+      });
+    }
+
+    console.log('🎨 Performing final color preservation check...');
+
+    const colorPatterns = [
+      /#[0-9a-fA-F]{3,6}/g,
+      /rgb\([^)]+\)/g,
+      /rgba\([^)]+\)/g,
+      /hsl\([^)]+\)/g,
+      /hsla\([^)]+\)/g
+    ];
+    let htmlOrigColors = new Set();
+    colorPatterns.forEach(pattern => {
+      const matches = htmlContent.match(pattern);
+      if (matches) {
+        matches.forEach(color => htmlOrigColors.add(color.toLowerCase()));
+      }
+    });
+
+    if (htmlOrigColors.size > 0) {
+      console.log(`🎨 Found ${htmlOrigColors.size} colors in original HTML`);
+      let liquidConvColors = new Set();
+      colorPatterns.forEach(pattern => {
+        const matches = cleanedLiquidContent.match(pattern);
+        if (matches) {
+          matches.forEach(color => liquidConvColors.add(color.toLowerCase()));
+        }
+      });
+
+      console.log(`🎨 Found ${liquidConvColors.size} colors in converted Liquid`);
+
+      const criticalColors = ['#7a2c2c', '#a13f4f', '#3d1017', '#ffe0dc'];
+      criticalColors.forEach(color => {
+        if (htmlOrigColors.has(color.toLowerCase()) && !liquidConvColors.has(color.toLowerCase())) {
+          console.warn(`⚠️ CRITICAL COLOR MISSING: ${color} was in original but not in converted output`);
+        }
       });
     }
 
