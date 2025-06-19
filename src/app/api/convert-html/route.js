@@ -4319,13 +4319,13 @@ Return ONLY valid JSON:`;
               "settings": {
                 "column_title": "Shop",
                 "link_1_text": "All Products",
-                "link_1_url": "#",
+                "link_1_url": "/",
                 "link_2_text": "Treatments",
-                "link_2_url": "#",
+                "link_2_url": "/",
                 "link_3_text": "Styling",
-                "link_3_url": "#",
+                "link_3_url": "/",
                 "link_4_text": "Tools",
-                "link_4_url": "#"
+                "link_4_url": "/"
               }
             };
 
@@ -4334,13 +4334,13 @@ Return ONLY valid JSON:`;
               "settings": {
                 "column_title": "Help",
                 "link_1_text": "Contact Us",
-                "link_1_url": "#",
+                "link_1_url": "/",
                 "link_2_text": "FAQs",
-                "link_2_url": "#",
+                "link_2_url": "/",
                 "link_3_text": "Shipping & Returns",
-                "link_3_url": "#",
+                "link_3_url": "/",
                 "link_4_text": "My Account",
-                "link_4_url": "#"
+                "link_4_url": "/"
               }
             };
 
@@ -4349,11 +4349,11 @@ Return ONLY valid JSON:`;
               "settings": {
                 "column_title": "About",
                 "link_1_text": "Our Story",
-                "link_1_url": "#",
+                "link_1_url": "/",
                 "link_2_text": "Ingredients",
-                "link_2_url": "#",
+                "link_2_url": "/",
                 "link_3_text": "Blog",
-                "link_3_url": "#",
+                "link_3_url": "/",
                 "link_4_text": "",
                 "link_4_url": ""
               }
@@ -4380,7 +4380,7 @@ Return ONLY valid JSON:`;
               "type": "social_link",
               "settings": {
                 "platform": "facebook",
-                "social_url": "#",
+                "social_url": "/",
                 "icon_class": "fab fa-facebook-f"
               }
             };
@@ -4389,7 +4389,7 @@ Return ONLY valid JSON:`;
               "type": "social_link",
               "settings": {
                 "platform": "instagram",
-                "social_url": "#",
+                "social_url": "/",
                 "icon_class": "fab fa-instagram"
               }
             };
@@ -4398,7 +4398,7 @@ Return ONLY valid JSON:`;
               "type": "social_link",
               "settings": {
                 "platform": "twitter",
-                "social_url": "#",
+                "social_url": "/",
                 "icon_class": "fab fa-twitter"
               }
             };
@@ -4407,7 +4407,7 @@ Return ONLY valid JSON:`;
               "type": "social_link",
               "settings": {
                 "platform": "pinterest",
-                "social_url": "#",
+                "social_url": "/",
                 "icon_class": "fab fa-pinterest-p"
               }
             };
