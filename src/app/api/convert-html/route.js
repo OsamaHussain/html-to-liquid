@@ -58,26 +58,34 @@ STRICT REQUIREMENTS:
 
 4. IDENTIFY REPEATING ELEMENTS: If HTML has multiple similar cards/items, use {% for block in section.blocks %}
 5. MANDATORY BLOCK CONVERSION: Convert ALL possible content into BLOCKS for maximum flexibility:
-   - Navigation links → header_link blocks
-   - Feature cards → feature blocks  
-   - Product cards → product blocks
-   - Testimonials → testimonial blocks
-   - Team members → team_member blocks
-   - Services → service blocks
-   - Social media links → social_link blocks
-   - Footer columns → footer_column blocks (CRITICAL: Preserve exact multi-column layout)
-   - Footer links within columns → footer_link blocks
-   - FAQ items → faq blocks
-   - Gallery images → gallery blocks
-   - Statistics → stat blocks
-   - Process steps → step blocks
-   - Benefits → benefit blocks
-   - Reviews → review blocks
-   - Awards → award blocks
-   - Partners → partner blocks
-   - Contact info → contact_info blocks
-   - Address info → address blocks
-   - ANY repeating or similar content → appropriate block type
+   - Navigation links → header_link blocks (DYNAMIC: admin can add/remove nav items)
+   - Feature cards → feature blocks (DYNAMIC: admin can add/remove features)
+   - Product cards → product blocks (DYNAMIC: admin can add/remove products)
+   - Testimonials → testimonial blocks (DYNAMIC: admin can add/remove testimonials)
+   - Team members → team_member blocks (DYNAMIC: admin can add/remove team members)
+   - Services → service blocks (DYNAMIC: admin can add/remove services)
+   - Social media links → social_link blocks (DYNAMIC: admin can add/remove social links)
+   - Footer columns → footer_column blocks (DYNAMIC: admin can add/remove footer columns)
+   - Footer links within columns → footer_link blocks (DYNAMIC: admin can add/remove footer links)
+   - FAQ items → faq blocks (DYNAMIC: admin can add/remove FAQ items)
+   - Gallery images → gallery blocks (DYNAMIC: admin can add/remove gallery items)
+   - Statistics → stat blocks (DYNAMIC: admin can add/remove statistics)
+   - Process steps → step blocks (DYNAMIC: admin can add/remove process steps)
+   - Benefits → benefit blocks (DYNAMIC: admin can add/remove benefits)
+   - Reviews → review blocks (DYNAMIC: admin can add/remove reviews)
+   - Awards → award blocks (DYNAMIC: admin can add/remove awards)
+   - Partners → partner blocks (DYNAMIC: admin can add/remove partners)
+   - Contact info → contact_info blocks (DYNAMIC: admin can add/remove contact info)
+   - Address info → address blocks (DYNAMIC: admin can add/remove addresses)
+   - Hero sections → hero blocks (DYNAMIC: admin can add/remove hero sections)
+   - About sections → about blocks (DYNAMIC: admin can add/remove about sections)
+   - CTA buttons → cta_button blocks (DYNAMIC: admin can add/remove CTA buttons)
+   - Image with text → image_text blocks (DYNAMIC: admin can add/remove image-text combinations)
+   - Video sections → video blocks (DYNAMIC: admin can add/remove videos)
+   - Newsletter signup → newsletter blocks (DYNAMIC: admin can add/remove newsletter forms)
+   - Social proof → social_proof blocks (DYNAMIC: admin can add/remove social proof elements)
+   - Pricing tables → pricing blocks (DYNAMIC: admin can add/remove pricing options)
+   - ANY repeating or similar content → appropriate block type (DYNAMIC: everything editable)
 6. PRESERVE HTML STRUCTURE: Keep exact HTML structure, classes, and attributes
 7. COMPREHENSIVE SCHEMA REQUIREMENTS:
    - Extract ACTUAL text from HTML as default values in schema
@@ -94,7 +102,34 @@ STRICT REQUIREMENTS:
 8. NO GENERIC PLACEHOLDERS: Use real content from HTML in schema defaults
 9. CRITICAL SHOPIFY RULE: Never add "default" attribute to "image_picker" settings
 10. COMPLETE CONVERSION: Convert ALL sections including headers, navigation, hero, content, testimonials, products, forms, footer - EVERYTHING!
-11. CREATE COMPREHENSIVE BLOCKS: Include blocks for products, testimonials, education guides, sustainability slides, transformation slides, team members, features, services, etc.
+11. CREATE COMPREHENSIVE BLOCKS: Include blocks for EVERYTHING to make it FULLY DYNAMIC:
+    - Products (DYNAMIC: add/remove product cards)
+    - Testimonials (DYNAMIC: add/remove customer testimonials)  
+    - Education guides (DYNAMIC: add/remove educational content)
+    - Sustainability slides (DYNAMIC: add/remove sustainability content)
+    - Transformation slides (DYNAMIC: add/remove before/after content)
+    - Team members (DYNAMIC: add/remove team member profiles)
+    - Features (DYNAMIC: add/remove feature highlights)
+    - Services (DYNAMIC: add/remove service offerings)
+    - Hero sections (DYNAMIC: add/remove hero banners)
+    - About sections (DYNAMIC: add/remove about content)
+    - Contact forms (DYNAMIC: add/remove contact forms)
+    - Social media (DYNAMIC: add/remove social links)
+    - Navigation menu (DYNAMIC: add/remove menu items)
+    - Footer sections (DYNAMIC: add/remove footer content)
+    - Gallery items (DYNAMIC: add/remove images/videos)
+    - FAQ sections (DYNAMIC: add/remove FAQ items)
+    - Pricing tables (DYNAMIC: add/remove pricing options)
+    - CTA buttons (DYNAMIC: add/remove call-to-action buttons)
+    - Newsletter signup (DYNAMIC: add/remove newsletter forms)
+    - Blog posts (DYNAMIC: add/remove blog content)
+    - Awards/certifications (DYNAMIC: add/remove awards)
+    - Partner logos (DYNAMIC: add/remove partner information)
+    - Statistics/counters (DYNAMIC: add/remove stat counters)
+    - Process steps (DYNAMIC: add/remove workflow steps)
+    - Benefits/advantages (DYNAMIC: add/remove benefit points)
+    - Reviews/ratings (DYNAMIC: add/remove customer reviews)
+    - 🚨 CRITICAL: EVERYTHING should be blocks for maximum admin flexibility!
 12. MANDATORY ANCHOR TAG CONVERSION: Every single <a> tag MUST become editable:
     - Header/Navigation links: Use BLOCKS for dynamic header links (can add/remove from admin)
     - Footer links: <a href="{{ section.settings.footer_link_1_url }}">{{ section.settings.footer_link_1_text }}</a>
@@ -284,10 +319,10 @@ Return ONLY the liquid template with complete schema section. Include ALL CSS ex
       {
         role: "user",
         content: prompt
-      }
-      ],
+      }],
       max_tokens: 16384,
-      temperature: 0.05,
+      temperature: 0.01,
+      seed: 12345,
     });
 
     let liquidContent = completion.choices[0]?.message?.content;
@@ -339,8 +374,9 @@ MANDATORY Requirements:
 13. NO hardcoded content should remain - make everything dynamic and editable from Shopify admin`
         }
         ],
-        max_tokens: 16000,
+        max_tokens: 16384,
         temperature: 0.01,
+        seed: 12345,
       });
 
       const retryLiquidContent = retryCompletion.choices[0]?.message?.content;
@@ -411,34 +447,150 @@ MANDATORY Requirements:
     }
 
     const liquidFileName = fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid';
-    const sectionType = liquidFileName.replace('.liquid', ''); const jsonPrompt = `Create a Shopify page template JSON that matches the Liquid schema EXACTLY and includes ALL dynamic content settings.
+    const sectionType = liquidFileName.replace('.liquid', '');
+    const htmlSections = htmlContent.match(/<(section|div|header|nav|main|footer|article)[^>]*>/gi) || [];
+    const htmlSectionCount = htmlSections.length;
 
-🚨 CRITICAL: The JSON template must use ONLY the block types defined in the Liquid schema AND include ALL editable content settings. 🚨
+    const hasHeader = htmlContent.toLowerCase().includes('<header') || htmlContent.toLowerCase().includes('<nav');
+    const hasFooter = htmlContent.toLowerCase().includes('<footer');
+    const hasTestimonials = htmlContent.toLowerCase().includes('testimonial') || htmlContent.toLowerCase().includes('review');
+    const hasProducts = htmlContent.toLowerCase().includes('product') || htmlContent.toLowerCase().includes('shop');
+    const hasTeam = htmlContent.toLowerCase().includes('team') || htmlContent.toLowerCase().includes('member');
+    const hasGallery = htmlContent.toLowerCase().includes('gallery') || htmlContent.toLowerCase().includes('portfolio');
+    const hasContact = htmlContent.toLowerCase().includes('contact') || htmlContent.toLowerCase().includes('form');
 
-Original HTML Content:
+    const structureAnalysis = {
+      hasHeader,
+      hasFooter,
+      hasTestimonials,
+      hasProducts,
+      hasTeam,
+      hasGallery,
+      hasContact,
+      sectionCount: htmlSectionCount
+    };
+
+    const jsonPrompt = `Create a comprehensive Shopify page template JSON that captures ALL HTML sections and includes EVERY piece of dynamic content.
+
+🚨 HTML STRUCTURE ANALYSIS: 🚨
+- Total sections detected: ${htmlSectionCount}
+- Has header/navigation: ${hasHeader}
+- Has footer: ${hasFooter}
+- Has testimonials/reviews: ${hasTestimonials}
+- Has products/shop elements: ${hasProducts}
+- Has team/member sections: ${hasTeam}
+- Has gallery/portfolio: ${hasGallery}
+- Has contact/form sections: ${hasContact}
+
+🚨 CRITICAL REQUIREMENTS - MISSING SECTIONS WILL CAUSE FAILURES: 🚨
+1. The JSON must include ALL sections found in HTML (detected ${htmlSectionCount} major sections)
+2. MANDATORY: Scan the ENTIRE Liquid schema and create JSON settings for EVERY SINGLE setting
+3. NO SECTION SHOULD BE MISSING - include header, navigation, hero, features, testimonials, products, services, team, gallery, contact, footer, etc.
+4. JSON template must use ONLY block types defined in the Liquid schema
+5. Extract REAL content from HTML for ALL settings - no generic placeholders
+
+🚨 SECTION COMPLETENESS CHECK: 🚨
+- SCAN HTML FOR: headers, navigation, hero sections, about sections, features, services, products, testimonials, team members, gallery, contact forms, footer columns, footer bottom
+- CREATE JSON BLOCKS FOR: Every repeating element found in HTML
+- INCLUDE SETTINGS FOR: Every text element, link, image, and form field in HTML
+
+Original HTML Content (${htmlContent.length} characters, ${htmlContent.split('\n').length} lines):
 \`\`\`html
 ${htmlContent}
 \`\`\`
 
-Converted Liquid Template (WITH SCHEMA):
+Converted Liquid Template (WITH COMPLETE SCHEMA):
 \`\`\`liquid
 ${cleanedLiquidContent}
 \`\`\`
 
-COMPREHENSIVE SCHEMA SYNCHRONIZATION RULES:
+🚨 COMPREHENSIVE MAPPING REQUIREMENTS: 🚨
 1. Section type must be "${sectionType}"
 2. Block types in JSON must EXACTLY match block types in the Liquid schema
 3. Every block setting in JSON must match the schema definition
 4. Extract REAL content from HTML for ALL default values
 5. NO default values for image_picker fields
-6. MANDATORY: Include settings for ALL text content that was made editable in Liquid template
-7. CRITICAL: Include ALL heading settings (title, subtitle, heading_1, heading_2, etc.)
-8. CRITICAL: Include ALL paragraph settings (description, text_1, text_2, etc.)
+6. 🚨 MANDATORY SCHEMA COMPLETENESS: 🚨
+   - Parse the ENTIRE Liquid schema section by section
+   - Count ALL settings in schema (both section settings and block settings)
+   - Create JSON entry for EVERY SINGLE setting found in schema
+   - If schema defines 45 settings, JSON must contain all 45 settings
+   - NO SETTING SHOULD BE OMITTED - this causes missing sections
+7. 🚨 HTML SECTION ANALYSIS: 🚨
+   - Systematically scan HTML for ALL major sections
+   - Header/Navigation: Extract all nav links and create header_link blocks
+   - Hero Section: Extract title, subtitle, description, button text and URLs
+   - Features/Services: Create blocks for each feature/service item
+   - Products: Create blocks for each product card or listing
+   - Testimonials: Create blocks for each testimonial
+   - Team Members: Create blocks for each team member
+   - Gallery: Create blocks for each gallery item
+   - Contact Section: Extract all form fields and contact info
+   - Footer Columns: Create blocks for each footer column with all links
+   - Footer Bottom: Extract copyright, terms, privacy, social links
+8. 🚨 CRITICAL CONTENT MAPPING: 🚨
+   - ALL heading text → corresponding JSON settings with real HTML content
+   - ALL paragraph text → corresponding JSON settings with real HTML content
+   - ALL button text and URLs → corresponding JSON settings with real HTML content
+   - ALL anchor tag text and URLs → corresponding JSON settings with real HTML content
+   - ALL form labels and placeholders → corresponding JSON settings with real HTML content
+   - ALL contact information → corresponding JSON settings with real HTML content
 9. CRITICAL: Include ALL button settings (button_text, button_1_text, etc.)
 10. CRITICAL: Include ALL link settings (both URL and text for every anchor tag)
 11. CRITICAL: Include ALL label/span settings (label_1, label_2, etc.)
 12. CRITICAL: Include ALL form settings (placeholder_text, etc.)
 13. CRITICAL: Include ALL contact info settings (phone, email, address, etc.)
+
+🚨 STEP-BY-STEP ANALYSIS REQUIRED: 🚨
+STEP 1: SCHEMA ANALYSIS
+- Parse the {% schema %} section completely
+- Count ALL settings in schema (section + block settings)
+- List ALL block types defined in schema
+- Note every setting ID and type
+
+STEP 2: HTML CONTENT ANALYSIS  
+- Scan HTML systematically section by section
+- Identify ALL major sections: header, nav, hero, about, features, services, products, testimonials, team, gallery, contact, footer
+- Count repeating elements in each section
+- Extract actual text content from each element
+
+STEP 3: COMPREHENSIVE MAPPING
+- Create JSON setting for EVERY schema setting
+- Create JSON block for EVERY repeating HTML element
+- Use actual HTML content as default values
+- Ensure block types match schema exactly
+
+STEP 4: VALIDATION
+- Verify ALL schema settings are included in JSON
+- Verify ALL HTML sections are represented
+- Verify block types match schema definitions
+- Ensure no content is missing or skipped
+
+🚨 MANDATORY ANALYSIS CHECKLIST: 🚨
+□ Header/Navigation: Count nav links → create header_link blocks (DYNAMIC: admin can add/remove nav items)
+□ Hero Section: Extract title, subtitle, description, button → create hero blocks (DYNAMIC: admin can add/remove hero sections)
+□ About Section: Extract headings, paragraphs, images → create about blocks (DYNAMIC: admin can add/remove about content)
+□ Features: Count feature items → create feature blocks (DYNAMIC: admin can add/remove features)
+□ Services: Count service items → create service blocks (DYNAMIC: admin can add/remove services)
+□ Products: Count product cards → create product blocks (DYNAMIC: admin can add/remove products)
+□ Testimonials: Count testimonials → create testimonial blocks (DYNAMIC: admin can add/remove testimonials)
+□ Team: Count team members → create team_member blocks (DYNAMIC: admin can add/remove team members)
+□ Gallery: Count images/items → create gallery blocks (DYNAMIC: admin can add/remove gallery items)
+□ Contact: Extract form fields and contact info → create contact_form blocks (DYNAMIC: admin can add/remove contact forms)
+□ Footer Columns: Count columns → create footer_column blocks (DYNAMIC: admin can add/remove footer columns)
+□ Footer Bottom: Extract copyright, terms, privacy, social links → create footer_bottom blocks (DYNAMIC: admin can add/remove footer bottom elements)
+□ FAQ Items: Count FAQ items → create faq blocks (DYNAMIC: admin can add/remove FAQ items)
+□ Statistics: Count statistics → create stat blocks (DYNAMIC: admin can add/remove statistics)
+□ Benefits: Count benefits → create benefit blocks (DYNAMIC: admin can add/remove benefits)
+□ Process Steps: Count steps → create step blocks (DYNAMIC: admin can add/remove process steps)
+□ Awards: Count awards → create award blocks (DYNAMIC: admin can add/remove awards)
+□ Partners: Count partners → create partner blocks (DYNAMIC: admin can add/remove partners)
+□ Reviews: Count reviews → create review blocks (DYNAMIC: admin can add/remove reviews)
+□ CTA Buttons: Count CTA buttons → create cta_button blocks (DYNAMIC: admin can add/remove CTA buttons)
+□ Newsletter: Count newsletter forms → create newsletter blocks (DYNAMIC: admin can add/remove newsletter forms)
+□ Videos: Count video sections → create video blocks (DYNAMIC: admin can add/remove videos)
+□ Social Links: Count social media links → create social_link blocks (DYNAMIC: admin can add/remove social links)
+□ Pricing: Count pricing tables → create pricing blocks (DYNAMIC: admin can add/remove pricing options)
 
 COMPLETE CONTENT ANALYSIS - MANDATORY STEP:
 1. Scan the Liquid schema for ALL settings (not just anchor tags)
@@ -482,12 +634,41 @@ ANALYSIS STEPS:
 6. SCAN for EVERY setting in the schema and populate them with real HTML content
 
 🚨 CRITICAL BLOCK REQUIREMENT: MAXIMIZE BLOCK USAGE IN JSON 🚨
-- Convert EVERY possible content element to BLOCKS in the JSON template
+- Convert EVERY possible content element to BLOCKS in the JSON template for MAXIMUM ADMIN FLEXIBILITY
 - Even single elements should be blocks if they might be repeated or customized
-- Create blocks for ALL navigation links, footer links, social links, features, services, testimonials, team members, products, gallery items, FAQ items, contact info, addresses, statistics, reviews, awards, partners, benefits, process steps, etc.
+- 🚨 EVERYTHING MUST BE DYNAMIC AND ADDABLE/REMOVABLE BY ADMIN 🚨
+- Create blocks for ALL content types:
+  * Navigation links → header_link blocks (admin can add/remove nav items)
+  * Footer links → footer_link blocks (admin can add/remove footer links)
+  * Features → feature blocks (admin can add/remove features)
+  * Services → service blocks (admin can add/remove services)
+  * Testimonials → testimonial blocks (admin can add/remove testimonials)
+  * Team members → team_member blocks (admin can add/remove team members)
+  * Products → product blocks (admin can add/remove products)
+  * Gallery images → gallery blocks (admin can add/remove gallery items)
+  * Social links → social_link blocks (admin can add/remove social links)
+  * Contact info → contact_info blocks (admin can add/remove contact details)
+  * Statistics → stat blocks (admin can add/remove statistics)
+  * Benefits → benefit blocks (admin can add/remove benefits)
+  * FAQ items → faq blocks (admin can add/remove FAQ items)
+  * Reviews → review blocks (admin can add/remove reviews)
+  * Awards → award blocks (admin can add/remove awards)
+  * Partners → partner blocks (admin can add/remove partners)
+  * Process steps → step blocks (admin can add/remove process steps)
+  * Hero sections → hero blocks (admin can add/remove hero banners)
+  * About sections → about blocks (admin can add/remove about content)
+  * CTA buttons → cta_button blocks (admin can add/remove call-to-action buttons)
+  * Newsletter forms → newsletter blocks (admin can add/remove newsletter signups)
+  * Video sections → video blocks (admin can add/remove videos)
+  * Image with text → image_text blocks (admin can add/remove image-text combinations)
+  * Pricing tables → pricing blocks (admin can add/remove pricing options)
+  * Blog posts → blog_post blocks (admin can add/remove blog content)
+  * Address information → address blocks (admin can add/remove addresses)
+  * Social proof → social_proof blocks (admin can add/remove social proof elements)
 - PREFER BLOCKS OVER SECTION SETTINGS whenever possible for maximum flexibility
 - Each block should contain ALL its related content (title, description, image, link, etc.)
-- This allows admins to add/remove/reorder elements dynamically
+- This allows admins to add/remove/reorder elements dynamically without code changes
+- 🚨 ADMIN EMPOWERMENT: Every piece of content should be manageable from Shopify admin
 
 🚨 FOOTER MULTI-COLUMN LAYOUT PRESERVATION 🚨
 - CRITICAL: Maintain exact footer column structure and CSS classes from HTML
@@ -647,43 +828,52 @@ Return ONLY valid JSON:`;
       model: "gpt-4o",
       messages: [{
         role: "system",
-        content: `You are a Shopify expert who creates comprehensive page template JSON files that capture ALL dynamic content with PERFECT SCHEMA SYNCHRONIZATION. 🚨 CRITICAL RULES:
+        content: `You are a Shopify expert who creates COMPLETE page template JSON files that capture EVERY HTML section and ALL dynamic content with PERFECT SCHEMA SYNCHRONIZATION. 
+
+🚨 CRITICAL ZERO-TOLERANCE RULE: NO SECTIONS OR SETTINGS CAN BE MISSING! 🚨
+
+MANDATORY RESPONSIBILITIES:
 1. Section type must be "${sectionType}" 
-2. Block types in JSON must EXACTLY match block types defined in the Liquid schema
-3. Parse the Liquid schema first to identify ALL settings (not just block types)
-4. Extract REAL content from HTML for ALL settings - no placeholders
-5. Count repeating elements and create blocks for each one
-6. NEVER add default values to image fields
-7. 🚨 CRITICAL IMAGE RULE: ALL image fields must be empty strings ("") - NO .jpg, .png, or any image extensions allowed
-8. Return valid JSON only, no markdown formatting
-9. Ensure ALL section settings and block settings match the Liquid schema exactly
-10. Create the exact number of blocks as there are repeating elements in the HTML
-11. ALWAYS MAINTAIN CONSISTENT OUTPUT: The JSON must perfectly match the 4-section Liquid template format (schema, stylesheet, javascript, HTML)
-12. 🚨 MAXIMIZE BLOCK USAGE: Convert EVERYTHING possible to blocks in JSON for maximum flexibility
-    - Navigation links → header_link blocks
-    - Footer links → footer_link blocks  
-    - Features → feature blocks
-    - Services → service blocks
-    - Testimonials → testimonial blocks
-    - Team members → team_member blocks
-    - Products → product blocks
-    - Gallery images → gallery blocks
-    - Social links → social_link blocks
-    - Contact info → contact_info blocks
-    - Statistics → stat blocks
-    - Benefits → benefit blocks
-    - FAQ items → faq blocks
-    - Reviews → review blocks
-    - Awards → award blocks
-    - Partners → partner blocks
-    - Process steps → step blocks    
-    - PREFER BLOCKS OVER SECTION SETTINGS for maximum admin flexibility
-12. ALWAYS include these standard Shopify styling settings in EVERY section:
-    - "heading_size": "h1" (for heading size control)
-    - "color_scheme": "scheme-1" (for color scheme selection) 
-    - "padding_top": 36 (top padding in pixels)
-    - "padding_bottom": 36 (bottom padding in pixels)
-    - "margin_top": 0 (top margin)    - "margin_bottom": 0 (bottom margin)
+2. Parse Liquid schema COMPLETELY - extract ALL section settings and ALL block types
+3. Create JSON entries for EVERY SINGLE setting defined in the schema
+4. Scan HTML systematically for ALL sections: header, nav, hero, about, features, services, products, testimonials, team, gallery, contact, footer
+5. Extract REAL content from HTML for ALL settings - never use placeholders
+6. Count repeating elements in HTML and create exact number of blocks
+7. 🚨 COMPLETENESS VALIDATION: If schema has 50 settings, JSON must have 50 settings 🚨
+
+COMPREHENSIVE SECTION MAPPING:
+- Header/Navigation → header_link blocks for each nav item (DYNAMIC: admin can add/remove nav items)
+- Hero Section → hero blocks for title, subtitle, description, button text/URLs (DYNAMIC: admin can add/remove hero sections)
+- Features/Services → feature/service blocks for each item (DYNAMIC: admin can add/remove features/services)
+- Products → product blocks for each product card (DYNAMIC: admin can add/remove products)
+- Testimonials → testimonial blocks for each testimonial (DYNAMIC: admin can add/remove testimonials)
+- Team Members → team_member blocks for each member (DYNAMIC: admin can add/remove team members)
+- Gallery → gallery blocks for each image/item (DYNAMIC: admin can add/remove gallery items)
+- Contact Forms → contact_form blocks for all form fields and contact info (DYNAMIC: admin can add/remove contact forms)
+- Footer Columns → footer_column blocks for each column with all links (DYNAMIC: admin can add/remove footer columns)
+- Footer Bottom → footer_bottom blocks for copyright, terms, privacy, social links (DYNAMIC: admin can add/remove footer bottom elements)
+- About Sections → about blocks for about content (DYNAMIC: admin can add/remove about sections)
+- CTA Buttons → cta_button blocks for call-to-action buttons (DYNAMIC: admin can add/remove CTA buttons)
+- FAQ Items → faq blocks for frequently asked questions (DYNAMIC: admin can add/remove FAQ items)
+- Statistics → stat blocks for counters and statistics (DYNAMIC: admin can add/remove statistics)
+- Benefits → benefit blocks for advantage points (DYNAMIC: admin can add/remove benefits)
+- Process Steps → step blocks for workflow steps (DYNAMIC: admin can add/remove process steps)
+- Awards → award blocks for certifications and awards (DYNAMIC: admin can add/remove awards)
+- Partners → partner blocks for partner logos and info (DYNAMIC: admin can add/remove partners)
+- Reviews → review blocks for customer reviews (DYNAMIC: admin can add/remove reviews)
+- Pricing → pricing blocks for pricing tables (DYNAMIC: admin can add/remove pricing options)
+- Newsletter → newsletter blocks for signup forms (DYNAMIC: admin can add/remove newsletter forms)
+- Video Sections → video blocks for embedded videos (DYNAMIC: admin can add/remove videos)
+- Social Media → social_link blocks for social media links (DYNAMIC: admin can add/remove social links)
+
+CRITICAL RULES:
+- NEVER skip any schema setting - include ALL in JSON
+- Extract actual text content from HTML for each setting
+- Use empty strings ("") for image fields only
+- Convert localhost URLs to relative paths ("/")
+- Block types in JSON must EXACTLY match schema block types
+- Create blocks for ALL repeating HTML elements
+- Include standard Shopify settings: heading_size, color_scheme, padding_top, padding_bottom, margin_top, margin_bottom
 13. COMPREHENSIVE CONTENT CAPTURE: You MUST scan the Liquid schema for ALL settings and populate them:
     - Find EVERY setting in the schema (headings, paragraphs, buttons, links, labels, forms, etc.)
     - Extract actual text content from HTML for each setting
@@ -705,7 +895,34 @@ Return ONLY valid JSON:`;
 18. HEADER LINKS: If there are multiple anchor tags in header/nav section, create blocks or numbered settings for each one
 19. CRITICAL: You must process the ENTIRE schema and create JSON for ALL settings. Do not truncate or skip any parts for large files.
 20. MISSING CONTENT RULE: If a setting exists in schema but no corresponding content found in HTML, use appropriate default values
-21. 🚨 BLOCK PRIORITY RULE: Always prefer creating BLOCKS over section settings when possible - this gives maximum flexibility to admins to add, remove, and reorder content elements dynamically
+21. 🚨 BLOCK PRIORITY RULE: EVERYTHING MUST BE BLOCKS FOR MAXIMUM ADMIN FLEXIBILITY 🚨
+    - Always prefer creating BLOCKS over section settings when possible
+    - This gives maximum flexibility to admins to add, remove, and reorder content elements dynamically
+    - EVEN SINGLE ITEMS should be blocks if they can be repeated or customized
+    - Admin should be able to manage ALL content from Shopify admin without touching code
+    - Examples of EVERYTHING that should be blocks:
+      * Single hero section → hero block (admin can add multiple hero sections)
+      * Single about section → about block (admin can add multiple about sections)
+      * Single contact form → contact_form block (admin can add multiple contact forms)
+      * Single newsletter signup → newsletter block (admin can add multiple newsletter forms)
+      * Single CTA button → cta_button block (admin can add multiple CTA buttons)
+      * Single statistic → stat block (admin can add multiple statistics)
+      * Single benefit → benefit block (admin can add multiple benefits)
+      * Single feature → feature block (admin can add multiple features)
+      * Single service → service block (admin can add multiple services)
+      * Single testimonial → testimonial block (admin can add multiple testimonials)
+      * Single team member → team_member block (admin can add multiple team members)
+      * Single product → product block (admin can add multiple products)
+      * Single gallery item → gallery block (admin can add multiple gallery items)
+      * Single FAQ → faq block (admin can add multiple FAQ items)
+      * Single award → award block (admin can add multiple awards)
+      * Single partner → partner block (admin can add multiple partners)
+      * Single review → review block (admin can add multiple reviews)
+      * Single process step → step block (admin can add multiple process steps)
+      * Single pricing option → pricing block (admin can add multiple pricing options)
+      * Single video → video block (admin can add multiple videos)
+      * Single social link → social_link block (admin can add multiple social links)
+    - RESULT: Admin has complete control over ALL content without developer intervention
 22. 🚨 IMAGE FIELD RULE: For ALL image-related settings in JSON, always use empty string ("") - never include .jpg, .png, or any file extensions`
       },
       {
@@ -713,8 +930,9 @@ Return ONLY valid JSON:`;
         content: jsonPrompt
       }
       ],
-      max_tokens: 12000,
+      max_tokens: 16384,
       temperature: 0.01,
+      seed: 12345,
     });
 
     const jsonTemplate = jsonCompletion.choices[0]?.message?.content;
@@ -761,21 +979,57 @@ Return ONLY valid JSON:`;
                 }
               }
             });
-          }
+          } const validBlockTypes = new Set();
+          let schemaSettings = [];
+          let schemaBlocks = [];
 
-          const validBlockTypes = new Set();
           if (cleanedLiquidContent.includes('{% schema %}')) {
             const schemaMatch = cleanedLiquidContent.match(/{% schema %}([\s\S]*?){% endschema %}/);
             if (schemaMatch) {
               try {
                 const schema = JSON.parse(schemaMatch[1]);
+
+                if (schema.settings) {
+                  schemaSettings = schema.settings.map(s => s.id).filter(Boolean);
+                }
+
                 if (schema.blocks) {
+                  schemaBlocks = schema.blocks;
                   schema.blocks.forEach(block => {
                     if (block.type) {
                       validBlockTypes.add(block.type);
                     }
                   });
                 }
+
+                const jsonSettingsCount = Object.keys(jsonData.sections.main.settings).length;
+                const schemaSettingsCount = schemaSettings.length;
+
+                console.log(`Schema validation: Schema has ${schemaSettingsCount} settings, JSON has ${jsonSettingsCount} settings`);
+
+                const missingSettings = schemaSettings.filter(settingId =>
+                  !jsonData.sections.main.settings.hasOwnProperty(settingId)
+                );
+
+                if (missingSettings.length > 0) {
+                  console.warn('Missing settings in JSON:', missingSettings);
+
+                  missingSettings.forEach(settingId => {
+                    const schemaSetting = schema.settings.find(s => s.id === settingId);
+                    if (schemaSetting) {
+                      if (schemaSetting.type === 'text' || schemaSetting.type === 'textarea') {
+                        jsonData.sections.main.settings[settingId] = schemaSetting.default || '';
+                      } else if (schemaSetting.type === 'url') {
+                        jsonData.sections.main.settings[settingId] = schemaSetting.default || '/';
+                      } else if (schemaSetting.type === 'image_picker') {
+                        jsonData.sections.main.settings[settingId] = '';
+                      } else {
+                        jsonData.sections.main.settings[settingId] = schemaSetting.default || '';
+                      }
+                    }
+                  });
+                }
+
               } catch (e) {
                 console.log('Schema parsing error, using fallback block types');
               }
@@ -783,6 +1037,44 @@ Return ONLY valid JSON:`;
           }
 
           if (jsonData.sections.main.blocks) {
+            const blockTypes = Object.values(jsonData.sections.main.blocks).map(block => block.type);
+            const uniqueBlockTypes = [...new Set(blockTypes)];
+
+            console.log(`Block validation: JSON has ${Object.keys(jsonData.sections.main.blocks).length} blocks of ${uniqueBlockTypes.length} types`);
+            console.log('Block types in JSON:', uniqueBlockTypes);
+            console.log('Valid block types from schema:', Array.from(validBlockTypes));
+
+            Object.keys(jsonData.sections.main.blocks).forEach(blockKey => {
+              const block = jsonData.sections.main.blocks[blockKey];
+
+              const schemaBlock = schemaBlocks.find(sb => sb.type === block.type);
+              if (schemaBlock && schemaBlock.settings && block.settings) {
+                const schemaBlockSettings = schemaBlock.settings.map(s => s.id).filter(Boolean);
+                const missingBlockSettings = schemaBlockSettings.filter(settingId =>
+                  !block.settings.hasOwnProperty(settingId)
+                );
+
+                if (missingBlockSettings.length > 0) {
+                  console.warn(`Missing settings in block ${blockKey}:`, missingBlockSettings);
+
+                  missingBlockSettings.forEach(settingId => {
+                    const schemaBlockSetting = schemaBlock.settings.find(s => s.id === settingId);
+                    if (schemaBlockSetting) {
+                      if (schemaBlockSetting.type === 'text' || schemaBlockSetting.type === 'textarea') {
+                        block.settings[settingId] = schemaBlockSetting.default || '';
+                      } else if (schemaBlockSetting.type === 'url') {
+                        block.settings[settingId] = schemaBlockSetting.default || '/';
+                      } else if (schemaBlockSetting.type === 'image_picker') {
+                        block.settings[settingId] = '';
+                      } else {
+                        block.settings[settingId] = schemaBlockSetting.default || '';
+                      }
+                    }
+                  });
+                }
+              }
+            });
+
             Object.keys(jsonData.sections.main.blocks).forEach(blockKey => {
               const block = jsonData.sections.main.blocks[blockKey];
 
@@ -860,17 +1152,56 @@ Return ONLY valid JSON:`;
       }
     }
 
+    let validationInfo = {
+      schemaSettingsCount: 0,
+      jsonSettingsCount: 0,
+      schemaBlockTypes: [],
+      jsonBlockCount: 0,
+      completenessCheck: 'passed'
+    };
+
+    try {
+      const parsedJson = JSON.parse(correctedJsonTemplate);
+      if (parsedJson.sections && parsedJson.sections.main) {
+        validationInfo.jsonSettingsCount = Object.keys(parsedJson.sections.main.settings || {}).length;
+        validationInfo.jsonBlockCount = Object.keys(parsedJson.sections.main.blocks || {}).length;
+      }
+
+      const schemaMatch = cleanedLiquidContent.match(/{% schema %}([\s\S]*?){% endschema %}/);
+      if (schemaMatch) {
+        try {
+          const schema = JSON.parse(schemaMatch[1]);
+          if (schema.settings) {
+            validationInfo.schemaSettingsCount = schema.settings.length;
+          }
+          if (schema.blocks) {
+            validationInfo.schemaBlockTypes = schema.blocks.map(b => b.type);
+          }
+
+          if (validationInfo.schemaSettingsCount > validationInfo.jsonSettingsCount) {
+            validationInfo.completenessCheck = 'missing_settings';
+          }
+        } catch (e) {
+          validationInfo.completenessCheck = 'schema_parse_error';
+        }
+      }
+    } catch (e) {
+      validationInfo.completenessCheck = 'json_parse_error';
+    }
+
     return NextResponse.json({
       success: true,
       liquidContent: cleanedLiquidContent,
       jsonTemplate: correctedJsonTemplate,
+      validation: validationInfo,
       metadata: {
         liquidFileName: liquidFileName,
         jsonFileName: fileName ? `page.${fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : 'page.custom.json',
         sectionType: sectionType,
         isLargeFile: isLargeFile,
         htmlSize: htmlContent.length,
-        htmlLines: htmlContent.split('\n').length
+        htmlLines: htmlContent.split('\n').length, htmlSectionCount: htmlSectionCount,
+        structureAnalysis: structureAnalysis
       }
     });
 
