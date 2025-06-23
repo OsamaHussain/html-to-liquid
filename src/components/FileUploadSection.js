@@ -1,8 +1,6 @@
 export default function FileUploadSection({
-    isLoading,
-    fileName,
-    handleFileUpload,
-    clearContent
+    numberOfFiles,
+    onNumberOfFilesChange
 }) {
     return (
         <div style={{
@@ -56,123 +54,75 @@ export default function FileUploadSection({
                     flex: '1',
                     minWidth: '200px'
                 }}>
-                    Upload HTML File
+                    Number of HTML Files
                 </h2>
             </div>
-
             <div style={{
-                border: '2px dashed rgba(0, 212, 255, 0.3)',
-                borderRadius: 'clamp(15px, 4vw, 20px)',
-                padding: 'clamp(25px, 6vw, 40px)',
+                border: '2px solid rgba(0, 212, 255, 0.3)',
+                borderRadius: 'clamp(10px, 3vw, 15px)',
+                padding: 'clamp(10px, 2vw, 15px)',
                 textAlign: 'center',
                 background: 'rgba(0, 0, 0, 0.2)',
-                transition: 'all 0.3s ease',
                 position: 'relative',
                 zIndex: 1,
                 backdropFilter: 'blur(10px)'
-            }}>
-                <input
-                    id="fileInput"
-                    type="file"
-                    accept=".html"
-                    onChange={handleFileUpload}
-                    disabled={isLoading}
+            }}>                <select
+                    value={numberOfFiles}
+                    onChange={(e) => onNumberOfFilesChange(parseInt(e.target.value))}
                     style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
+                        background: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
+                        color: '#ffffff',
+                        border: '2px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '10px',
+                        padding: 'clamp(6px, 1.5vw, 10px) clamp(12px, 2.5vw, 16px)',
+                        fontSize: 'clamp(13px, 2.5vw, 15px)',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        boxShadow: '0 6px 12px rgba(0, 212, 255, 0.3)',
+                        transition: 'all 0.3s ease',
                         width: '100%',
-                        height: '100%',
-                        opacity: 0,
-                        cursor: isLoading ? 'not-allowed' : 'pointer'
+                        maxWidth: 'full',
+                        minWidth: '200px',
+                        height: 'auto',
+                        lineHeight: '1.4'
                     }}
-                />
-                <div style={{
-                    fontSize: 'clamp(40px, 10vw, 60px)',
-                    marginBottom: 'clamp(15px, 4vw, 20px)',
-                    filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))'
-                }}>
-                    {isLoading ? '⏳' : '☁️'}
-                </div>
-                <p style={{
-                    margin: '0 0 15px 0',
-                    fontSize: 'clamp(16px, 4vw, 20px)',
-                    fontWeight: '700',
-                    color: '#ffffff',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                }}>
-                    {isLoading ? 'Processing your file...' : 'Click to upload or drag & drop'}
-                </p>
-                <p style={{
-                    margin: 0,
-                    fontSize: 'clamp(14px, 3vw, 16px)',
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    fontWeight: '500'
-                }}>
-                    Only .html files are supported
-                </p>
-            </div>
-
-            {fileName && (
-                <div style={{
-                    marginTop: 'clamp(15px, 4vw, 25px)',
-                    padding: 'clamp(15px, 4vw, 20px)',
-                    background: 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
-                    borderRadius: '15px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    boxShadow: '0 10px 20px rgba(0, 255, 136, 0.2)',
-                    position: 'relative',
-                    zIndex: 1,
-                    flexWrap: 'wrap',
-                    gap: '10px'
-                }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        minWidth: 0,
-                        flex: '1'
+                    onMouseOver={(e) => {
+                        e.target.style.transform = 'translateY(-1px)';
+                        e.target.style.boxShadow = '0 8px 16px rgba(0, 212, 255, 0.4)';
+                    }}
+                    onMouseOut={(e) => {
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = '0 6px 12px rgba(0, 212, 255, 0.3)';
+                    }}
+                >
+                    <option value={0} style={{ 
+                        background: '#1e1e2e', 
+                        color: '#ffffff',
+                        padding: '6px 10px',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        lineHeight: '1.3',
+                        minHeight: '32px',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
                     }}>
-                        <span style={{
-                            fontSize: 'clamp(18px, 4vw, 24px)',
-                            marginRight: '15px',
-                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
-                            flexShrink: 0
-                        }}>✅</span>
-                        <span style={{
-                            color: '#000000',
-                            fontWeight: '700',
-                            fontSize: 'clamp(14px, 3vw, 16px)',
-                            textShadow: '0 1px 2px rgba(255,255,255,0.1)',
-                            wordBreak: 'break-all',
-                            overflow: 'hidden'
-                        }}>
-                            {fileName}
-                        </span>
-                    </div>
-                    <button
-                        onClick={clearContent}
-                        style={{
-                            background: 'rgba(0, 0, 0, 0.2)',
-                            color: '#000000',
-                            border: 'none',
-                            borderRadius: '12px',
-                            padding: 'clamp(8px, 2vw, 12px) clamp(12px, 3vw, 20px)',
-                            cursor: 'pointer',
-                            fontSize: 'clamp(12px, 2.5vw, 14px)',
-                            fontWeight: '700',
-                            transition: 'all 0.2s ease',
-                            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-                            flexShrink: 0
-                        }}
-                        onMouseOver={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.3)'}
-                        onMouseOut={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.2)'}
-                    >
-                        🗑️ Clear
-                    </button>
-                </div>
-            )}
+                        📋 Select number of HTML files
+                    </option>
+                    {Array.from({ length: 20 }, (_, i) => i + 1).map(num => (
+                        <option key={num} value={num} style={{ 
+                            background: num % 2 === 0 ? '#2a2a3e' : '#1e1e2e', 
+                            color: '#ffffff',
+                            padding: '6px 10px',
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            lineHeight: '1.3',
+                            minHeight: '30px',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.05)'                        }}>
+                            📄 {num} {num === 1 ? 'file' : 'files'}
+                        </option>
+                    ))}
+                </select>
+            </div>
         </div>
     );
 }

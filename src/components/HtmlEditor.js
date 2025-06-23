@@ -1,12 +1,65 @@
 import { useState } from 'react';
 import Editor from '@monaco-editor/react';
+import { validateAndExtractHtml } from '../utils/htmlValidation';
 
 export default function HtmlEditor({
     fileContent,
     fileName,
-    handleManualInput
+    handleManualInput,
+    index,
+    isLoading,
+    onFileUpload,
+    onClearContent,
+    validationErrors,
+    onValidationError
 }) {
     const [showPreview, setShowPreview] = useState(false);
+
+    const handleFileUpload = async (event) => {
+        const file = event.target.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        const allowedExtensions = ['.html'];
+        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+
+        if (!allowedExtensions.includes(fileExtension)) {
+            onValidationError('Please select only .html files. Only HTML files are supported for validation.');
+            event.target.value = '';
+            return;
+        }
+
+        try {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const rawText = e.target.result;
+                const result = validateAndExtractHtml(rawText);
+
+                if (!result.isValid) {
+                    onValidationError(result.error);
+                    event.target.value = '';
+                    return;
+                }
+
+                onFileUpload(index, file.name, result.content);
+            };
+
+            reader.onerror = () => {
+                onValidationError('Error reading file. Please try again.');
+            };
+
+            reader.readAsText(file);
+        } catch (error) {
+            onValidationError('Error reading file: ' + error.message);
+            event.target.value = '';
+        }
+    };
+
+    const clearContent = () => {
+        onClearContent(index);
+    };
 
     return (
         <div style={{
@@ -16,7 +69,8 @@ export default function HtmlEditor({
             boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             position: 'relative',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            marginBottom: 'clamp(20px, 5vw, 35px)'
         }}>
             <div style={{
                 position: 'absolute',
@@ -59,42 +113,152 @@ export default function HtmlEditor({
                     flex: '1',
                     minWidth: '200px'
                 }}>
-                    HTML Editor & Validator
+                    HTML Editor & Validator {index > 0 && `#${index + 1}`}
                 </h2>
-                {fileContent && (
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    {/* Upload Button */}
+                    <div style={{ position: 'relative' }}>
+                        <input
+                            type="file"
+                            accept=".html"
+                            onChange={handleFileUpload}
+                            disabled={isLoading}
+                            style={{ display: 'none' }}
+                            id={`fileInput-${index}`}
+                        />
+                        <button
+                            onClick={() => document.getElementById(`fileInput-${index}`).click()}
+                            disabled={isLoading}
+                            style={{
+                                background: 'linear-gradient(135deg, #ff00ff 0%, #cc0099 100%)',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '10px',
+                                padding: '8px 16px',
+                                fontSize: 'clamp(12px, 3vw, 14px)',
+                                fontWeight: '600',
+                                cursor: isLoading ? 'not-allowed' : 'pointer',
+                                boxShadow: '0 4px 12px rgba(255, 0, 255, 0.3)',
+                                transition: 'all 0.2s ease',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                flexShrink: 0,
+                                opacity: isLoading ? 0.7 : 1
+                            }}
+                            onMouseOver={(e) => {
+                                if (!isLoading) {
+                                    e.target.style.transform = 'translateY(-1px)';
+                                    e.target.style.boxShadow = '0 6px 16px rgba(255, 0, 255, 0.4)';
+                                }
+                            }}
+                            onMouseOut={(e) => {
+                                if (!isLoading) {
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = '0 4px 12px rgba(255, 0, 255, 0.3)';
+                                }
+                            }}
+                        >
+                            {isLoading ? '⏳' : '📁'} Upload
+                        </button>
+                    </div>
+
+                    {/* Preview Button */}
+                    {fileContent && (
+                        <button
+                            onClick={() => setShowPreview(true)}
+                            style={{
+                                background: 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '10px',
+                                padding: '8px 16px',
+                                cursor: 'pointer',
+                                fontSize: 'clamp(12px, 3vw, 14px)',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                boxShadow: '0 4px 12px rgba(26, 143, 58, 0.3)',
+                                transition: 'all 0.2s ease',
+                                flexShrink: 0
+                            }}
+                            onMouseOver={(e) => {
+                                e.target.style.transform = 'translateY(-1px)';
+                                e.target.style.boxShadow = '0 6px 16px rgba(26, 143, 58, 0.4)';
+                                e.target.style.background = 'linear-gradient(135deg, #0c6f30 0%, #1ea042 100%)';
+                            }}
+                            onMouseOut={(e) => {
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = '0 4px 12px rgba(26, 143, 58, 0.3)';
+                                e.target.style.background = 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)';
+                            }}
+                        >
+                            👁️ Preview
+                        </button>
+                    )}
+                </div>            </div>
+
+            {fileName && (
+                <div style={{
+                    marginBottom: 'clamp(15px, 4vw, 25px)',
+                    padding: 'clamp(15px, 4vw, 20px)',
+                    background: 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
+                    borderRadius: '15px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 10px 20px rgba(0, 255, 136, 0.2)',
+                    position: 'relative',
+                    zIndex: 1,
+                    flexWrap: 'wrap',
+                    gap: '10px'
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        minWidth: 0,
+                        flex: '1'
+                    }}>
+                        <span style={{
+                            fontSize: 'clamp(18px, 4vw, 24px)',
+                            marginRight: '15px',
+                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+                            flexShrink: 0
+                        }}>✅</span>
+                        <span style={{
+                            color: '#000000',
+                            fontWeight: '700',
+                            fontSize: 'clamp(14px, 3vw, 16px)',
+                            textShadow: '0 1px 2px rgba(255,255,255,0.1)',
+                            wordBreak: 'break-all',
+                            overflow: 'hidden'
+                        }}>
+                            {fileName}
+                        </span>
+                    </div>
                     <button
-                        onClick={() => setShowPreview(true)}
+                        onClick={clearContent}
                         style={{
-                            background: 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)',
-                            color: '#ffffff',
+                            background: 'rgba(0, 0, 0, 0.2)',
+                            color: '#000000',
                             border: 'none',
-                            borderRadius: '10px',
-                            padding: '8px 16px',
+                            borderRadius: '12px',
+                            padding: 'clamp(8px, 2vw, 12px) clamp(12px, 3vw, 20px)',
                             cursor: 'pointer',
-                            fontSize: 'clamp(12px, 3vw, 14px)',
-                            fontWeight: '600',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            boxShadow: '0 4px 12px rgba(26, 143, 58, 0.3)',
+                            fontSize: 'clamp(12px, 2.5vw, 14px)',
+                            fontWeight: '700',
                             transition: 'all 0.2s ease',
+                            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
                             flexShrink: 0
                         }}
-                        onMouseOver={(e) => {
-                            e.target.style.transform = 'translateY(-1px)';
-                            e.target.style.boxShadow = '0 6px 16px rgba(26, 143, 58, 0.4)';
-                            e.target.style.background = 'linear-gradient(135deg, #0c6f30 0%, #1ea042 100%)';
-                        }}
-                        onMouseOut={(e) => {
-                            e.target.style.transform = 'translateY(0)';
-                            e.target.style.boxShadow = '0 4px 12px rgba(26, 143, 58, 0.3)';
-                            e.target.style.background = 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)';
-                        }}
+                        onMouseOver={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.3)'}
+                        onMouseOut={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.2)'}
                     >
-                        👁️ Preview
+                        🗑️ Clear
                     </button>
-                )}
-            </div>
+                </div>
+            )}
 
             <div style={{
                 position: 'relative',
