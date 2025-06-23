@@ -9,7 +9,11 @@ export default function ConversionSection({
     fileNames,
     convertToLiquid,
     downloadLiquidFile,
-    downloadJsonFile
+    downloadJsonFile,
+    headContent,
+    isExtractingHead,
+    headExtractionError,
+    extractHeadSection
 }) {
     if (!fileContent) return null;
 
@@ -75,44 +79,89 @@ export default function ConversionSection({
                         HTML to Liquid + JSON Converter
                     </h2>
                 </div>
+                <div style={{
+                    display: 'flex',
+                    gap: '15px',
+                    flexWrap: 'wrap'
+                }}>
+                    <button
+                        onClick={extractHeadSection}
+                        disabled={isExtractingHead || !fileContent}
+                        style={{
+                            background: isExtractingHead
+                                ? 'linear-gradient(135deg, #666 0%, #888 100%)'
+                                : 'linear-gradient(135deg, #ff6b00 0%, #cc5500 100%)',
+                            color: isExtractingHead ? '#ccc' : '#ffffff',
+                            border: 'none',
+                            borderRadius: '15px',
+                            padding: 'clamp(10px, 3vw, 15px) clamp(20px, 5vw, 30px)',
+                            cursor: isExtractingHead ? 'not-allowed' : 'pointer',
+                            fontSize: 'clamp(14px, 3vw, 16px)',
+                            fontWeight: '700',
+                            transition: 'all 0.3s ease',
+                            boxShadow: isExtractingHead
+                                ? '0 4px 8px rgba(0,0,0,0.2)'
+                                : '0 8px 16px rgba(255, 107, 0, 0.3)',
+                            transform: isExtractingHead ? 'scale(0.98)' : 'scale(1)',
+                            opacity: isExtractingHead ? 0.7 : 1,
+                            flexShrink: 0,
+                            whiteSpace: 'nowrap'
+                        }}
+                        onMouseOver={(e) => {
+                            if (!isExtractingHead) {
+                                e.target.style.transform = 'scale(1.05)';
+                                e.target.style.boxShadow = '0 12px 24px rgba(255, 107, 0, 0.4)';
+                            }
+                        }}
+                        onMouseOut={(e) => {
+                            if (!isExtractingHead) {
+                                e.target.style.transform = 'scale(1)';
+                                e.target.style.boxShadow = '0 8px 16px rgba(255, 107, 0, 0.3)';
+                            }
+                        }}
+                    >
+                        {isExtractingHead ? '⏳ Extracting Head...' : '🎯 Extract Head Section'}
+                    </button>
 
-                <button
-                    onClick={convertToLiquid}
-                    disabled={isConverting || !fileContent}
-                    style={{
-                        background: isConverting
-                            ? 'linear-gradient(135deg, #666 0%, #888 100%)'
-                            : 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
-                        color: isConverting ? '#ccc' : '#000000',
-                        border: 'none',
-                        borderRadius: '15px',
-                        padding: 'clamp(10px, 3vw, 15px) clamp(20px, 5vw, 30px)',
-                        cursor: isConverting ? 'not-allowed' : 'pointer',
-                        fontSize: 'clamp(14px, 3vw, 16px)',
-                        fontWeight: '700',
-                        transition: 'all 0.3s ease',
-                        boxShadow: isConverting
-                            ? '0 4px 8px rgba(0,0,0,0.2)'
-                            : '0 8px 16px rgba(0, 255, 136, 0.3)',
-                        transform: isConverting ? 'scale(0.98)' : 'scale(1)',
-                        opacity: isConverting ? 0.7 : 1,
-                        flexShrink: 0,
-                        whiteSpace: 'nowrap'
-                    }}
-                    onMouseOver={(e) => {
-                        if (!isConverting) {
-                            e.target.style.transform = 'scale(1.05)';
-                            e.target.style.boxShadow = '0 12px 24px rgba(0, 255, 136, 0.4)';
-                        }
-                    }}
-                    onMouseOut={(e) => {
-                        if (!isConverting) {
-                            e.target.style.transform = 'scale(1)';
-                            e.target.style.boxShadow = '0 8px 16px rgba(0, 255, 136, 0.3)';
-                        }
-                    }}                >
-                    {isConverting ? '⏳ Converting to Liquid + JSON...' : '🚀 Convert to Liquid + JSON'}
-                </button>
+                    <button
+                        onClick={convertToLiquid}
+                        disabled={isConverting || !fileContent}
+                        style={{
+                            background: isConverting
+                                ? 'linear-gradient(135deg, #666 0%, #888 100%)'
+                                : 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
+                            color: isConverting ? '#ccc' : '#000000',
+                            border: 'none',
+                            borderRadius: '15px',
+                            padding: 'clamp(10px, 3vw, 15px) clamp(20px, 5vw, 30px)',
+                            cursor: isConverting ? 'not-allowed' : 'pointer',
+                            fontSize: 'clamp(14px, 3vw, 16px)',
+                            fontWeight: '700',
+                            transition: 'all 0.3s ease',
+                            boxShadow: isConverting
+                                ? '0 4px 8px rgba(0,0,0,0.2)'
+                                : '0 8px 16px rgba(0, 255, 136, 0.3)',
+                            transform: isConverting ? 'scale(0.98)' : 'scale(1)',
+                            opacity: isConverting ? 0.7 : 1,
+                            flexShrink: 0,
+                            whiteSpace: 'nowrap'
+                        }}
+                        onMouseOver={(e) => {
+                            if (!isConverting) {
+                                e.target.style.transform = 'scale(1.05)';
+                                e.target.style.boxShadow = '0 12px 24px rgba(0, 255, 136, 0.4)';
+                            }
+                        }}
+                        onMouseOut={(e) => {
+                            if (!isConverting) {
+                                e.target.style.transform = 'scale(1)';
+                                e.target.style.boxShadow = '0 8px 16px rgba(0, 255, 136, 0.3)';
+                            }
+                        }}
+                    >
+                        {isConverting ? '⏳ Converting to Liquid + JSON...' : '🚀 Convert to Liquid + JSON'}
+                    </button>
+                </div>
             </div>
             {conversionError && (
                 <div style={{
@@ -128,6 +177,23 @@ export default function ConversionSection({
                     zIndex: 1
                 }}>
                     ❌ {conversionError}
+                </div>
+            )}
+
+            {headExtractionError && (
+                <div style={{
+                    background: 'linear-gradient(135deg, #ff4444 0%, #cc3333 100%)',
+                    color: 'white',
+                    padding: '15px 20px',
+                    borderRadius: '12px',
+                    marginBottom: '20px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    boxShadow: '0 4px 8px rgba(255, 68, 68, 0.3)',
+                    position: 'relative',
+                    zIndex: 1
+                }}>
+                    ❌ Head Extraction Error: {headExtractionError}
                 </div>
             )}
             {isConverting && (
@@ -271,6 +337,28 @@ export default function ConversionSection({
                     </div>
                 </div>
             )}
+
+            {headContent && (
+                <CodeViewer
+                    content={headContent}
+                    fileName={fileName ? `${fileName.replace('.html', '')}-head.liquid` : 'theme-head-section.liquid'}
+                    fileType="Liquid"
+                    title="Theme.liquid Head Section"
+                    onDownload={() => {
+                        if (!headContent) return;
+                        const blob = new Blob([headContent], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = fileName ? `${fileName.replace('.html', '')}-head.liquid` : 'theme-head-section.liquid';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }}
+                />
+            )}
+
             {liquidContent && (
                 <CodeViewer
                     content={liquidContent}

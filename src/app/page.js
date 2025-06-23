@@ -18,7 +18,12 @@ export default function Home() {
   const [validationErrors, setValidationErrors] = useState(""); const [liquidContent, setLiquidContent] = useState("");
   const [jsonTemplate, setJsonTemplate] = useState("");
   const [fileNames, setFileNames] = useState({});
-  const [conversionMetadata, setConversionMetadata] = useState(null); const [isConverting, setIsConverting] = useState(false); const [conversionError, setConversionError] = useState("");
+  const [conversionMetadata, setConversionMetadata] = useState(null);
+
+  // Head extraction states
+  const [headContent, setHeadContent] = useState("");
+  const [isExtractingHead, setIsExtractingHead] = useState(false);
+  const [headExtractionError, setHeadExtractionError] = useState(""); const [isConverting, setIsConverting] = useState(false); const [conversionError, setConversionError] = useState("");
   const [inputSource, setInputSource] = useState("");
   const [showHowItWorksPopup, setShowHowItWorksPopup] = useState(false);
   const [showAIGenerationPopup, setShowAIGenerationPopup] = useState(false);
@@ -148,6 +153,50 @@ export default function Home() {
       setIsConverting(false);
     }
   };
+
+  const extractHeadSection = async () => {
+    if (!fileContent) {
+      setHeadExtractionError('No HTML content to extract head from');
+      return;
+    }
+
+    const result = validateAndExtractHtml(fileContent);
+    if (!result.isValid) {
+      setValidationErrors(result.error);
+      setShowErrorPopup(true);
+      setHeadExtractionError('Please fix HTML validation errors before extracting head');
+      return;
+    }
+
+    setIsExtractingHead(true);
+    setHeadExtractionError('');
+    setHeadContent('');
+
+    try {
+      const response = await fetch('/api/extract-head', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          htmlContent: fileContent,
+          fileName: fileName || (inputSource === "manual" ? "manual-input.html" : "uploaded-file.html"),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Head extraction failed');
+      }
+
+      setHeadContent(data.headContent);
+    } catch (error) {
+      setHeadExtractionError(error.message);
+    } finally {
+      setIsExtractingHead(false);
+    }
+  };
   const downloadLiquidFile = () => {
     if (!liquidContent) return;
 
@@ -199,8 +248,7 @@ export default function Home() {
           fileContent={fileContent}
           fileName={fileName}
           handleManualInput={handleManualInput}
-        />
-        <ConversionSection
+        />        <ConversionSection
           fileContent={fileContent}
           fileName={fileName}
           isConverting={isConverting}
@@ -211,6 +259,10 @@ export default function Home() {
           convertToLiquid={convertToLiquid}
           downloadLiquidFile={downloadLiquidFile}
           downloadJsonFile={downloadJsonFile}
+          headContent={headContent}
+          isExtractingHead={isExtractingHead}
+          headExtractionError={headExtractionError}
+          extractHeadSection={extractHeadSection}
         />
       </div>
       <ErrorPopup
