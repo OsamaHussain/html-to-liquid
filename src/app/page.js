@@ -18,6 +18,7 @@ export default function Home() {
   const [convertedFiles, setConvertedFiles] = useState([]);
   const [combinedHeadContent, setCombinedHeadContent] = useState('');
   const [currentlyConverting, setCurrentlyConverting] = useState(null);
+  const [activeTab, setActiveTab] = useState(0);
   const [isConverting, setIsConverting] = useState(false);
   const [conversionError, setConversionError] = useState("");
   const [inputSource, setInputSource] = useState("");
@@ -102,6 +103,7 @@ export default function Home() {
     try {
       setConvertedFiles([]);
       setCombinedHeadContent('');
+      setActiveTab(0);
 
       let allHeadLines = new Set();
       let fileSourceMap = new Map();
@@ -173,7 +175,12 @@ export default function Home() {
             fileNames: data.metadata,
             headExtractionError: headExtractionError,
             index: i
-          }; setConvertedFiles(prev => [...prev, newResult]);
+          };
+          setConvertedFiles(prev => [...prev, newResult]);
+
+          if (i < filesWithContent.length - 1) {
+            setActiveTab(prev => prev + 1);
+          }
 
         } catch (fileError) {
           const errorResult = {
@@ -184,9 +191,11 @@ export default function Home() {
             headExtractionError: fileError.message,
             index: i,
             hasError: true
-          };
+          }; setConvertedFiles(prev => [...prev, errorResult]);
 
-          setConvertedFiles(prev => [...prev, errorResult]);
+          if (i < filesWithContent.length - 1) {
+            setActiveTab(prev => prev + 1);
+          }
         }
       }
       if (allHeadLines.size > 0) {
@@ -293,6 +302,8 @@ export default function Home() {
           conversionError={conversionError}
           convertedFiles={convertedFiles}
           combinedHeadContent={combinedHeadContent}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
           convertToLiquid={convertToLiquid}
           downloadLiquidFile={downloadLiquidFile}
           downloadJsonFile={downloadJsonFile}

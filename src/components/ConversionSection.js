@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import CodeViewer from './CodeViewer';
 export default function ConversionSection({
     files,
@@ -6,6 +7,8 @@ export default function ConversionSection({
     conversionError,
     convertedFiles,
     combinedHeadContent,
+    activeTab,
+    setActiveTab,
     convertToLiquid,
     downloadLiquidFile,
     downloadJsonFile,
@@ -192,84 +195,287 @@ export default function ConversionSection({
                 </div>
             )}
 
-            {convertedFiles.map((convertedFile, index) => (
-                <div key={index} style={{
+            {(convertedFiles.length > 0 || isConverting) && (
+                <div style={{
                     marginTop: 'clamp(20px, 5vw, 30px)',
-                    padding: 'clamp(15px, 4vw, 20px)',
                     background: 'rgba(255, 255, 255, 0.05)',
                     borderRadius: 'clamp(10px, 3vw, 15px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    overflow: 'hidden'
                 }}>
-                    <div style={{
-                        marginBottom: 'clamp(15px, 4vw, 20px)',
-                        padding: 'clamp(10px, 3vw, 15px)',
-                        background: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
-                        borderRadius: '10px',
-                        textAlign: 'center'
+                    <style jsx>{`
+                        .tab-container::-webkit-scrollbar {
+                            height: 6px;
+                        }
+                        .tab-container::-webkit-scrollbar-track {
+                            background: rgba(255, 255, 255, 0.1);
+                            border-radius: 3px;
+                        }
+                        .tab-container::-webkit-scrollbar-thumb {
+                            background: rgba(0, 212, 255, 0.5);
+                            border-radius: 3px;
+                        }
+                        .tab-container::-webkit-scrollbar-thumb:hover {
+                            background: rgba(0, 212, 255, 0.7);
+                        }
+                    `}</style>
+                    <div className="tab-container" style={{
+                        display: 'flex',
+                        overflowX: 'auto',
+                        background: 'rgba(0, 0, 0, 0.2)',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: 'rgba(255, 255, 255, 0.3) transparent'
                     }}>
-                        <h3 style={{
-                            color: '#ffffff',
-                            margin: 0,
-                            fontSize: 'clamp(16px, 4vw, 20px)',
-                            fontWeight: '700',
-                            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                        }}>
-                            📄 File {index + 1}: {convertedFile.originalFile.fileName || `File-${index + 1}.html`}
-                        </h3>
+                        {filesWithContent.map((file, index) => {
+                            const convertedFile = convertedFiles.find(cf => cf.index === index);
+                            const isCurrentlyConverting = currentlyConverting && currentlyConverting.index === index;
+                            const hasError = convertedFile?.hasError;
+
+                            return (
+                                <button
+                                    key={index}
+                                    onClick={() => setActiveTab(index)}
+                                    style={{
+                                        padding: 'clamp(12px, 3vw, 16px) clamp(16px, 4vw, 24px)',
+                                        background: activeTab === index
+                                            ? 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)'
+                                            : 'transparent',
+                                        color: activeTab === index ? '#ffffff' : 'rgba(255, 255, 255, 0.7)',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        fontSize: 'clamp(12px, 3vw, 14px)',
+                                        fontWeight: activeTab === index ? '700' : '500',
+                                        transition: 'all 0.3s ease',
+                                        whiteSpace: 'nowrap',
+                                        minWidth: 'fit-content',
+                                        textShadow: activeTab === index ? '0 2px 4px rgba(0,0,0,0.3)' : 'none',
+                                        borderRadius: activeTab === index ? '8px 8px 0 0' : '0',
+                                        position: 'relative'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        if (activeTab !== index) {
+                                            e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                                            e.target.style.color = '#ffffff';
+                                        }
+                                    }}
+                                    onMouseOut={(e) => {
+                                        if (activeTab !== index) {
+                                            e.target.style.background = 'transparent';
+                                            e.target.style.color = 'rgba(255, 255, 255, 0.7)';
+                                        }
+                                    }}
+                                >
+                                    📄 {file.fileName || `File ${index + 1}`}
+                                    {hasError && ' ⚠️'}
+                                    {isCurrentlyConverting && !convertedFile && (
+                                        <div style={{
+                                            width: '8px',
+                                            height: '8px',
+                                            border: '1px solid rgba(0, 255, 136, 0.3)',
+                                            borderTop: '1px solid #00ff88',
+                                            borderRadius: '50%',
+                                            marginLeft: '8px',
+                                            display: 'inline-block'
+                                        }} className="spinning-loader"></div>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
-                    {convertedFile.headExtractionError && (
-                        <div style={{
-                            background: 'linear-gradient(135deg, #ff8800 0%, #cc6600 100%)',
-                            color: 'white',
-                            padding: '12px 16px',
-                            borderRadius: '10px',
-                            marginBottom: '15px',
-                            fontSize: 'clamp(13px, 3vw, 15px)',
-                            fontWeight: '500',
-                            border: '1px solid rgba(255, 136, 0, 0.3)',
-                            boxShadow: '0 4px 8px rgba(255, 136, 0, 0.2)'
-                        }}>
-                            ⚠️ Head extraction warning: {convertedFile.headExtractionError}
-                        </div>
-                    )}
-                    {convertedFile.hasError && (
-                        <div style={{
-                            background: 'linear-gradient(135deg, #ff4444 0%, #cc3333 100%)',
-                            color: 'white',
-                            padding: '15px 20px',
-                            borderRadius: '12px',
-                            marginBottom: '20px',
-                            fontSize: 'clamp(14px, 3vw, 16px)',
-                            fontWeight: '600',
-                            boxShadow: '0 4px 8px rgba(255, 68, 68, 0.3)',
-                            textAlign: 'center'
-                        }}>
-                            ❌ Conversion Error: {convertedFile.headExtractionError}
-                        </div>
-                    )}
+                    <div style={{
+                        padding: 'clamp(15px, 4vw, 20px)'
+                    }}>
+                        {convertedFiles[activeTab] && (
+                            <div>
+                                <div style={{
+                                    marginBottom: 'clamp(15px, 4vw, 20px)',
+                                    padding: 'clamp(10px, 3vw, 15px)',
+                                    background: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
+                                    borderRadius: '10px',
+                                    textAlign: 'center'
+                                }}>
+                                    <h3 style={{
+                                        color: '#ffffff',
+                                        margin: 0,
+                                        fontSize: 'clamp(16px, 4vw, 20px)',
+                                        fontWeight: '700',
+                                        textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                                    }}>
+                                        📄 File {activeTab + 1}: {convertedFiles[activeTab].originalFile.fileName || `File-${activeTab + 1}.html`}
+                                    </h3>
+                                </div>
 
-                    {convertedFile.liquidContent && (
-                        <CodeViewer
-                            content={convertedFile.liquidContent}
-                            fileName={convertedFile.fileNames?.liquidFileName || (convertedFile.originalFile?.fileName ? convertedFile.originalFile.fileName.replace('.html', '.liquid') : `converted-${index + 1}.liquid`)}
-                            fileType="Liquid"
-                            title={`Converted Liquid Template - File ${index + 1}`}
-                            onDownload={() => downloadLiquidFile(convertedFile)}
-                        />
-                    )}
+                                {convertedFiles[activeTab].headExtractionError && (
+                                    <div style={{
+                                        background: 'linear-gradient(135deg, #ff8800 0%, #cc6600 100%)',
+                                        color: 'white',
+                                        padding: '12px 16px',
+                                        borderRadius: '10px',
+                                        marginBottom: '15px',
+                                        fontSize: 'clamp(13px, 3vw, 15px)',
+                                        fontWeight: '500',
+                                        border: '1px solid rgba(255, 136, 0, 0.3)',
+                                        boxShadow: '0 4px 8px rgba(255, 136, 0, 0.2)'
+                                    }}>
+                                        ⚠️ Head extraction warning: {convertedFiles[activeTab].headExtractionError}
+                                    </div>
+                                )}
 
-                    {convertedFile.jsonTemplate && (
-                        <CodeViewer
-                            content={convertedFile.jsonTemplate}
-                            fileName={convertedFile.fileNames?.jsonFileName || (convertedFile.originalFile?.fileName ? `page.${convertedFile.originalFile.fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : `page.custom-${index + 1}.json`)}
-                            fileType="JSON"
-                            title={`Shopify Page Template - File ${index + 1}`}
-                            onDownload={() => downloadJsonFile(convertedFile)}
-                        />
-                    )}
+                                {convertedFiles[activeTab].hasError && (
+                                    <div style={{
+                                        background: 'linear-gradient(135deg, #ff4444 0%, #cc3333 100%)',
+                                        color: 'white',
+                                        padding: '15px 20px',
+                                        borderRadius: '12px',
+                                        marginBottom: '20px',
+                                        fontSize: 'clamp(14px, 3vw, 16px)',
+                                        fontWeight: '600',
+                                        boxShadow: '0 4px 8px rgba(255, 68, 68, 0.3)',
+                                        textAlign: 'center'
+                                    }}>
+                                        ❌ Conversion Error: {convertedFiles[activeTab].headExtractionError}
+                                    </div>
+                                )}
+
+                                {convertedFiles[activeTab].liquidContent && (
+                                    <CodeViewer
+                                        content={convertedFiles[activeTab].liquidContent}
+                                        fileName={convertedFiles[activeTab].fileNames?.liquidFileName || (convertedFiles[activeTab].originalFile?.fileName ? convertedFiles[activeTab].originalFile.fileName.replace('.html', '.liquid') : `converted-${activeTab + 1}.liquid`)}
+                                        fileType="Liquid"
+                                        title={`Converted Liquid Template - File ${activeTab + 1}`}
+                                        onDownload={() => downloadLiquidFile(convertedFiles[activeTab])}
+                                    />
+                                )}
+
+                                {convertedFiles[activeTab].jsonTemplate && (
+                                    <CodeViewer
+                                        content={convertedFiles[activeTab].jsonTemplate}
+                                        fileName={convertedFiles[activeTab].fileNames?.jsonFileName || (convertedFiles[activeTab].originalFile?.fileName ? `page.${convertedFiles[activeTab].originalFile.fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : `page.custom-${activeTab + 1}.json`)}
+                                        fileType="JSON"
+                                        title={`Shopify Page Template - File ${activeTab + 1}`}
+                                        onDownload={() => downloadJsonFile(convertedFiles[activeTab])}
+                                    />
+                                )}
+                            </div>
+                        )}
+
+                        {!convertedFiles[activeTab] && isConverting && currentlyConverting && currentlyConverting.index === activeTab && (
+                            <div style={{
+                                textAlign: 'center',
+                                padding: 'clamp(40px, 8vw, 60px)',
+                                background: 'linear-gradient(135deg, #0a0a0a 0%, #111111 100%)',
+                                borderRadius: '15px',
+                                border: '1px solid rgba(0, 255, 136, 0.3)',
+                                position: 'relative'
+                            }}>
+                                <div style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    background: 'radial-gradient(circle at 50% 50%, rgba(0, 255, 136, 0.1) 0%, transparent 50%)',
+                                    borderRadius: '15px'
+                                }} className="pulsing-bg"></div>
+
+                                <div style={{
+                                    fontSize: 'clamp(32px, 6vw, 40px)',
+                                    marginBottom: '15px',
+                                    zIndex: 1,
+                                    position: 'relative'
+                                }} className="bouncing-emoji">
+                                    ⚡
+                                </div>
+
+                                <h3 style={{
+                                    color: '#00ff88',
+                                    fontSize: 'clamp(16px, 4vw, 20px)',
+                                    fontWeight: '700',
+                                    marginBottom: '10px',
+                                    position: 'relative',
+                                    zIndex: 1
+                                }}>
+                                    Converting File {activeTab + 1}
+                                </h3>
+
+                                <p style={{
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    fontSize: 'clamp(14px, 3vw, 16px)',
+                                    marginBottom: '20px',
+                                    position: 'relative',
+                                    zIndex: 1
+                                }}>
+                                    {currentlyConverting.fileName}
+                                </p>
+
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    position: 'relative',
+                                    zIndex: 1
+                                }}>
+                                    <div style={{
+                                        width: '12px',
+                                        height: '12px',
+                                        borderRadius: '50%',
+                                        background: '#00ff88'
+                                    }} className="loading-dot"></div>
+                                    <div style={{
+                                        width: '12px',
+                                        height: '12px',
+                                        borderRadius: '50%',
+                                        background: '#00ff88'
+                                    }} className="loading-dot"></div>
+                                    <div style={{
+                                        width: '12px',
+                                        height: '12px',
+                                        borderRadius: '50%',
+                                        background: '#00ff88'
+                                    }} className="loading-dot"></div>
+                                </div>
+                            </div>
+                        )}
+
+                        {!convertedFiles[activeTab] && (!isConverting || !currentlyConverting || currentlyConverting.index !== activeTab) && activeTab < filesWithContent.length && (
+                            <div style={{
+                                textAlign: 'center',
+                                padding: 'clamp(40px, 8vw, 60px)',
+                                background: 'rgba(255, 255, 255, 0.03)',
+                                borderRadius: '15px',
+                                border: '1px solid rgba(255, 255, 255, 0.1)'
+                            }}>
+                                <div style={{
+                                    fontSize: 'clamp(32px, 6vw, 40px)',
+                                    marginBottom: '15px',
+                                    opacity: 0.5
+                                }}>
+                                    ⏳
+                                </div>
+
+                                <h3 style={{
+                                    color: 'rgba(255, 255, 255, 0.6)',
+                                    fontSize: 'clamp(16px, 4vw, 20px)',
+                                    fontWeight: '600',
+                                    marginBottom: '10px'
+                                }}>
+                                    Waiting for File {activeTab + 1}
+                                </h3>
+
+                                <p style={{
+                                    color: 'rgba(255, 255, 255, 0.4)',
+                                    fontSize: 'clamp(14px, 3vw, 16px)'
+                                }}>
+                                    {filesWithContent[activeTab]?.fileName || `File-${activeTab + 1}.html`}
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            ))}
-            {isConverting && currentlyConverting && (
+            )}
+
+            {false && (
                 <div style={{
                     position: 'relative',
                     borderRadius: '20px',
