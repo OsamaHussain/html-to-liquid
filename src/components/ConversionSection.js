@@ -178,7 +178,7 @@ export default function ConversionSection({
                             fontSize: 'clamp(12px, 3vw, 14px)',
                             fontWeight: '500'
                         }}>
-                            All head content from your files combined for theme.liquid
+                            All head content from your files combined for theme.liquid ({combinedHeadContent.split('\n').filter(line => line.trim()).length} unique lines)
                         </p>
                     </div>
 

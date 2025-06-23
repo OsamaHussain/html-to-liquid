@@ -21,17 +21,43 @@ export async function POST(request) {
                 { error: 'OpenAI API key is not configured' },
                 { status: 500 }
             );
+        } const headMatch = htmlContent.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+
+        if (!headMatch) {
+            return NextResponse.json({
+                headContent: '',
+                metadata: {
+                    fileName: fileName || 'theme-head-section',
+                    extractedAt: new Date().toISOString(),
+                    inputLength: htmlContent.length,
+                    outputLength: 0,
+                    message: 'No head section found'
+                }
+            });
         }
-        const headMatch = htmlContent.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
-        const headOnly = headMatch ? headMatch[1] : htmlContent;
-        const prompt = `Extract link tags from HTML head for Shopify theme.liquid. If you find TailwindCSS link, replace it with: <script defer src="https://cdn.tailwindcss.com"></script>
-Return raw HTML only for Shopify theme, no markdown, no code blocks, no formatting.
+
+        const headOnly = headMatch[1].trim();
+
+        if (!headOnly) {
+            return NextResponse.json({
+                headContent: '',
+                metadata: {
+                    fileName: fileName || 'theme-head-section',
+                    extractedAt: new Date().toISOString(),
+                    inputLength: htmlContent.length,
+                    outputLength: 0,
+                    message: 'Head section is empty'
+                }
+            });
+        } const prompt = `Extract link tags from HTML head for Shopify theme.liquid. If you find TailwindCSS link, replace it with: <script defer src="https://cdn.tailwindcss.com"></script>
+If there are no relevant link, script, or meta tags in the head section, return empty content.
+Return raw HTML only for Shopify theme, no markdown, no code blocks, no formatting, no explanatory text.
 
 ${headOnly}`; const completion = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [{
                 role: "system",
-                content: "Extract link tags for Shopify theme.liquid. Replace TailwindCSS links with script tag. Return raw HTML tags only, no markdown formatting."
+                content: "Extract relevant link, script, and meta tags for Shopify theme.liquid. Replace TailwindCSS links with script tag. If no relevant tags exist, return nothing. Return raw HTML tags only, no markdown formatting, no explanatory text."
             },
             {
                 role: "user",
@@ -40,15 +66,19 @@ ${headOnly}`; const completion = await openai.chat.completions.create({
             ],
             temperature: 0.1,
             max_tokens: 4000,
-        });
+        }); const headContent = completion.choices[0]?.message?.content?.trim();
 
-        const headContent = completion.choices[0]?.message?.content?.trim();
-
-        if (!headContent) {
-            return NextResponse.json(
-                { error: 'Failed to extract head content' },
-                { status: 500 }
-            );
+        if (!headContent || headContent.toLowerCase().includes('no relevant') || headContent.toLowerCase().includes('nothing to extract') || headContent.toLowerCase().includes('no head content')) {
+            return NextResponse.json({
+                headContent: '',
+                metadata: {
+                    fileName: fileName || 'theme-head-section',
+                    extractedAt: new Date().toISOString(),
+                    inputLength: htmlContent.length,
+                    outputLength: 0,
+                    message: 'No relevant head content found'
+                }
+            });
         }
 
         return NextResponse.json({

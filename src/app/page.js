@@ -103,7 +103,8 @@ export default function Home() {
       setConvertedFiles([]);
       setCombinedHeadContent('');
 
-      let allHeadContent = [];
+      let allHeadLines = new Set();
+      let fileSourceMap = new Map();
 
       for (let i = 0; i < filesWithContent.length; i++) {
         const file = filesWithContent[i];
@@ -132,9 +133,17 @@ export default function Home() {
           let headExtractionError = '';
 
           if (headResponse.ok) {
-            headContent = headData.headContent;
-            if (headContent && headContent.trim()) {
-              allHeadContent.push(`<!-- Head content from ${file.fileName || `File ${i + 1}`} -->\n${headContent}`);
+            headContent = headData.headContent; if (headContent && headContent.trim()) {
+              const headLines = headContent.split('\n').filter(line => line.trim());
+              const fileName = file.fileName || `File ${i + 1}`;
+
+              headLines.forEach(line => {
+                const normalizedLine = line.trim().replace(/\s+/g, ' ');
+                if (normalizedLine && !allHeadLines.has(normalizedLine)) {
+                  allHeadLines.add(normalizedLine);
+                  fileSourceMap.set(normalizedLine, fileName);
+                }
+              });
             }
           } else {
             headExtractionError = headData.error || 'Head extraction failed';
@@ -164,13 +173,7 @@ export default function Home() {
             fileNames: data.metadata,
             headExtractionError: headExtractionError,
             index: i
-          };
-
-          setConvertedFiles(prev => [...prev, newResult]);
-
-          if (allHeadContent.length > 0) {
-            setCombinedHeadContent(allHeadContent.join('\n\n'));
-          }
+          }; setConvertedFiles(prev => [...prev, newResult]);
 
         } catch (fileError) {
           const errorResult = {
@@ -186,6 +189,11 @@ export default function Home() {
           setConvertedFiles(prev => [...prev, errorResult]);
         }
       }
+      if (allHeadLines.size > 0) {
+        const uniqueHeadContent = Array.from(allHeadLines).join('\n');
+        setCombinedHeadContent(uniqueHeadContent);
+      }
+
     } catch (error) {
       setConversionError(error.message);
     } finally {
