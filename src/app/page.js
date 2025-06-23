@@ -15,12 +15,9 @@ export default function Home() {
   const [files, setFiles] = useState([]);
   const [showErrorPopup, setShowErrorPopup] = useState(false);
   const [validationErrors, setValidationErrors] = useState("");
-  const [liquidContent, setLiquidContent] = useState("");
-  const [jsonTemplate, setJsonTemplate] = useState("");
-  const [fileNames, setFileNames] = useState({});
-  const [conversionMetadata, setConversionMetadata] = useState(null);
-  const [headContent, setHeadContent] = useState("");
-  const [headExtractionError, setHeadExtractionError] = useState("");
+  const [convertedFiles, setConvertedFiles] = useState([]);
+  const [combinedHeadContent, setCombinedHeadContent] = useState('');
+  const [currentlyConverting, setCurrentlyConverting] = useState(null);
   const [isConverting, setIsConverting] = useState(false);
   const [conversionError, setConversionError] = useState("");
   const [inputSource, setInputSource] = useState("");
@@ -43,30 +40,26 @@ export default function Home() {
     setFiles(newFiles);
     setInputSource("file");
   };
-
   const handleManualInput = (index, text) => {
     setConversionError('');
-    setLiquidContent('');
-    setJsonTemplate('');
-    setConversionMetadata(null);
+    setConvertedFiles([]);
+    setCombinedHeadContent('');
+    setCurrentlyConverting(null);
 
     const newFiles = [...files];
     newFiles[index] = { ...newFiles[index], fileContent: text };
     setFiles(newFiles);
     setInputSource(text.trim() ? "manual" : "");
   };
-
   const handleClearContent = (index) => {
     const newFiles = [...files];
     newFiles[index] = { fileContent: "", fileName: "", isLoading: false };
     setFiles(newFiles);
-
-    // Check if all files are empty
     const hasAnyContent = newFiles.some(file => file.fileContent || file.fileName);
     if (!hasAnyContent) {
-      setLiquidContent('');
-      setJsonTemplate('');
-      setConversionMetadata(null);
+      setConvertedFiles([]);
+      setCombinedHeadContent('');
+      setCurrentlyConverting(null);
       setConversionError('');
       setInputSource('');
     }
@@ -77,112 +70,177 @@ export default function Home() {
     setShowErrorPopup(true);
   };
   const convertToLiquid = async () => {
-    // Get the first file with content
-    const fileWithContent = files.find(file => file.fileContent);
-    if (!fileWithContent) {
+    const filesWithContent = files.filter(file => file.fileContent);
+    if (filesWithContent.length === 0) {
       setConversionError('No HTML content to convert');
       return;
     }
 
-    const result = validateAndExtractHtml(fileWithContent.fileContent);
-    if (!result.isValid) {
-      setValidationErrors(result.error);
-      setShowErrorPopup(true);
-      setConversionError('Please fix HTML validation errors before converting');
-      return;
+    for (const file of filesWithContent) {
+      const result = validateAndExtractHtml(file.fileContent);
+      if (!result.isValid) {
+        setValidationErrors(result.error);
+        setShowErrorPopup(true);
+        setConversionError('Please fix HTML validation errors before converting');
+        return;
+      }
     }
 
     setShowAIGenerationPopup(true);
-  }; const performConversion = async () => {
+  };
+  const performConversion = async () => {
     setIsConverting(true);
     setConversionError('');
-    setHeadExtractionError('');
-    setLiquidContent('');
-    setJsonTemplate('');
-    setHeadContent('');
-    setConversionMetadata(null);
-    setFileNames({});
+    setConvertedFiles([]);
 
-    // Get the first file with content
-    const fileWithContent = files.find(file => file.fileContent);
-    if (!fileWithContent) {
+    const filesWithContent = files.filter(file => file.fileContent);
+    if (filesWithContent.length === 0) {
       setConversionError('No HTML content to convert');
       setIsConverting(false);
       return;
     }
-
     try {
-      const headResponse = await fetch('/api/extract-head', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          htmlContent: fileWithContent.fileContent,
-          fileName: fileWithContent.fileName || (inputSource === "manual" ? "manual-input.html" : "uploaded-file.html"),
-        }),
-      });
+      setConvertedFiles([]);
+      setCombinedHeadContent('');
 
-      const headData = await headResponse.json();
+      let allHeadContent = [];
 
-      if (headResponse.ok) {
-        setHeadContent(headData.headContent);
-      } else {
-        setHeadExtractionError(headData.error || 'Head extraction failed');
+      for (let i = 0; i < filesWithContent.length; i++) {
+        const file = filesWithContent[i];
+
+        setCurrentlyConverting({
+          index: i,
+          fileName: file.fileName || `File ${i + 1}`,
+          total: filesWithContent.length,
+          remaining: filesWithContent.length - i
+        });
+
+        try {
+          const headResponse = await fetch('/api/extract-head', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              htmlContent: file.fileContent,
+              fileName: file.fileName || (inputSource === "manual" ? `manual-input-${i + 1}.html` : `uploaded-file-${i + 1}.html`),
+            }),
+          });
+
+          const headData = await headResponse.json();
+          let headContent = '';
+          let headExtractionError = '';
+
+          if (headResponse.ok) {
+            headContent = headData.headContent;
+            if (headContent && headContent.trim()) {
+              allHeadContent.push(`<!-- Head content from ${file.fileName || `File ${i + 1}`} -->\n${headContent}`);
+            }
+          } else {
+            headExtractionError = headData.error || 'Head extraction failed';
+          }
+
+          const response = await fetch('/api/convert-html', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              htmlContent: file.fileContent,
+              fileName: file.fileName || (inputSource === "manual" ? `manual-input-${i + 1}.html` : `uploaded-file-${i + 1}.html`),
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || `Conversion failed for file ${i + 1}`);
+          }
+
+          const newResult = {
+            originalFile: file,
+            liquidContent: data.liquidContent,
+            jsonTemplate: data.jsonTemplate,
+            fileNames: data.metadata,
+            headExtractionError: headExtractionError,
+            index: i
+          };
+
+          setConvertedFiles(prev => [...prev, newResult]);
+
+          if (allHeadContent.length > 0) {
+            setCombinedHeadContent(allHeadContent.join('\n\n'));
+          }
+
+        } catch (fileError) {
+          const errorResult = {
+            originalFile: file,
+            liquidContent: '',
+            jsonTemplate: '',
+            fileNames: {},
+            headExtractionError: fileError.message,
+            index: i,
+            hasError: true
+          };
+
+          setConvertedFiles(prev => [...prev, errorResult]);
+        }
       }
-
-      const response = await fetch('/api/convert-html', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          htmlContent: fileWithContent.fileContent,
-          fileName: fileWithContent.fileName || (inputSource === "manual" ? "manual-input.html" : "uploaded-file.html"),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Conversion failed');
-      }
-
-      setLiquidContent(data.liquidContent);
-      setJsonTemplate(data.jsonTemplate);
-      setFileNames(data.metadata);
-      setConversionMetadata(data.metadata);
     } catch (error) {
       setConversionError(error.message);
     } finally {
       setIsConverting(false);
+      setCurrentlyConverting(null);
     }
   };
+  const downloadLiquidFile = (convertedFile) => {
+    if (!convertedFile.liquidContent) return;
 
-  const downloadLiquidFile = () => {
-    if (!liquidContent) return;
-
-    const fileWithContent = files.find(file => file.fileContent);
-    const blob = new Blob([liquidContent], { type: 'text/plain' });
+    const blob = new Blob([convertedFile.liquidContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = fileNames?.liquidFileName || (fileWithContent?.fileName ? fileWithContent.fileName.replace('.html', '.liquid') : 'converted.liquid');
+    a.download = convertedFile.fileNames?.liquidFileName || (convertedFile.originalFile?.fileName ? convertedFile.originalFile.fileName.replace('.html', '.liquid') : 'converted.liquid');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  const downloadJsonFile = (convertedFile) => {
+    if (!convertedFile.jsonTemplate) return;
+
+    const blob = new Blob([convertedFile.jsonTemplate], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = convertedFile.fileNames?.jsonFileName || (convertedFile.originalFile?.fileName ? `page.${convertedFile.originalFile.fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : 'page.custom.json');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  const downloadHeadFile = (convertedFile) => {
+    if (!convertedFile.headContent) return;
+
+    const blob = new Blob([convertedFile.headContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = convertedFile.originalFile?.fileName ? `${convertedFile.originalFile.fileName.replace('.html', '')}-head.liquid` : `head-section-${convertedFile.index + 1}.liquid`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  const downloadJsonFile = () => {
-    if (!jsonTemplate) return;
+  const downloadCombinedHeadFile = () => {
+    if (!combinedHeadContent) return;
 
-    const fileWithContent = files.find(file => file.fileContent);
-    const blob = new Blob([jsonTemplate], { type: 'application/json' });
+    const blob = new Blob([combinedHeadContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = fileNames?.jsonFileName || (fileWithContent?.fileName ? `page.${fileWithContent.fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : 'page.custom.json');
+    a.download = 'combined-theme-head.liquid';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -221,26 +279,24 @@ export default function Home() {
           />
         ))}
         <ConversionSection
-          fileContent={files[0]?.fileContent || ''}
-          fileName={files[0]?.fileName || ''}
+          files={files}
           isConverting={isConverting}
+          currentlyConverting={currentlyConverting}
           conversionError={conversionError}
-          liquidContent={liquidContent}
-          jsonTemplate={jsonTemplate}
-          fileNames={fileNames}
+          convertedFiles={convertedFiles}
+          combinedHeadContent={combinedHeadContent}
           convertToLiquid={convertToLiquid}
           downloadLiquidFile={downloadLiquidFile}
           downloadJsonFile={downloadJsonFile}
-          headContent={headContent}
-          isExtractingHead={isConverting}
-          headExtractionError={headExtractionError}
+          downloadHeadFile={downloadHeadFile}
+          downloadCombinedHeadFile={downloadCombinedHeadFile}
         />
       </div>
       <ErrorPopup
         errors={validationErrors}
         isVisible={showErrorPopup}
         onClose={() => setShowErrorPopup(false)}
-        fileName={files[0]?.fileName || ''}
+        fileName={files.find(f => f.fileContent)?.fileName || ''}
       />
       <HowItWorksPopup
         isOpen={showHowItWorksPopup}

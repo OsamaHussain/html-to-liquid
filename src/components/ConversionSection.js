@@ -1,20 +1,20 @@
 import CodeViewer from './CodeViewer';
 export default function ConversionSection({
-    fileContent,
-    fileName,
+    files,
     isConverting,
+    currentlyConverting,
     conversionError,
-    liquidContent,
-    jsonTemplate,
-    fileNames,
+    convertedFiles,
+    combinedHeadContent,
     convertToLiquid,
     downloadLiquidFile,
     downloadJsonFile,
-    headContent,
-    isExtractingHead,
-    headExtractionError
+    downloadHeadFile,
+    downloadCombinedHeadFile
 }) {
-    if (!fileContent) return null;
+    const filesWithContent = files.filter(file => file.fileContent);
+
+    if (filesWithContent.length === 0) return null;
 
     return (
         <div style={{
@@ -80,7 +80,7 @@ export default function ConversionSection({
                 </div>
                 <button
                     onClick={convertToLiquid}
-                    disabled={isConverting || !fileContent}
+                    disabled={isConverting || filesWithContent.length === 0}
                     style={{
                         background: isConverting
                             ? 'linear-gradient(135deg, #666 0%, #888 100%)'
@@ -112,9 +112,23 @@ export default function ConversionSection({
                             e.target.style.transform = 'scale(1)';
                             e.target.style.boxShadow = '0 8px 16px rgba(0, 255, 136, 0.3)';
                         }
-                    }}
-                >
-                    {isConverting ? '⏳ Converting to Head + Liquid + JSON...' : '🚀 Convert to Liquid + JSON'}
+                    }}                >
+                    {isConverting ? (
+                        <>
+                            <div style={{
+                                width: '16px',
+                                height: '16px',
+                                border: '2px solid rgba(255, 255, 255, 0.3)',
+                                borderTop: '2px solid #ffffff',
+                                borderRadius: '50%',
+                                marginRight: '10px',
+                                display: 'inline-block'
+                            }} className="spinning-loader"></div>
+                            Converting {filesWithContent.length} file{filesWithContent.length > 1 ? 's' : ''}...
+                        </>
+                    ) : (
+                        `🚀 Convert ${filesWithContent.length} File${filesWithContent.length > 1 ? 's' : ''} to Liquid + JSON`
+                    )}
                 </button>
             </div>
             {conversionError && (
@@ -134,45 +148,128 @@ export default function ConversionSection({
                 </div>
             )}
 
-            {headExtractionError && (
+            {combinedHeadContent && (
                 <div style={{
-                    background: 'linear-gradient(135deg, #ff4444 0%, #cc3333 100%)',
-                    color: 'white',
-                    padding: '15px 20px',
-                    borderRadius: '12px',
-                    marginBottom: '20px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    boxShadow: '0 4px 8px rgba(255, 68, 68, 0.3)',
-                    position: 'relative',
-                    zIndex: 1
+                    marginTop: 'clamp(20px, 5vw, 30px)',
+                    padding: 'clamp(15px, 4vw, 20px)',
+                    background: 'rgba(0, 212, 255, 0.1)',
+                    borderRadius: 'clamp(10px, 3vw, 15px)',
+                    border: '1px solid rgba(0, 212, 255, 0.3)'
                 }}>
-                    ❌ Head Extraction Error: {headExtractionError}
+                    <div style={{
+                        marginBottom: 'clamp(15px, 4vw, 20px)',
+                        padding: 'clamp(10px, 3vw, 15px)',
+                        background: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
+                        borderRadius: '10px',
+                        textAlign: 'center'
+                    }}>
+                        <h3 style={{
+                            color: '#ffffff',
+                            margin: 0,
+                            fontSize: 'clamp(16px, 4vw, 20px)',
+                            fontWeight: '700',
+                            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                        }}>
+                            🎨 Combined Theme Head Section
+                        </h3>
+                        <p style={{
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            margin: '8px 0 0 0',
+                            fontSize: 'clamp(12px, 3vw, 14px)',
+                            fontWeight: '500'
+                        }}>
+                            All head content from your files combined for theme.liquid
+                        </p>
+                    </div>
+
+                    <CodeViewer
+                        content={combinedHeadContent}
+                        fileName="combined-theme-head.liquid"
+                        fileType="Liquid"
+                        title="Combined Head Content for Theme.liquid"
+                        onDownload={downloadCombinedHeadFile}
+                    />
                 </div>
             )}
 
-            {headContent && (
-                <CodeViewer
-                    content={headContent}
-                    fileName={fileName ? `${fileName.replace('.html', '')}-head.liquid` : 'theme-head-section.liquid'}
-                    fileType="Liquid"
-                    title="Theme.liquid Head Section"
-                    onDownload={() => {
-                        if (!headContent) return;
-                        const blob = new Blob([headContent], { type: 'text/plain' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = fileName ? `${fileName.replace('.html', '')}-head.liquid` : 'theme-head-section.liquid';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    }}
-                />
-            )}
+            {convertedFiles.map((convertedFile, index) => (
+                <div key={index} style={{
+                    marginTop: 'clamp(20px, 5vw, 30px)',
+                    padding: 'clamp(15px, 4vw, 20px)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: 'clamp(10px, 3vw, 15px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                    <div style={{
+                        marginBottom: 'clamp(15px, 4vw, 20px)',
+                        padding: 'clamp(10px, 3vw, 15px)',
+                        background: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
+                        borderRadius: '10px',
+                        textAlign: 'center'
+                    }}>
+                        <h3 style={{
+                            color: '#ffffff',
+                            margin: 0,
+                            fontSize: 'clamp(16px, 4vw, 20px)',
+                            fontWeight: '700',
+                            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                        }}>
+                            📄 File {index + 1}: {convertedFile.originalFile.fileName || `File-${index + 1}.html`}
+                        </h3>
+                    </div>
+                    {convertedFile.headExtractionError && (
+                        <div style={{
+                            background: 'linear-gradient(135deg, #ff8800 0%, #cc6600 100%)',
+                            color: 'white',
+                            padding: '12px 16px',
+                            borderRadius: '10px',
+                            marginBottom: '15px',
+                            fontSize: 'clamp(13px, 3vw, 15px)',
+                            fontWeight: '500',
+                            border: '1px solid rgba(255, 136, 0, 0.3)',
+                            boxShadow: '0 4px 8px rgba(255, 136, 0, 0.2)'
+                        }}>
+                            ⚠️ Head extraction warning: {convertedFile.headExtractionError}
+                        </div>
+                    )}
+                    {convertedFile.hasError && (
+                        <div style={{
+                            background: 'linear-gradient(135deg, #ff4444 0%, #cc3333 100%)',
+                            color: 'white',
+                            padding: '15px 20px',
+                            borderRadius: '12px',
+                            marginBottom: '20px',
+                            fontSize: 'clamp(14px, 3vw, 16px)',
+                            fontWeight: '600',
+                            boxShadow: '0 4px 8px rgba(255, 68, 68, 0.3)',
+                            textAlign: 'center'
+                        }}>
+                            ❌ Conversion Error: {convertedFile.headExtractionError}
+                        </div>
+                    )}
 
-            {isConverting && (
+                    {convertedFile.liquidContent && (
+                        <CodeViewer
+                            content={convertedFile.liquidContent}
+                            fileName={convertedFile.fileNames?.liquidFileName || (convertedFile.originalFile?.fileName ? convertedFile.originalFile.fileName.replace('.html', '.liquid') : `converted-${index + 1}.liquid`)}
+                            fileType="Liquid"
+                            title={`Converted Liquid Template - File ${index + 1}`}
+                            onDownload={() => downloadLiquidFile(convertedFile)}
+                        />
+                    )}
+
+                    {convertedFile.jsonTemplate && (
+                        <CodeViewer
+                            content={convertedFile.jsonTemplate}
+                            fileName={convertedFile.fileNames?.jsonFileName || (convertedFile.originalFile?.fileName ? `page.${convertedFile.originalFile.fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : `page.custom-${index + 1}.json`)}
+                            fileType="JSON"
+                            title={`Shopify Page Template - File ${index + 1}`}
+                            onDownload={() => downloadJsonFile(convertedFile)}
+                        />
+                    )}
+                </div>
+            ))}
+            {isConverting && currentlyConverting && (
                 <div style={{
                     position: 'relative',
                     borderRadius: '20px',
@@ -180,36 +277,36 @@ export default function ConversionSection({
                     border: '1px solid rgba(0, 255, 136, 0.3)',
                     boxShadow: '0 10px 20px rgba(0, 0, 0, 0.3)',
                     zIndex: 1,
-                    marginBottom: '25px',
+                    marginTop: 'clamp(20px, 5vw, 30px)',
                     background: 'linear-gradient(145deg, #1a1a2e 0%, #2a2a3e 100%)'
                 }}>
                     <div style={{
                         background: 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)',
-                        padding: '20px 25px',
+                        padding: '15px 20px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', gap: '10px', marginRight: '20px' }}>
+                            <div style={{ display: 'flex', gap: '8px', marginRight: '15px' }}>
                                 <div style={{
-                                    width: '14px',
-                                    height: '14px',
+                                    width: '12px',
+                                    height: '12px',
                                     borderRadius: '50%',
                                     background: '#ff5f56',
                                     boxShadow: '0 2px 4px rgba(255, 95, 86, 0.4)'
                                 }} className="floating-icon"></div>
                                 <div style={{
-                                    width: '14px',
-                                    height: '14px',
+                                    width: '12px',
+                                    height: '12px',
                                     borderRadius: '50%',
                                     background: '#ffbd2e',
                                     boxShadow: '0 2px 4px rgba(255, 189, 46, 0.4)'
                                 }} className="floating-icon"></div>
                                 <div style={{
-                                    width: '14px',
-                                    height: '14px',
+                                    width: '12px',
+                                    height: '12px',
                                     borderRadius: '50%',
                                     background: '#27ca3f',
                                     boxShadow: '0 2px 4px rgba(39, 202, 63, 0.4)'
@@ -217,11 +314,11 @@ export default function ConversionSection({
                             </div>
                             <span style={{
                                 color: '#ffffff',
-                                fontSize: '16px',
+                                fontSize: 'clamp(14px, 3vw, 16px)',
                                 fontWeight: '600',
                                 textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)'
                             }}>
-                                🤖 AI is generating your code...
+                                🤖 Converting: {currentlyConverting.fileName}
                             </span>
                         </div>
                         <div style={{
@@ -229,9 +326,16 @@ export default function ConversionSection({
                             alignItems: 'center',
                             gap: '10px'
                         }}>
+                            <span style={{
+                                color: '#00ff88',
+                                fontSize: 'clamp(12px, 2.5vw, 14px)',
+                                fontWeight: '600'
+                            }}>
+                                {currentlyConverting.remaining} remaining
+                            </span>
                             <div style={{
-                                width: '20px',
-                                height: '20px',
+                                width: '18px',
+                                height: '18px',
                                 border: '2px solid rgba(0, 255, 136, 0.3)',
                                 borderTop: '2px solid #00ff88',
                                 borderRadius: '50%'
@@ -240,10 +344,10 @@ export default function ConversionSection({
                     </div>
 
                     <div style={{
-                        padding: '40px',
+                        padding: 'clamp(20px, 4vw, 30px)',
                         textAlign: 'center',
                         background: 'linear-gradient(135deg, #0a0a0a 0%, #111111 100%)',
-                        minHeight: '200px',
+                        minHeight: 'clamp(120px, 20vh, 150px)',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
@@ -260,78 +364,56 @@ export default function ConversionSection({
                         }} className="pulsing-bg"></div>
 
                         <div style={{
-                            fontSize: '48px',
-                            marginBottom: '20px',
+                            fontSize: 'clamp(32px, 6vw, 40px)',
+                            marginBottom: '15px',
                             zIndex: 1
                         }} className="bouncing-emoji">
-                            🚀
+                            ⚡
                         </div>
-
                         <div style={{
                             color: '#00ff88',
-                            fontSize: '18px',
+                            fontSize: 'clamp(14px, 3vw, 16px)',
                             fontWeight: '600',
-                            marginBottom: '10px',
+                            marginBottom: '8px',
                             zIndex: 1
                         }}>
-                            Generating Liquid + JSON Files
+                            Processing File {currentlyConverting.index + 1} of {currentlyConverting.total}
                         </div>
-
                         <div style={{
                             color: 'rgba(255, 255, 255, 0.7)',
-                            fontSize: '14px',
-                            marginBottom: '30px',
+                            fontSize: 'clamp(12px, 2.5vw, 14px)',
+                            marginBottom: '20px',
                             zIndex: 1
                         }}>
-                            AI is converting your HTML to Shopify Liquid template...
+                            Converting current file to Liquid + JSON...
                         </div>
 
                         <div style={{
                             display: 'flex',
-                            gap: '8px',
+                            gap: '6px',
                             zIndex: 1
                         }}>
                             <div style={{
-                                width: '12px',
-                                height: '12px',
+                                width: '10px',
+                                height: '10px',
                                 borderRadius: '50%',
                                 background: '#00ff88'
                             }} className="loading-dot"></div>
                             <div style={{
-                                width: '12px',
-                                height: '12px',
+                                width: '10px',
+                                height: '10px',
                                 borderRadius: '50%',
                                 background: '#00ff88'
                             }} className="loading-dot"></div>
                             <div style={{
-                                width: '12px',
-                                height: '12px',
+                                width: '10px',
+                                height: '10px',
                                 borderRadius: '50%',
                                 background: '#00ff88'
                             }} className="loading-dot"></div>
                         </div>
                     </div>
                 </div>
-            )}
-
-            {liquidContent && (
-                <CodeViewer
-                    content={liquidContent}
-                    fileName={fileNames?.liquidFileName || (fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid')}
-                    fileType="Liquid"
-                    title="Converted Liquid Template"
-                    onDownload={downloadLiquidFile}
-                />
-            )}
-
-            {jsonTemplate && (
-                <CodeViewer
-                    content={jsonTemplate}
-                    fileName={fileNames?.jsonFileName || (fileName ? `page.${fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : 'page.custom.json')}
-                    fileType="JSON"
-                    title="Shopify Page Template"
-                    onDownload={downloadJsonFile}
-                />
             )}
         </div>
     );

@@ -66,7 +66,8 @@ export default function FileUploadSection({
                 position: 'relative',
                 zIndex: 1,
                 backdropFilter: 'blur(10px)'
-            }}>                <select
+            }}>
+                <select
                     value={numberOfFiles}
                     onChange={(e) => onNumberOfFilesChange(parseInt(e.target.value))}
                     style={{
@@ -96,8 +97,8 @@ export default function FileUploadSection({
                         e.target.style.boxShadow = '0 6px 12px rgba(0, 212, 255, 0.3)';
                     }}
                 >
-                    <option value={0} style={{ 
-                        background: '#1e1e2e', 
+                    <option value={0} style={{
+                        background: '#1e1e2e',
                         color: '#ffffff',
                         padding: '6px 10px',
                         fontSize: '13px',
@@ -109,15 +110,16 @@ export default function FileUploadSection({
                         📋 Select number of HTML files
                     </option>
                     {Array.from({ length: 20 }, (_, i) => i + 1).map(num => (
-                        <option key={num} value={num} style={{ 
-                            background: num % 2 === 0 ? '#2a2a3e' : '#1e1e2e', 
+                        <option key={num} value={num} style={{
+                            background: num % 2 === 0 ? '#2a2a3e' : '#1e1e2e',
                             color: '#ffffff',
                             padding: '6px 10px',
                             fontSize: '13px',
                             fontWeight: '500',
                             lineHeight: '1.3',
                             minHeight: '30px',
-                            borderBottom: '1px solid rgba(255, 255, 255, 0.05)'                        }}>
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                        }}>
                             📄 {num} {num === 1 ? 'file' : 'files'}
                         </option>
                     ))}

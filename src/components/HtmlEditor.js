@@ -116,7 +116,6 @@ export default function HtmlEditor({
                     HTML Editor & Validator {index > 0 && `#${index + 1}`}
                 </h2>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    {/* Upload Button */}
                     <div style={{ position: 'relative' }}>
                         <input
                             type="file"
@@ -163,7 +162,6 @@ export default function HtmlEditor({
                         </button>
                     </div>
 
-                    {/* Preview Button */}
                     {fileContent && (
                         <button
                             onClick={() => setShowPreview(true)}
@@ -197,7 +195,8 @@ export default function HtmlEditor({
                             👁️ Preview
                         </button>
                     )}
-                </div>            </div>
+                </div>
+            </div>
 
             {fileName && (
                 <div style={{
