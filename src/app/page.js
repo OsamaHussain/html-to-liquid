@@ -19,10 +19,7 @@ export default function Home() {
   const [jsonTemplate, setJsonTemplate] = useState("");
   const [fileNames, setFileNames] = useState({});
   const [conversionMetadata, setConversionMetadata] = useState(null);
-
-  // Head extraction states
   const [headContent, setHeadContent] = useState("");
-  const [isExtractingHead, setIsExtractingHead] = useState(false);
   const [headExtractionError, setHeadExtractionError] = useState(""); const [isConverting, setIsConverting] = useState(false); const [conversionError, setConversionError] = useState("");
   const [inputSource, setInputSource] = useState("");
   const [showHowItWorksPopup, setShowHowItWorksPopup] = useState(false);
@@ -118,16 +115,36 @@ export default function Home() {
     }
 
     setShowAIGenerationPopup(true);
-  };
-  const performConversion = async () => {
+  }; const performConversion = async () => {
     setIsConverting(true);
     setConversionError('');
+    setHeadExtractionError('');
     setLiquidContent('');
     setJsonTemplate('');
+    setHeadContent('');
     setConversionMetadata(null);
     setFileNames({});
 
     try {
+      const headResponse = await fetch('/api/extract-head', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          htmlContent: fileContent,
+          fileName: fileName || (inputSource === "manual" ? "manual-input.html" : "uploaded-file.html"),
+        }),
+      });
+
+      const headData = await headResponse.json();
+
+      if (headResponse.ok) {
+        setHeadContent(headData.headContent);
+      } else {
+        setHeadExtractionError(headData.error || 'Head extraction failed');
+      }
+
       const response = await fetch('/api/convert-html', {
         method: 'POST',
         headers: {
@@ -143,7 +160,9 @@ export default function Home() {
 
       if (!response.ok) {
         throw new Error(data.error || 'Conversion failed');
-      } setLiquidContent(data.liquidContent);
+      }
+
+      setLiquidContent(data.liquidContent);
       setJsonTemplate(data.jsonTemplate);
       setFileNames(data.metadata);
       setConversionMetadata(data.metadata);
@@ -151,50 +170,6 @@ export default function Home() {
       setConversionError(error.message);
     } finally {
       setIsConverting(false);
-    }
-  };
-
-  const extractHeadSection = async () => {
-    if (!fileContent) {
-      setHeadExtractionError('No HTML content to extract head from');
-      return;
-    }
-
-    const result = validateAndExtractHtml(fileContent);
-    if (!result.isValid) {
-      setValidationErrors(result.error);
-      setShowErrorPopup(true);
-      setHeadExtractionError('Please fix HTML validation errors before extracting head');
-      return;
-    }
-
-    setIsExtractingHead(true);
-    setHeadExtractionError('');
-    setHeadContent('');
-
-    try {
-      const response = await fetch('/api/extract-head', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          htmlContent: fileContent,
-          fileName: fileName || (inputSource === "manual" ? "manual-input.html" : "uploaded-file.html"),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Head extraction failed');
-      }
-
-      setHeadContent(data.headContent);
-    } catch (error) {
-      setHeadExtractionError(error.message);
-    } finally {
-      setIsExtractingHead(false);
     }
   };
   const downloadLiquidFile = () => {
@@ -248,7 +223,8 @@ export default function Home() {
           fileContent={fileContent}
           fileName={fileName}
           handleManualInput={handleManualInput}
-        />        <ConversionSection
+        />
+        <ConversionSection
           fileContent={fileContent}
           fileName={fileName}
           isConverting={isConverting}
@@ -260,9 +236,8 @@ export default function Home() {
           downloadLiquidFile={downloadLiquidFile}
           downloadJsonFile={downloadJsonFile}
           headContent={headContent}
-          isExtractingHead={isExtractingHead}
+          isExtractingHead={isConverting}
           headExtractionError={headExtractionError}
-          extractHeadSection={extractHeadSection}
         />
       </div>
       <ErrorPopup
