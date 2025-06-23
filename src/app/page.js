@@ -4,6 +4,7 @@ import ErrorPopup from "../components/ErrorPopup";
 import Header from "../components/Header";
 import FileUploadSection from "../components/FileUploadSection";
 import HtmlEditor from "../components/HtmlEditor";
+import HtmlEditorTabs from "../components/HtmlEditorTabs";
 import ConversionSection from "../components/ConversionSection";
 import GlobalStyles from "../components/GlobalStyles";
 import HowItWorksPopup from "../components/HowItWorksPopup";
@@ -282,19 +283,15 @@ export default function Home() {
           numberOfFiles={numberOfFiles}
           onNumberOfFilesChange={handleNumberOfFilesChange}
         />
-        {files.map((file, index) => (
-          <HtmlEditor
-            key={index}
-            index={index}
-            fileContent={file.fileContent}
-            fileName={file.fileName}
-            isLoading={file.isLoading}
-            handleManualInput={(text) => handleManualInput(index, text)}
+        {files.length > 0 && (
+          <HtmlEditorTabs
+            files={files}
+            handleManualInput={handleManualInput}
             onFileUpload={handleFileUpload}
             onClearContent={handleClearContent}
             onValidationError={handleValidationError}
           />
-        ))}
+        )}
         <ConversionSection
           files={files}
           isConverting={isConverting}
