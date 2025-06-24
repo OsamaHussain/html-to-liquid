@@ -49,15 +49,18 @@ export async function POST(request) {
                     message: 'Head section is empty'
                 }
             });
-        } const prompt = `Extract link tags from HTML head for Shopify theme.liquid. If you find TailwindCSS link, replace it with: <script defer src="https://cdn.tailwindcss.com"></script>
-If there are no relevant link, script, or meta tags in the head section, return empty content.
+        }
+        const prompt = `Extract ONLY link and script tags from HTML head for Shopify theme.liquid. Do NOT include meta tags.
+If you find TailwindCSS link, replace it with: <script defer src="https://cdn.tailwindcss.com"></script>
+If there are no relevant link or script tags in the head section, return empty content.
 Return raw HTML only for Shopify theme, no markdown, no code blocks, no formatting, no explanatory text.
 
-${headOnly}`; const completion = await openai.chat.completions.create({
+${headOnly}`;
+        const completion = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [{
                 role: "system",
-                content: "Extract relevant link, script, and meta tags for Shopify theme.liquid. Replace TailwindCSS links with script tag. If no relevant tags exist, return nothing. Return raw HTML tags only, no markdown formatting, no explanatory text."
+                content: "Extract ONLY link and script tags for Shopify theme.liquid. Do NOT include meta tags. Replace TailwindCSS links with script tag. If no relevant link or script tags exist, return nothing. Return raw HTML tags only, no markdown formatting, no explanatory text."
             },
             {
                 role: "user",
@@ -66,7 +69,8 @@ ${headOnly}`; const completion = await openai.chat.completions.create({
             ],
             temperature: 0.1,
             max_tokens: 4000,
-        }); const headContent = completion.choices[0]?.message?.content?.trim();
+        });
+        const headContent = completion.choices[0]?.message?.content?.trim();
 
         if (!headContent || headContent.toLowerCase().includes('no relevant') || headContent.toLowerCase().includes('nothing to extract') || headContent.toLowerCase().includes('no head content')) {
             return NextResponse.json({
