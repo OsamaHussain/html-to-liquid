@@ -35,7 +35,7 @@ export default function HtmlEditor({
             const reader = new FileReader();
             reader.onload = (e) => {
                 const rawText = e.target.result;
-                const result = validateAndExtractHtml(rawText);
+                const result = validateAndExtractHtml(rawText, file.name);
 
                 if (!result.isValid) {
                     onValidationError(result.error);

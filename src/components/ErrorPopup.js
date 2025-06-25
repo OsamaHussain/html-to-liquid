@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 
-const ErrorPopup = ({ errors, isVisible, onClose, fileName }) => {
+const ErrorPopup = ({ errors, isVisible, onClose, fileName, allFileErrors = null }) => {
     const [isAnimating, setIsAnimating] = useState(false);
 
     useEffect(() => {
@@ -19,6 +19,40 @@ const ErrorPopup = ({ errors, isVisible, onClose, fileName }) => {
 
     if (!isVisible) return null;
     const formatErrors = (errorString) => {
+        if (allFileErrors && Array.isArray(allFileErrors)) {
+            const formattedErrors = [];
+
+            allFileErrors.forEach(fileError => {
+                formattedErrors.push(`📁 ${fileError.fileName} (${fileError.errorCount} error${fileError.errorCount !== 1 ? 's' : ''})`);
+
+                if (fileError.detailedErrors && fileError.detailedErrors.length > 0) {
+                    fileError.detailedErrors.forEach((error, index) => {
+                        formattedErrors.push(`   ${index + 1}. ${error}`);
+                    });
+                } else {
+                    const errorLines = fileError.error.split('\n').filter(line => {
+                        const trimmed = line.trim();
+                        return /^\d+\.\s+Line\s+\d+,\s+Col\s+\d+:/.test(trimmed);
+                    });
+
+                    if (errorLines.length > 0) {
+                        errorLines.forEach((line, index) => {
+                            const cleanError = line.trim().replace(/^\d+\.\s+/, '');
+                            formattedErrors.push(`   ${index + 1}. ${cleanError}`);
+                        });
+                    } else {
+                        formattedErrors.push(`   1. ${fileError.error.split('\n')[0]}`);
+                    }
+                }
+
+                if (fileError !== allFileErrors[allFileErrors.length - 1]) {
+                    formattedErrors.push('');
+                }
+            });
+
+            return formattedErrors;
+        }
+
         if (typeof errorString === 'string') {
             const lines = errorString.split('\n').filter(line => line.trim());
 
@@ -123,7 +157,15 @@ const ErrorPopup = ({ errors, isVisible, onClose, fileName }) => {
                                 }}>
                                     HTML Validation Errors
                                 </h3>
-                                {fileName && (
+                                {allFileErrors && allFileErrors.length > 1 ? (
+                                    <p style={{
+                                        margin: '4px 0 0 0',
+                                        color: 'rgba(255, 255, 255, 0.7)',
+                                        fontSize: '14px'
+                                    }}>
+                                        {allFileErrors.length} files with errors ({allFileErrors.reduce((sum, f) => sum + f.errorCount, 0)} total errors)
+                                    </p>
+                                ) : fileName ? (
                                     <p style={{
                                         margin: '4px 0 0 0',
                                         color: 'rgba(255, 255, 255, 0.7)',
@@ -131,7 +173,7 @@ const ErrorPopup = ({ errors, isVisible, onClose, fileName }) => {
                                     }}>
                                         File: {fileName}
                                     </p>
-                                )}
+                                ) : null}
                             </div>
                         </div>
                         <button
@@ -173,49 +215,68 @@ const ErrorPopup = ({ errors, isVisible, onClose, fileName }) => {
                     maxHeight: '60vh',
                     overflowY: 'auto'
                 }}>
-                    {errorList.map((error, index) => (
-                        <div
-                            key={index}
-                            style={{
-                                padding: '20px 30px',
-                                borderBottom: index < errorList.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-                                background: index % 2 === 0 ? 'rgba(255, 255, 255, 0.02)' : 'transparent'
-                            }}
-                        >
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '15px'
-                            }}>
+                    {errorList.map((error, index) => {
+                        const isFileHeader = error.startsWith('📁');
+                        const isIndentedError = error.startsWith('   ');
+                        const isEmpty = error.trim() === '';
+
+                        if (isEmpty) {
+                            return (
+                                <div key={index} style={{ height: '10px' }} />
+                            );
+                        }
+
+                        return (
+                            <div
+                                key={index}
+                                style={{
+                                    padding: isFileHeader ? '15px 30px 10px 30px' :
+                                        isIndentedError ? '5px 30px 5px 60px' : '20px 30px',
+                                    borderBottom: !isIndentedError && index < errorList.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+                                    background: isFileHeader ? 'rgba(102, 126, 234, 0.1)' :
+                                        isIndentedError ? 'transparent' :
+                                            index % 2 === 0 ? 'rgba(255, 255, 255, 0.02)' : 'transparent'
+                                }}
+                            >
                                 <div style={{
-                                    minWidth: '25px',
-                                    height: '25px',
-                                    borderRadius: '50%',
-                                    background: 'linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%)',
                                     display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'white',
-                                    fontSize: '12px',
-                                    fontWeight: 'bold',
-                                    marginTop: '2px'
+                                    alignItems: 'flex-start',
+                                    gap: isIndentedError ? '10px' : '15px'
                                 }}>
-                                    {index + 1}
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <p style={{
-                                        margin: 0,
-                                        color: '#ffffff',
-                                        fontSize: '15px',
-                                        lineHeight: '1.6',
-                                        fontFamily: 'Monaco, Consolas, "Courier New", monospace'
-                                    }}>
-                                        {error}
-                                    </p>
+                                    {!isFileHeader && !isIndentedError && (
+                                        <div style={{
+                                            minWidth: '25px',
+                                            height: '25px',
+                                            borderRadius: '50%',
+                                            background: 'linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: 'white',
+                                            fontSize: '12px',
+                                            fontWeight: 'bold',
+                                            marginTop: '2px'
+                                        }}>
+                                            {index + 1}
+                                        </div>
+                                    )}
+                                    <div style={{ flex: 1 }}>
+                                        <p style={{
+                                            margin: 0,
+                                            color: isFileHeader ? '#667eea' : '#ffffff',
+                                            fontSize: isFileHeader ? '16px' :
+                                                isIndentedError ? '14px' : '15px',
+                                            lineHeight: '1.6',
+                                            fontFamily: isFileHeader ? 'inherit' : 'Monaco, Consolas, "Courier New", monospace',
+                                            fontWeight: isFileHeader ? '600' : 'normal'
+                                        }}>
+                                            {error}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 <div style={{
@@ -234,7 +295,11 @@ const ErrorPopup = ({ errors, isVisible, onClose, fileName }) => {
                         fontSize: '14px'
                     }}>
                         <span>📋</span>
-                        {errorList.length} error{errorList.length !== 1 ? 's' : ''} found
+                        {allFileErrors && allFileErrors.length > 1 ? (
+                            `${allFileErrors.reduce((sum, f) => sum + f.errorCount, 0)} errors in ${allFileErrors.length} files`
+                        ) : (
+                            `${errorList.filter(e => e.trim() && !e.startsWith('📁')).length} error${errorList.filter(e => e.trim() && !e.startsWith('📁')).length !== 1 ? 's' : ''} found`
+                        )}
                     </div>
                     <button
                         onClick={handleClose}

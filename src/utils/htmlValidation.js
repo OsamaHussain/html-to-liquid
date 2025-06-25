@@ -1,7 +1,6 @@
 import { HTMLHint } from "htmlhint";
 
-// HTML validation utilities
-export const validateAndExtractHtml = (text) => {
+export const validateAndExtractHtml = (text, fileName = '') => {
   try {
     const htmlTagRegex = /<[^>]+>/g;
     const hasHtmlTags = htmlTagRegex.test(text);
@@ -10,7 +9,8 @@ export const validateAndExtractHtml = (text) => {
       return {
         isValid: false,
         content: '',
-        error: 'No HTML content found in this file.'
+        error: 'No HTML content found in this file.',
+        fileName: fileName
       };
     }
 
@@ -45,24 +45,62 @@ export const validateAndExtractHtml = (text) => {
         `Line ${msg.line}, Col ${msg.col}: ${msg.message} (${msg.rule.id})`
       );
 
+      const filePrefix = fileName ? `File: ${fileName}\n\n` : '';
+
       return {
         isValid: false,
         content: '',
-        error: `HTML validation errors found:\n\n${errors.map((err, i) => `${i + 1}. ${err}`).join('\n')}\n\nPlease fix these issues in your HTML file first.`
+        error: `${filePrefix}HTML validation errors found:\n\n${errors.map((err, i) => `${i + 1}. ${err}`).join('\n')}\n\nPlease fix these issues in your HTML file first.`,
+        fileName: fileName,
+        errorCount: errors.length,
+        detailedErrors: errors
       };
     }
 
     return {
       isValid: true,
       content: text,
-      error: null
+      error: null,
+      fileName: fileName
     };
 
   } catch (error) {
     return {
       isValid: false,
       content: '',
-      error: `HTML validation error: ${error.message}\n\nPlease check your HTML syntax and try again.`
+      error: `HTML validation error: ${error.message}\n\nPlease check your HTML syntax and try again.`,
+      fileName: fileName
     };
   }
+};
+
+export const validateAllFiles = (files) => {
+  const allErrors = [];
+  const validFiles = [];
+
+  files.forEach((file, index) => {
+    if (!file.fileContent) return;
+
+    const displayName = file.fileName || `File ${index + 1}`;
+    const result = validateAndExtractHtml(file.fileContent, displayName);
+
+    if (result.isValid) {
+      validFiles.push(file);
+    } else {
+      allErrors.push({
+        fileName: displayName,
+        fileIndex: index,
+        error: result.error,
+        detailedErrors: result.detailedErrors || [],
+        errorCount: result.errorCount || 1
+      });
+    }
+  });
+
+  return {
+    isValid: allErrors.length === 0,
+    validFiles,
+    allErrors,
+    totalErrorCount: allErrors.reduce((sum, fileError) => sum + fileError.errorCount, 0)
+  };
 };

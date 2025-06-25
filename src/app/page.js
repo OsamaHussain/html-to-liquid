@@ -9,13 +9,14 @@ import ConversionSection from "../components/ConversionSection";
 import GlobalStyles from "../components/GlobalStyles";
 import HowItWorksPopup from "../components/HowItWorksPopup";
 import AIGenerationPopup from "../components/AIGenerationPopup";
-import { validateAndExtractHtml } from "../utils/htmlValidation";
+import { validateAndExtractHtml, validateAllFiles } from "../utils/htmlValidation";
 
 export default function Home() {
   const [numberOfFiles, setNumberOfFiles] = useState(0);
   const [files, setFiles] = useState([]);
   const [showErrorPopup, setShowErrorPopup] = useState(false);
   const [validationErrors, setValidationErrors] = useState("");
+  const [allFileErrors, setAllFileErrors] = useState(null);
   const [convertedFiles, setConvertedFiles] = useState([]);
   const [combinedHeadContent, setCombinedHeadContent] = useState('');
   const [currentlyConverting, setCurrentlyConverting] = useState(null);
@@ -69,6 +70,7 @@ export default function Home() {
 
   const handleValidationError = (error) => {
     setValidationErrors(error);
+    setAllFileErrors(null);
     setShowErrorPopup(true);
   };
   const convertToLiquid = async () => {
@@ -78,14 +80,14 @@ export default function Home() {
       return;
     }
 
-    for (const file of filesWithContent) {
-      const result = validateAndExtractHtml(file.fileContent);
-      if (!result.isValid) {
-        setValidationErrors(result.error);
-        setShowErrorPopup(true);
-        setConversionError('Please fix HTML validation errors before converting');
-        return;
-      }
+    const validationResult = validateAllFiles(filesWithContent);
+
+    if (!validationResult.isValid) {
+      setAllFileErrors(validationResult.allErrors);
+      setValidationErrors('Multiple validation errors found');
+      setShowErrorPopup(true);
+      setConversionError('Please fix HTML validation errors before converting');
+      return;
     }
 
     setShowAIGenerationPopup(true);
@@ -311,8 +313,12 @@ export default function Home() {
       <ErrorPopup
         errors={validationErrors}
         isVisible={showErrorPopup}
-        onClose={() => setShowErrorPopup(false)}
+        onClose={() => {
+          setShowErrorPopup(false);
+          setAllFileErrors(null);
+        }}
         fileName={files.find(f => f.fileContent)?.fileName || ''}
+        allFileErrors={allFileErrors}
       />
       <HowItWorksPopup
         isOpen={showHowItWorksPopup}
