@@ -13,7 +13,8 @@ export default function ConversionSection({
     downloadLiquidFile,
     downloadJsonFile,
     downloadHeadFile,
-    downloadCombinedHeadFile
+    downloadCombinedHeadFile,
+    downloadAllAsZip
 }) {
     const filesWithContent = files.filter(file => file.fileContent);
 
@@ -133,6 +134,37 @@ export default function ConversionSection({
                         `🚀 Convert ${filesWithContent.length} File${filesWithContent.length > 1 ? 's' : ''} to Liquid + JSON`
                     )}
                 </button>
+
+                {convertedFiles.length > 0 && (
+                    <button
+                        onClick={downloadAllAsZip}
+                        style={{
+                            background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '15px',
+                            padding: 'clamp(10px, 3vw, 15px) clamp(20px, 5vw, 30px)',
+                            cursor: 'pointer',
+                            fontSize: 'clamp(14px, 3vw, 16px)',
+                            fontWeight: '700',
+                            transition: 'all 0.3s ease',
+                            boxShadow: '0 8px 16px rgba(99, 102, 241, 0.3)',
+                            flexShrink: 0,
+                            whiteSpace: 'nowrap',
+                            marginLeft: '15px'
+                        }}
+                        onMouseOver={(e) => {
+                            e.target.style.transform = 'scale(1.05)';
+                            e.target.style.boxShadow = '0 12px 24px rgba(99, 102, 241, 0.4)';
+                        }}
+                        onMouseOut={(e) => {
+                            e.target.style.transform = 'scale(1)';
+                            e.target.style.boxShadow = '0 8px 16px rgba(99, 102, 241, 0.3)';
+                        }}
+                    >
+                        📦 Download ZIP ({convertedFiles.length} files)
+                    </button>
+                )}
             </div>
             {conversionError && (
                 <div style={{
@@ -335,6 +367,57 @@ export default function ConversionSection({
                                         textAlign: 'center'
                                     }}>
                                         ❌ Conversion Error: {convertedFiles[activeTab].headExtractionError}
+                                    </div>
+                                )}
+
+                                {convertedFiles[activeTab].shopifyInfo && !convertedFiles[activeTab].hasError && (
+                                    <div style={{
+                                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                        color: 'white',
+                                        padding: '15px 20px',
+                                        borderRadius: '12px',
+                                        marginBottom: '20px',
+                                        fontSize: 'clamp(12px, 3vw, 14px)',
+                                        boxShadow: '0 4px 8px rgba(16, 185, 129, 0.3)'
+                                    }}>
+                                        <div style={{ fontWeight: '700', marginBottom: '10px' }}>
+                                            ✅ Shopify Processing Complete
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                                            <div>
+                                                <strong>Section Name:</strong> {convertedFiles[activeTab].sectionName}
+                                            </div>
+                                            <div>
+                                                <strong>Files:</strong> sections/{convertedFiles[activeTab].sectionName}.liquid, templates/{convertedFiles[activeTab].sectionName}.json
+                                            </div>
+                                            {convertedFiles[activeTab].filenameCorrected && (
+                                                <div style={{ color: '#fef08a' }}>
+                                                    <strong>Filename Corrected:</strong> Made Shopify-compatible
+                                                </div>
+                                            )}
+                                            {convertedFiles[activeTab].injectedBlocks && convertedFiles[activeTab].injectedBlocks.length > 0 && (
+                                                <div>
+                                                    <strong>Auto-injected Blocks:</strong> {convertedFiles[activeTab].injectedBlocks.join(', ')}
+                                                </div>
+                                            )}
+                                            {convertedFiles[activeTab].usedBlockTypes && convertedFiles[activeTab].usedBlockTypes.length > 0 && (
+                                                <div>
+                                                    <strong>Block Types Used:</strong> {convertedFiles[activeTab].usedBlockTypes.length} types
+                                                </div>
+                                            )}
+                                        </div>
+                                        {convertedFiles[activeTab].processingErrors && convertedFiles[activeTab].processingErrors.length > 0 && (
+                                            <div style={{
+                                                marginTop: '10px',
+                                                padding: '8px 12px',
+                                                background: 'rgba(0,0,0,0.2)',
+                                                borderRadius: '8px',
+                                                fontSize: 'clamp(11px, 2.5vw, 13px)'
+                                            }}>
+                                                <strong>⚠️ Warnings:</strong><br />
+                                                {convertedFiles[activeTab].processingErrors.join('; ')}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 

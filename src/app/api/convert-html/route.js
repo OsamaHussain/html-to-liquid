@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { validateShopifyFilename, generateShopifyPaths } from '../../../utils/filenameValidation';
+import { processSchemaAndBlocks } from '../../../utils/schemaProcessor';
+import { addFileComment } from '../../../utils/zipGenerator';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -21,7 +24,33 @@ export async function POST(request) {
         { error: 'OpenAI API key is not configured' },
         { status: 500 }
       );
-    } const isLargeFile = htmlContent.length > 10000 || htmlContent.split('\n').length > 800; const prompt = `Convert the following HTML code to a complete Shopify Liquid template file with the EXACT structure format below. ${isLargeFile ? 'CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''} 
+    }
+
+    let finalFileName = fileName || 'custom-page';
+    let filenameCorrected = false;
+    let filenameError = null;
+
+    const filenameValidation = validateShopifyFilename(finalFileName);
+
+    if (!filenameValidation.valid) {
+      return NextResponse.json(
+        {
+          error: 'Invalid filename for Shopify',
+          details: filenameValidation.error,
+          suggestion: filenameValidation.suggestions
+        },
+        { status: 400 }
+      );
+    }
+
+    if (filenameValidation.sanitized !== finalFileName.replace(/\.html?$/i, '')) {
+      finalFileName = filenameValidation.sanitized;
+      filenameCorrected = true;
+    } else {
+      finalFileName = filenameValidation.sanitized;
+    }
+
+    const shopifyPaths = generateShopifyPaths(finalFileName); const isLargeFile = htmlContent.length > 10000 || htmlContent.split('\n').length > 800; const prompt = `Convert the following HTML code to a complete Shopify Liquid template file with the EXACT structure format below. ${isLargeFile ? 'CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''} 
 
 🚨 MANDATORY OUTPUT FORMAT - ALWAYS INCLUDE ALL 4 SECTIONS IN THIS EXACT ORDER: 🚨
 
@@ -1155,22 +1184,72 @@ CRITICAL RULES:
       }
     }
 
+    let processingErrors = [];
+    let injectedBlocks = [];
+    let usedBlockTypes = [];
+
+    try {
+      const schemaProcessingResult = processSchemaAndBlocks(
+        cleanedLiquidContent,
+        correctedJsonTemplate,
+        finalFileName
+      );
+
+      if (schemaProcessingResult.success) {
+        cleanedLiquidContent = schemaProcessingResult.liquidContent;
+        correctedJsonTemplate = schemaProcessingResult.jsonContent;
+        injectedBlocks = schemaProcessingResult.injectedBlocks || [];
+        usedBlockTypes = schemaProcessingResult.usedBlockTypes || [];
+      } else {
+        processingErrors = schemaProcessingResult.errors || [];
+
+        if (schemaProcessingResult.error) {
+          return NextResponse.json(
+            {
+              error: 'Invalid JSON structure generated',
+              details: schemaProcessingResult.error,
+              suggestion: 'Please try regenerating the content'
+            },
+            { status: 422 }
+          );
+        }
+      }
+    } catch (schemaError) {
+      console.error('Schema processing error:', schemaError);
+      processingErrors.push(`Schema processing failed: ${schemaError.message}`);
+    }
+
+    const liquidWithComments = addFileComment(
+      cleanedLiquidContent,
+      'liquid',
+      shopifyPaths.liquid
+    );
+
+    const jsonWithComments = addFileComment(
+      correctedJsonTemplate,
+      'json',
+      shopifyPaths.json
+    );
+
     let validationInfo = {
       schemaSettingsCount: 0,
       jsonSettingsCount: 0,
       schemaBlockTypes: [],
       jsonBlockCount: 0,
-      completenessCheck: 'passed'
+      completenessCheck: 'passed',
+      injectedBlocks: injectedBlocks,
+      usedBlockTypes: usedBlockTypes,
+      processingErrors: processingErrors
     };
 
     try {
-      const parsedJson = JSON.parse(correctedJsonTemplate);
+      const parsedJson = JSON.parse(jsonWithComments);
       if (parsedJson.sections && parsedJson.sections.main) {
         validationInfo.jsonSettingsCount = Object.keys(parsedJson.sections.main.settings || {}).length;
         validationInfo.jsonBlockCount = Object.keys(parsedJson.sections.main.blocks || {}).length;
       }
 
-      const schemaMatch = cleanedLiquidContent.match(/{% schema %}([\s\S]*?){% endschema %}/);
+      const schemaMatch = liquidWithComments.match(/{% schema %}([\s\S]*?){% endschema %}/);
       if (schemaMatch) {
         try {
           const schema = JSON.parse(schemaMatch[1]);
@@ -1194,13 +1273,23 @@ CRITICAL RULES:
 
     return NextResponse.json({
       success: true,
-      liquidContent: cleanedLiquidContent,
-      jsonTemplate: correctedJsonTemplate,
+      liquidContent: liquidWithComments,
+      jsonTemplate: jsonWithComments,
       validation: validationInfo,
+      shopifyInfo: {
+        sectionName: finalFileName,
+        liquidPath: shopifyPaths.liquid,
+        jsonPath: shopifyPaths.json,
+        snippetPath: shopifyPaths.snippet,
+        filenameCorrected: filenameCorrected,
+        injectedBlocks: injectedBlocks,
+        usedBlockTypes: usedBlockTypes,
+        processingErrors: processingErrors
+      },
       metadata: {
-        liquidFileName: liquidFileName,
-        jsonFileName: fileName ? `page.${fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : 'page.custom.json',
-        sectionType: sectionType,
+        liquidFileName: `${finalFileName}.liquid`,
+        jsonFileName: `${finalFileName}.json`,
+        sectionType: finalFileName,
         isLargeFile: isLargeFile,
         htmlSize: htmlContent.length,
         htmlLines: htmlContent.split('\n').length, htmlSectionCount: htmlSectionCount,

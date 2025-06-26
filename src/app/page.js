@@ -10,6 +10,8 @@ import GlobalStyles from "../components/GlobalStyles";
 import HowItWorksPopup from "../components/HowItWorksPopup";
 import AIGenerationPopup from "../components/AIGenerationPopup";
 import { validateAndExtractHtml, validateAllFiles } from "../utils/htmlValidation";
+import { validateBatchFilenames } from "../utils/filenameValidation";
+import { generateAndDownloadZip } from "../utils/zipGenerator";
 
 export default function Home() {
   const [numberOfFiles, setNumberOfFiles] = useState(0);
@@ -87,6 +89,20 @@ export default function Home() {
       setValidationErrors('Multiple validation errors found');
       setShowErrorPopup(true);
       setConversionError('Please fix HTML validation errors before converting');
+      return;
+    }
+
+    const filenames = filesWithContent.map(file => file.fileName || `file-${Math.random().toString(36).slice(2, 8)}`);
+    const filenameValidation = validateBatchFilenames(filenames);
+
+    if (!filenameValidation.valid) {
+      const errorMessages = filenameValidation.errors.map(error =>
+        `File ${error.index + 1} (${error.filename}): ${error.error}. ${error.suggestion}`
+      ).join('\n\n');
+
+      setConversionError(`Invalid filenames for Shopify:\n\n${errorMessages}`);
+      setValidationErrors('Filename validation errors');
+      setShowErrorPopup(true);
       return;
     }
 
@@ -177,7 +193,14 @@ export default function Home() {
             jsonTemplate: data.jsonTemplate,
             fileNames: data.metadata,
             headExtractionError: headExtractionError,
-            index: i
+            index: i,
+            shopifyInfo: data.shopifyInfo || {},
+            sectionName: data.shopifyInfo?.sectionName || `page-${i + 1}`,
+            injectedBlocks: data.shopifyInfo?.injectedBlocks || [],
+            usedBlockTypes: data.shopifyInfo?.usedBlockTypes || [],
+            filenameCorrected: data.shopifyInfo?.filenameCorrected || false,
+            processingErrors: data.shopifyInfo?.processingErrors || [],
+            validation: data.validation || {}
           };
           setConvertedFiles(prev => [...prev, newResult]);
 
@@ -267,6 +290,27 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
+  const downloadAllAsZip = async () => {
+    if (convertedFiles.length === 0) {
+      setConversionError('No converted files to download');
+      return;
+    }
+
+    try {
+      const result = await generateAndDownloadZip(
+        convertedFiles,
+        combinedHeadContent,
+        'shopify-files.zip'
+      );
+
+      if (!result.success) {
+        setConversionError(`Failed to generate ZIP: ${result.error}`);
+      }
+    } catch (error) {
+      setConversionError(`ZIP generation error: ${error.message}`);
+    }
+  };
+
   const handleHowItWorksClick = () => {
     setShowHowItWorksPopup(true);
   };
@@ -308,6 +352,7 @@ export default function Home() {
           downloadJsonFile={downloadJsonFile}
           downloadHeadFile={downloadHeadFile}
           downloadCombinedHeadFile={downloadCombinedHeadFile}
+          downloadAllAsZip={downloadAllAsZip}
         />
       </div>
       <ErrorPopup

@@ -11,7 +11,9 @@
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "axios": "^1.10.0",
+    "file-saver": "^2.0.5",
     "htmlhint": "^1.2.0",
+    "jszip": "^3.10.1",
     "next": "15.3.2",
     "openai": "^5.0.1",
     "react": "^19.0.0",
