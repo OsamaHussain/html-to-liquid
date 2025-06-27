@@ -1,95 +1,106 @@
 import React from 'react';
 
 export default function HowItWorksPopup({ isOpen, onClose }) {
-    if (!isOpen) return null; const steps = [
+    if (!isOpen) return null;
+
+    const handleClickOutside = (e) => {
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    }; const steps = [
         {
             step: "1",
-            title: "Select Number of Files & Setup",
-            description: "Choose how many HTML files you want to convert (1-20). The system dynamically creates tabbed input areas for each file, allowing you to work with multiple projects simultaneously.",
+            title: "Select Number of Files",
+            description: "Choose how many HTML files you want to convert (1-20). The system creates input tabs for each file.",
             icon: "📊",
-            details: "Dynamic tab creation, flexible file count selection, organized workspace for batch processing"
+            details: "Dynamic tab creation, file count selection, workspace setup"
         },
         {
             step: "2",
-            title: "Multi-File HTML Input & Upload",
-            description: "Each tab offers dual input methods: upload HTML files (.html only) or paste code directly into the Monaco editor. Mix and match upload/paste methods across different tabs as needed.",
+            title: "Add HTML Content",
+            description: "For each tab: upload HTML files or paste code directly. Each tab has its own editor with syntax highlighting.",
             icon: "📁",
-            details: "Tabbed interface, drag & drop uploads, syntax-highlighted code editor, file validation per tab"
+            details: "File upload or paste code, Monaco editor, independent tabs"
         },
         {
             step: "3",
-            title: "Advanced HTML Validation",
-            description: "Each HTML input is validated independently using HTMLHint. Real-time error detection ensures all files meet quality standards before conversion begins.",
-            icon: "✅",
-            details: "Per-file validation, detailed error reporting, automatic HTML structure analysis, quality assurance"
+            title: "Enter Section Names",
+            description: "Provide section names for all files - this is mandatory. These names become your Shopify .liquid file names.",
+            icon: "🏷️",
+            details: "Required filename entry, no fallbacks allowed, section naming"
         },
         {
             step: "4",
-            title: "AI-Powered Batch Conversion",
-            description: "Using OpenAI GPT-4, all valid HTML files are converted sequentially into production-ready Shopify Liquid templates. Watch real-time progress as each file is processed.",
-            icon: "🔄",
-            details: "Sequential processing, real-time progress tracking, auto-tab switching, intelligent content replacement"
+            title: "Preview & Validate",
+            description: "Use HTML preview toggle to check content visually. HTML validation ensures quality before conversion.",
+            icon: "�️",
+            details: "Live preview toggle, HTMLHint validation, error detection"
         },
         {
             step: "5",
-            title: "Individual File Outputs",
-            description: "Each converted file generates its own Liquid template and JSON schema. View results in organized tabs with separate download options for each file's Liquid and JSON components.",
-            icon: "📄",
-            details: "Tabbed result viewing, individual file downloads, separate Liquid/JSON generation per file"
+            title: "Convert to Liquid",
+            description: "AI converts all files sequentially. Watch real-time progress as each file is processed into Shopify sections.",
+            icon: "�",
+            details: "AI-powered conversion, progress tracking, sequential processing"
         },
         {
             step: "6",
-            title: "Combined Global Head Snippet",
-            description: "Automatically extracts and combines all head elements (fonts, Tailwind, Font Awesome, scripts) from all files into a single deduplicated snippet for theme.liquid.",
-            icon: "🎨",
-            details: "Smart head extraction, duplicate removal, single combined snippet, theme.liquid ready"
+            title: "Download Results",
+            description: "Get individual .liquid and .json files for each input, plus a combined head snippet for theme.liquid.",
+            icon: "⬇️",
+            details: "Individual downloads, combined head snippet, organized output"
         }
     ];
     const features = [
-        "🔢 Multi-File Batch Processing - Convert up to 20 HTML files simultaneously with tabbed interface",
-        "📝 Dual Input Methods - Upload files or paste code directly in each tab with Monaco editor",
-        "🎨 Combined Global Head Snippet - Single deduplicated snippet from all files for theme.liquid",
-        "� Individual File Outputs - Each file generates separate Liquid template and JSON schema",
-        "⚡ Real-Time Progress Tracking - Watch conversion progress with auto-tab switching",
-        "🎯 Tabbed Result Organization - Clean interface for managing multiple file results",
-        "🔄 Sequential AI Processing - OpenAI GPT-4 converts each file maintaining quality",
-        "📱 Responsive Design Preservation - All original mobile and desktop layouts maintained",
-        "🛡️ Per-File HTML Validation - HTMLHint integration with detailed error reporting per file",
-        "⬇️ Organized Download System - Individual and batch download options for all outputs",
-        "🚀 Dynamic Workspace Creation - Interface adapts based on selected number of files",
-        "� Smart Head Content Extraction - Automatically finds and combines fonts, scripts, styles",
-        "� Independent File Processing - Each tab works independently with separate validation",
-        "🎨 Professional UI/UX - Clean tabbed interface optimized for batch workflow"
+        "🔢 Convert Multiple Files - Process 1-20 HTML files at once",
+        "� Upload or Paste - Add HTML content by uploading files or pasting code",
+        "�️ Required Section Names - Enter names for all files before conversion",
+        "�️ HTML Preview - Toggle preview to see how HTML looks before converting",
+        "⚠️ Schema Conflict Warning - Alerts if HTML already has Shopify schema blocks",
+        "🔄 AI-Powered Conversion - Uses OpenAI to convert HTML to Shopify Liquid",
+        "� Individual Outputs - Each file creates its own .liquid and .json files",
+        "🎨 Combined Head Snippet - Single file with all styles and scripts for theme.liquid",
+        "🛡️ HTML Validation - Checks HTML quality before conversion starts",
+        "📋 Field Requirements - Clear marking of required vs optional schema fields",
+        "⬇️ Easy Downloads - Download individual files or batch download all",
+        "� Responsive Design - All original styling and responsiveness preserved"
     ];
+
     return (
-        <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000,
-            padding: 'clamp(10px, 3vw, 20px)',
-            overflowY: 'auto'
-        }}>
-            <div style={{
-                backgroundColor: '#1a1a1a',
-                borderRadius: 'clamp(15px, 4vw, 20px)',
-                padding: 'clamp(20px, 5vw, 30px)',
-                maxWidth: 'clamp(320px, 90vw, 800px)',
-                width: '100%',
-                maxHeight: '90vh',
-                overflowY: 'auto',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-                position: 'relative',
-                margin: 'auto'
-            }}>
+        <div
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                backdropFilter: 'blur(8px)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000,
+                padding: 'clamp(10px, 3vw, 20px)',
+                overflowY: 'auto'
+            }}
+            onClick={handleClickOutside}
+        >
+            <div
+                style={{
+                    backgroundColor: '#1a1a1a',
+                    borderRadius: 'clamp(15px, 4vw, 20px)',
+                    padding: 'clamp(20px, 5vw, 30px)',
+                    maxWidth: 'clamp(320px, 90vw, 800px)',
+                    width: '100%',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+                    position: 'relative',
+                    margin: 'auto'
+                }}
+                onClick={(e) => e.stopPropagation()}
+            >
                 <button
                     onClick={onClose}
                     style={{
@@ -155,7 +166,7 @@ export default function HowItWorksPopup({ isOpen, onClose }) {
                             margin: 0,
                             fontWeight: '500'
                         }}>
-                            💡 <strong>What This Tool Does:</strong> Converts multiple HTML files (1-20) into complete Shopify sections with organized tabbed interface. Features batch processing, combined head snippet generation, and individual file outputs - perfect for developers managing multiple projects or complex theme conversions.
+                            💡 <strong>How It Works:</strong> This tool converts your HTML files into complete Shopify sections. Upload or paste HTML, enter section names, preview content, then convert with AI to get ready-to-use Shopify files.
                         </p>
                     </div>
                 </div>
@@ -166,7 +177,7 @@ export default function HowItWorksPopup({ isOpen, onClose }) {
                         marginBottom: 'clamp(15px, 4vw, 20px)',
                         textAlign: 'center'
                     }}>
-                        Step-by-Step Process 📋
+                        How to Use This Tool 📋
                     </h3>
 
                     <div style={{
@@ -247,7 +258,7 @@ export default function HowItWorksPopup({ isOpen, onClose }) {
                         marginBottom: 'clamp(12px, 3vw, 15px)',
                         textAlign: 'center'
                     }}>
-                        Key Features ✨
+                        What You Get ✨
                     </h3>
                     <div style={{
                         display: 'grid',
@@ -282,7 +293,7 @@ export default function HowItWorksPopup({ isOpen, onClose }) {
                         margin: '0 0 10px 0',
                         fontSize: 'clamp(14px, 3.5vw, 16px)'
                     }}>
-                        💡 Pro Tips for Multi-File Batch Processing:
+                        💡 Usage Tips:
                     </h4>
                     <ul style={{
                         color: '#e6e6e6',
@@ -291,13 +302,11 @@ export default function HowItWorksPopup({ isOpen, onClose }) {
                         fontSize: 'clamp(12px, 3vw, 14px)',
                         lineHeight: '1.5'
                     }}>
-                        <li style={{ marginBottom: '8px' }}><strong>Start Small:</strong> Begin with 1-2 files to understand the workflow, then scale up to 20 files</li>
-                        <li style={{ marginBottom: '8px' }}><strong>Organize Files:</strong> Use clear, descriptive filenames - they become tab labels for easy navigation</li>
-                        <li style={{ marginBottom: '8px' }}><strong>Mix Input Methods:</strong> Upload complex files, paste simple HTML - each tab works independently</li>
-                        <li style={{ marginBottom: '8px' }}><strong>Watch Progress:</strong> Conversion auto-switches tabs - follow along to see real-time processing</li>
-                        <li style={{ marginBottom: '8px' }}><strong>Check Combined Head:</strong> Review the global head snippet to ensure no conflicts between files</li>
-                        <li style={{ marginBottom: '8px' }}><strong>Validation First:</strong> Fix HTML errors in each tab before starting batch conversion</li>
-                        <li><strong>Download Strategy:</strong> Download individual files as needed, or batch download for complete projects</li>
+                        <li style={{ marginBottom: '8px' }}><strong>Start Small:</strong> Begin with 1-2 files to understand the process</li>
+                        <li style={{ marginBottom: '8px' }}><strong>Use Preview:</strong> Toggle HTML preview to check content before converting</li>
+                        <li style={{ marginBottom: '8px' }}><strong>Name Your Sections:</strong> Enter descriptive names - they become your .liquid filenames</li>
+                        <li style={{ marginBottom: '8px' }}><strong>Check for Warnings:</strong> Tool will alert you if HTML already has schema blocks</li>
+                        <li><strong>Download Strategy:</strong> Get individual files or download all at once</li>
                     </ul>
                 </div>
 
@@ -313,7 +322,7 @@ export default function HowItWorksPopup({ isOpen, onClose }) {
                         margin: '0 0 10px 0',
                         fontSize: 'clamp(14px, 3.5vw, 16px)'
                     }}>
-                        🎯 What You Get After Multi-File Conversion:
+                        🎯 Final Output:
                     </h4>
                     <ul style={{
                         color: '#e6e6e6',
@@ -322,14 +331,11 @@ export default function HowItWorksPopup({ isOpen, onClose }) {
                         fontSize: 'clamp(12px, 3vw, 14px)',
                         lineHeight: '1.5'
                     }}>
-                        <li style={{ marginBottom: '5px' }}>✅ Individual .liquid and .json files for each HTML input (up to 20 sets)</li>
-                        <li style={{ marginBottom: '5px' }}>✅ Single combined head snippet with all fonts, scripts, and styles deduplicated</li>
-                        <li style={{ marginBottom: '5px' }}>✅ Organized tabbed interface for managing multiple file outputs</li>
-                        <li style={{ marginBottom: '5px' }}>✅ Real-time conversion progress with auto-tab switching</li>
-                        <li style={{ marginBottom: '5px' }}>✅ Independent download options for each file set</li>
-                        <li style={{ marginBottom: '5px' }}>✅ Batch processing efficiency for large-scale theme development</li>
-                        <li style={{ marginBottom: '5px' }}>✅ Clean workspace organization for complex multi-page projects</li>
-                        <li>✅ Professional workflow designed for agencies and developers handling multiple clients</li>
+                        <li style={{ marginBottom: '5px' }}>✅ Ready-to-use .liquid section files for Shopify</li>
+                        <li style={{ marginBottom: '5px' }}>✅ JSON template files for page assignment</li>
+                        <li style={{ marginBottom: '5px' }}>✅ Combined head snippet for theme.liquid</li>
+                        <li style={{ marginBottom: '5px' }}>✅ Schema fields marked as required (*) or optional</li>
+                        <li>✅ All content becomes editable in Shopify Theme Editor</li>
                     </ul>
                 </div>
             </div>

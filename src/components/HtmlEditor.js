@@ -11,9 +11,12 @@ export default function HtmlEditor({
     onFileUpload,
     onClearContent,
     validationErrors,
-    onValidationError
+    onValidationError,
+    onFileNameChange
 }) {
     const [showPreview, setShowPreview] = useState(false);
+    const [localFileName, setLocalFileName] = useState(fileName || '');
+    const [fileNameError, setFileNameError] = useState('');
 
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
@@ -43,7 +46,11 @@ export default function HtmlEditor({
                     return;
                 }
 
-                onFileUpload(index, file.name, result.content);
+                // Set the filename when file is uploaded
+                const baseFileName = file.name.replace(/\.html?$/i, '');
+                setLocalFileName(baseFileName);
+                onFileNameChange && onFileNameChange(index, baseFileName);
+                onFileUpload(index, baseFileName, result.content);
             };
 
             reader.onerror = () => {
@@ -55,6 +62,22 @@ export default function HtmlEditor({
             onValidationError('Error reading file: ' + error.message);
             event.target.value = '';
         }
+    };
+
+    const handleFileNameChange = (newFileName) => {
+        setLocalFileName(newFileName);
+        
+        // Validate filename for Shopify compliance
+        const { validateShopifyFilename } = require('../utils/filenameValidation');
+        const validation = validateShopifyFilename(newFileName);
+        
+        if (!validation.valid) {
+            setFileNameError(validation.error);
+        } else {
+            setFileNameError('');
+        }
+        
+        onFileNameChange && onFileNameChange(index, newFileName);
     };
 
     const clearContent = () => {
@@ -164,9 +187,11 @@ export default function HtmlEditor({
 
                     {fileContent && (
                         <button
-                            onClick={() => setShowPreview(true)}
+                            onClick={() => setShowPreview(!showPreview)}
                             style={{
-                                background: 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)',
+                                background: showPreview 
+                                    ? 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)'
+                                    : 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)',
                                 color: '#ffffff',
                                 border: 'none',
                                 borderRadius: '10px',
@@ -177,22 +202,34 @@ export default function HtmlEditor({
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '6px',
-                                boxShadow: '0 4px 12px rgba(26, 143, 58, 0.3)',
+                                boxShadow: showPreview 
+                                    ? '0 4px 12px rgba(231, 76, 60, 0.3)'
+                                    : '0 4px 12px rgba(26, 143, 58, 0.3)',
                                 transition: 'all 0.2s ease',
                                 flexShrink: 0
                             }}
                             onMouseOver={(e) => {
                                 e.target.style.transform = 'translateY(-1px)';
-                                e.target.style.boxShadow = '0 6px 16px rgba(26, 143, 58, 0.4)';
-                                e.target.style.background = 'linear-gradient(135deg, #0c6f30 0%, #1ea042 100%)';
+                                if (showPreview) {
+                                    e.target.style.boxShadow = '0 6px 16px rgba(231, 76, 60, 0.4)';
+                                    e.target.style.background = 'linear-gradient(135deg, #ec644b 0%, #d63447 100%)';
+                                } else {
+                                    e.target.style.boxShadow = '0 6px 16px rgba(26, 143, 58, 0.4)';
+                                    e.target.style.background = 'linear-gradient(135deg, #0c6f30 0%, #1ea042 100%)';
+                                }
                             }}
                             onMouseOut={(e) => {
                                 e.target.style.transform = 'translateY(0)';
-                                e.target.style.boxShadow = '0 4px 12px rgba(26, 143, 58, 0.3)';
-                                e.target.style.background = 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)';
+                                if (showPreview) {
+                                    e.target.style.boxShadow = '0 4px 12px rgba(231, 76, 60, 0.3)';
+                                    e.target.style.background = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
+                                } else {
+                                    e.target.style.boxShadow = '0 4px 12px rgba(26, 143, 58, 0.3)';
+                                    e.target.style.background = 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)';
+                                }
                             }}
                         >
-                            👁️ Preview
+                            {showPreview ? '❌ Hide Preview' : '👁️ Show Preview'}
                         </button>
                     )}
                 </div>
@@ -259,6 +296,89 @@ export default function HtmlEditor({
                 </div>
             )}
 
+            {/* Filename Input Section */}
+            <div style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '15px',
+                padding: '20px',
+                marginBottom: '20px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                position: 'relative',
+                zIndex: 1
+            }}>
+                <h3 style={{
+                    margin: '0 0 15px 0',
+                    color: '#ffffff',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                }}>
+                    📝 Section Name (Required)
+                    <span style={{
+                        background: 'linear-gradient(135deg, #ff4757 0%, #c44569 100%)',
+                        color: '#ffffff',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        fontWeight: '700'
+                    }}>*</span>
+                </h3>
+                <input
+                    type="text"
+                    value={localFileName}
+                    onChange={(e) => handleFileNameChange(e.target.value)}
+                    placeholder="Enter section name (e.g., homepage, about, contact)"
+                    style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: '10px',
+                        border: fileNameError ? '2px solid #ff4757' : '1px solid rgba(255, 255, 255, 0.2)',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        color: '#ffffff',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        outline: 'none',
+                        transition: 'all 0.3s ease',
+                        boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => {
+                        if (!fileNameError) {
+                            e.target.style.borderColor = 'rgba(120, 119, 198, 0.5)';
+                            e.target.style.boxShadow = '0 0 0 3px rgba(120, 119, 198, 0.1)';
+                        }
+                    }}
+                    onBlur={(e) => {
+                        if (!fileNameError) {
+                            e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                            e.target.style.boxShadow = 'none';
+                        }
+                    }}
+                />
+                {fileNameError && (
+                    <div style={{
+                        color: '#ff4757',
+                        fontSize: '12px',
+                        marginTop: '8px',
+                        padding: '8px 12px',
+                        background: 'rgba(255, 71, 87, 0.1)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(255, 71, 87, 0.3)'
+                    }}>
+                        ⚠️ {fileNameError}
+                    </div>
+                )}
+                <div style={{
+                    fontSize: '12px',
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    marginTop: '8px',
+                    lineHeight: '1.4'
+                }}>
+                    💡 Use only lowercase letters, numbers, hyphens, and underscores. This will be your Shopify section filename.
+                </div>
+            </div>
+
             <div style={{
                 position: 'relative',
                 borderRadius: 'clamp(15px, 4vw, 20px)',
@@ -309,176 +429,132 @@ export default function HtmlEditor({
                         HTML
                     </span>
                 </div>
-                <div style={{
-                    display: 'flex',
-                    background: '#1E1E1E',
-                    position: 'relative',
-                    borderRadius: '0 0 15px 15px',
-                    paddingLeft: '10px',
-                    paddingTop: '10px',
-                    paddingBottom: '10px',
-                }}>
-                    <div style={{
-                        width: '100%',
-                        height: 'clamp(300px, 60vh, 450px)'
-                    }}>
-                        <Editor
-                            height="100%"
-                            language="html"
-                            value={fileContent || ''}
-                            onChange={(value) => handleManualInput(value || '')}
-                            theme="vs-dark"
-                            options={{
-                                readOnly: false,
-                                minimap: { enabled: true },
-                                lineNumbers: 'on',
-                                lineNumbersMinChars: 4,
-                                glyphMargin: false,
-                                folding: true,
-                                lineDecorationsWidth: 10,
-                                renderLineHighlight: 'line',
-                                scrollBeyondLastLine: false,
-                                automaticLayout: true,
-                                fontSize: 14,
-                                fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", "Consolas", monospace',
-                                fontLigatures: true,
-                                cursorBlinking: 'blink',
-                                cursorStyle: 'line',
-                                renderWhitespace: 'boundary',
-                                wordWrap: 'on',
-                                bracketPairColorization: { enabled: true },
-                                guides: {
-                                    bracketPairs: true,
-                                    indentation: true
-                                },
-                                suggest: { enabled: true },
-                                quickSuggestions: true,
-                                parameterHints: { enabled: true },
-                                hover: { enabled: true },
-                                contextmenu: true,
-                                mouseWheelZoom: true,
-                                smoothScrolling: true,
-                                cursorSmoothCaretAnimation: 'on',
-                                autoIndent: 'full',
-                                formatOnPaste: true,
-                                formatOnType: true,
-                                tabCompletion: 'on',
-                                acceptSuggestionOnEnter: 'on',
-                                scrollbar: {
-                                    verticalScrollbarSize: 12,
-                                    horizontalScrollbarSize: 12,
-                                    arrowSize: 11
-                                }
-                            }}
-                            loading={
-                                <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    height: '100%',
-                                    color: '#ffffff',
-                                    fontSize: '16px',
-                                    fontFamily: '"Fira Code", monospace'
-                                }}>
-                                    Loading HTML Editor...
-                                </div>
-                            }
-                        />
-                    </div>
-                </div>
-            </div>
 
-            {showPreview && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'rgba(0, 0, 0, 0.8)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000,
-                    padding: '20px'
-                }}>
+                {!showPreview ? (
                     <div style={{
-                        background: 'linear-gradient(145deg, #1e1e2e 0%, #2a2a3e 100%)',
-                        borderRadius: '20px',
-                        width: '90%',
-                        maxWidth: '1200px',
-                        height: '90%',
-                        maxHeight: '800px',
                         display: 'flex',
-                        flexDirection: 'column',
-                        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        overflow: 'hidden'
+                        background: '#1E1E1E',
+                        position: 'relative',
+                        borderRadius: '0 0 15px 15px',
+                        paddingLeft: '10px',
+                        paddingTop: '10px',
+                        paddingBottom: '10px',
                     }}>
                         <div style={{
-                            background: 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)',
-                            padding: '20px 25px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                            width: '100%',
+                            height: 'clamp(300px, 60vh, 450px)'
                         }}>
-                            <h3 style={{
-                                margin: 0,
-                                color: '#ffffff',
-                                fontSize: '18px',
-                                fontWeight: '600',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px'
-                            }}>
-                                👁️ HTML Preview - {fileName || 'Untitled'}
-                            </h3>
-                            <button
-                                onClick={() => setShowPreview(false)}
-                                style={{
-                                    background: 'rgba(255, 255, 255, 0.2)',
-                                    color: '#ffffff',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    padding: '8px 12px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    fontWeight: '600',
-                                    transition: 'all 0.2s ease'
+                            <Editor
+                                height="100%"
+                                language="html"
+                                value={fileContent || ''}
+                                onChange={(value) => handleManualInput(value || '')}
+                                theme="vs-dark"
+                                options={{
+                                    readOnly: false,
+                                    minimap: { enabled: true },
+                                    lineNumbers: 'on',
+                                    lineNumbersMinChars: 4,
+                                    glyphMargin: false,
+                                    folding: true,
+                                    lineDecorationsWidth: 10,
+                                    renderLineHighlight: 'line',
+                                    scrollBeyondLastLine: false,
+                                    automaticLayout: true,
+                                    fontSize: 14,
+                                    fontFamily: '"Fira Code", "JetBrains Mono", "Cascadia Code", "Consolas", monospace',
+                                    fontLigatures: true,
+                                    cursorBlinking: 'blink',
+                                    cursorStyle: 'line',
+                                    renderWhitespace: 'boundary',
+                                    wordWrap: 'on',
+                                    bracketPairColorization: { enabled: true },
+                                    guides: {
+                                        bracketPairs: true,
+                                        indentation: true
+                                    },
+                                    suggest: { enabled: true },
+                                    quickSuggestions: true,
+                                    parameterHints: { enabled: true },
+                                    hover: { enabled: true },
+                                    contextmenu: true,
+                                    mouseWheelZoom: true,
+                                    smoothScrolling: true,
                                 }}
-                                onMouseOver={(e) => {
-                                    e.target.style.background = 'rgba(255, 255, 255, 0.3)';
-                                }}
-                                onMouseOut={(e) => {
-                                    e.target.style.background = 'rgba(255, 255, 255, 0.2)';
-                                }}
-                            >
-                                ❌ Close
-                            </button>
-                        </div>
-
-                        <div style={{
-                            flex: 1,
-                            background: '#ffffff',
-                            overflow: 'auto',
-                            border: '2px solid rgba(255, 255, 255, 0.1)',
-                            margin: '20px',
-                            borderRadius: '15px'
-                        }}>
-                            <iframe
-                                srcDoc={fileContent}
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    border: 'none',
-                                    borderRadius: '15px'
-                                }}
-                                title="HTML Preview"
-                                sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups"
                             />
                         </div>
                     </div>
+                ) : (
+                    <div style={{
+                        background: '#ffffff',
+                        borderRadius: '0 0 15px 15px',
+                        height: 'clamp(300px, 60vh, 450px)',
+                        overflow: 'auto',
+                        border: '2px solid rgba(255, 255, 255, 0.1)',
+                        position: 'relative'
+                    }}>
+                        <div style={{
+                            position: 'absolute',
+                            top: '10px',
+                            right: '10px',
+                            background: 'rgba(0, 0, 0, 0.8)',
+                            color: '#ffffff',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            zIndex: 10
+                        }}>
+                            👁️ Live Preview
+                        </div>
+                        <iframe
+                            srcDoc={fileContent}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                border: 'none',
+                                borderRadius: '0 0 15px 15px'
+                            }}
+                            title="HTML Preview"
+                            sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups"
+                        />
+                    </div>
+                )}
+            </div>
+
+            {fileContent && !showPreview && (
+                <div style={{
+                    marginTop: '15px',
+                    display: 'flex',
+                    justifyContent: 'center'
+                }}>
+                    <button
+                        onClick={clearContent}
+                        style={{
+                            background: 'rgba(231, 76, 60, 0.2)',
+                            color: '#ff6b6b',
+                            border: '1px solid rgba(231, 76, 60, 0.3)',
+                            borderRadius: '10px',
+                            padding: '8px 16px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                        }}
+                        onMouseOver={(e) => {
+                            e.target.style.background = 'rgba(231, 76, 60, 0.3)';
+                            e.target.style.transform = 'translateY(-1px)';
+                        }}
+                        onMouseOut={(e) => {
+                            e.target.style.background = 'rgba(231, 76, 60, 0.2)';
+                            e.target.style.transform = 'translateY(0)';
+                        }}
+                    >
+                        🗑️ Clear Content
+                    </button>
                 </div>
             )}
         </div>

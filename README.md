@@ -13,6 +13,39 @@ A comprehensive web application that converts HTML files into complete Shopify L
 - **No Hardcoded Content**: Converts all text, images, and links to dynamic settings
 - **Responsive Design**: Maintains full responsiveness across all devices
 - **Modern UI**: Beautiful, responsive interface with real-time feedback
+- **Field Requirements System**: Clear distinction between required and optional schema fields
+
+## 📋 Schema Field Requirements
+
+### Required Fields ⚠️
+These fields are **mandatory** for proper section functionality:
+
+- **Section Name/Title** - Essential for identifying the section in Theme Editor
+- **Block Type Fields** - Required for proper block functionality  
+- **Primary Content Fields** - Main headings, primary text content
+- **Navigation Links** - For sections with navigation elements
+- **Form Actions** - For sections containing forms
+
+### Optional Fields ✅  
+These fields enhance functionality but have sensible defaults:
+
+- **Description Fields** - Supplementary text content
+- **Image Alt Text** - Recommended for accessibility (defaults to filename)
+- **Color Scheme Settings** - Will use theme defaults if not specified
+- **Advanced Settings** - Additional customization options
+- **Decorative Elements** - Icons, dividers, background elements
+
+### Field Identification in Theme Editor:
+- **Required fields** are marked with `*` in field labels
+- **Optional fields** show helpful placeholder text
+- **All fields** include descriptions explaining their purpose
+- **Default values** are provided for smoother setup experience
+
+### Best Practices:
+1. Always fill required fields first before customizing optional ones
+2. Required fields prevent layout breaking if left empty
+3. Optional fields can be left empty - they'll gracefully degrade
+4. Use descriptive content in required fields for better SEO
 
 ## 🚀 Getting Started
 
@@ -179,7 +212,3 @@ your-theme/
 ---
 
 **Perfect for:** Contact pages, About pages, Landing pages, Custom sections, any HTML that needs to be editable in Shopify's Theme Editor.
-
-Updated @30/05/2025 - Now with complete Shopify integration
-
-Hassan

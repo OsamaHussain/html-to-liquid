@@ -19,6 +19,13 @@ export async function POST(request) {
       );
     }
 
+    if (!fileName || !fileName.trim()) {
+      return NextResponse.json(
+        { error: 'Filename is required for conversion. Please provide a section name before proceeding.' },
+        { status: 400 }
+      );
+    }
+
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
         { error: 'OpenAI API key is not configured' },
@@ -26,7 +33,7 @@ export async function POST(request) {
       );
     }
 
-    let finalFileName = fileName || 'custom-page';
+    let finalFileName = fileName.trim();
     let filenameCorrected = false;
     let filenameError = null;
 
@@ -50,7 +57,9 @@ export async function POST(request) {
       finalFileName = filenameValidation.sanitized;
     }
 
-    const shopifyPaths = generateShopifyPaths(finalFileName); const isLargeFile = htmlContent.length > 10000 || htmlContent.split('\n').length > 800; const prompt = `Convert the following HTML code to a complete Shopify Liquid template file with the EXACT structure format below. ${isLargeFile ? 'CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''} 
+    const shopifyPaths = generateShopifyPaths(finalFileName);
+    const isLargeFile = htmlContent.length > 10000 || htmlContent.split('\n').length > 800;
+    const prompt = `Convert the following HTML code to a complete Shopify Liquid template file with the EXACT structure format below. ${isLargeFile ? 'CRITICAL: This is a large HTML file. You MUST convert the ENTIRE HTML content completely. Do not truncate or stop mid-conversion. Ensure the complete liquid template with full schema is returned.' : ''} 
 
 🚨 MANDATORY OUTPUT FORMAT - ALWAYS INCLUDE ALL 4 SECTIONS IN THIS EXACT ORDER: 🚨
 
@@ -60,6 +69,12 @@ export async function POST(request) {
 4. HTML liquid template content with liquid variables
 
 🚨 MANDATORY: MAKE ALL HARDCODED CONTENT EDITABLE - NO HARDCODED TEXT SHOULD REMAIN! 🚨
+
+🚨 FIELD REQUIREMENTS SYSTEM - MARK REQUIRED FIELDS: 🚨
+- REQUIRED fields (critical for functionality): Mark with * in label: "label": "Section Title *"
+- OPTIONAL fields (have defaults): Regular label: "label": "Description"
+- REQUIRED FIELDS include: Section titles, block types, navigation links, form actions, primary headings
+- OPTIONAL FIELDS include: Descriptions, alt text, color schemes, advanced settings, decorative elements
 
 STRICT REQUIREMENTS:
 1. PRESERVE ALL ORIGINAL STYLING: Keep ALL CSS classes, inline styles, and visual design EXACTLY as written in HTML
@@ -478,7 +493,7 @@ MANDATORY Requirements:
       );
     }
 
-    const liquidFileName = fileName ? fileName.replace('.html', '.liquid') : 'converted.liquid';
+    const liquidFileName = fileName.replace(/\.html?$/i, '').trim() + '.liquid';
     const sectionType = liquidFileName.replace('.liquid', '');
     const htmlSections = htmlContent.match(/<(section|div|header|nav|main|footer|article)[^>]*>/gi) || [];
     const htmlSectionCount = htmlSections.length;

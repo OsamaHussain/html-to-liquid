@@ -12,6 +12,7 @@ import AIGenerationPopup from "../components/AIGenerationPopup";
 import { validateAndExtractHtml, validateAllFiles } from "../utils/htmlValidation";
 import { validateBatchFilenames } from "../utils/filenameValidation";
 import { generateAndDownloadZip } from "../utils/zipGenerator";
+import { detectExistingSchema } from "../utils/schemaDetection";
 
 export default function Home() {
   const [numberOfFiles, setNumberOfFiles] = useState(0);
@@ -45,6 +46,13 @@ export default function Home() {
     setFiles(newFiles);
     setInputSource("file");
   };
+
+  const handleFileNameChange = (index, fileName) => {
+    const newFiles = [...files];
+    newFiles[index] = { ...newFiles[index], fileName };
+    setFiles(newFiles);
+  };
+
   const handleManualInput = (index, text) => {
     setConversionError('');
     setConvertedFiles([]);
@@ -82,6 +90,37 @@ export default function Home() {
       return;
     }
 
+    const filesWithoutNames = filesWithContent.filter(file => !file.fileName || !file.fileName.trim());
+    if (filesWithoutNames.length > 0) {
+      const fileIndices = filesWithoutNames.map((file, i) => {
+        const originalIndex = files.findIndex(f => f === file);
+        return `File ${originalIndex + 1}`;
+      }).join(', ');
+
+      setConversionError(`🚫 CONVERSION BLOCKED: Section Names Required!\n\n❌ Missing filenames for: ${fileIndices}\n\n✅ Please enter section names for ALL files before conversion.\n💡 These names become your Shopify .liquid file names.\n\n⚠️ No fallback names allowed - you must provide each filename.`);
+      setValidationErrors('Missing required filenames - conversion blocked');
+      setShowErrorPopup(true);
+      return;
+    }
+
+    const filesWithSchema = filesWithContent.filter(file => {
+      const schemaDetection = detectExistingSchema(file.fileContent);
+      return schemaDetection.hasSchema;
+    });
+
+    if (filesWithSchema.length > 0) {
+      const fileNames = filesWithSchema.map((file, i) => {
+        const originalIndex = files.findIndex(f => f === file);
+        return `"${file.fileName || `File ${originalIndex + 1}`}"`;
+      }).join(', ');
+
+      const warningMessage = `⚠️ Existing Schema Blocks Detected!\n\nThe following files already contain {% schema %} blocks:\n${fileNames}\n\nThe converter will automatically replace these with new schemas. Do you want to continue?\n\n• Choose "OK" to proceed (existing schemas will be replaced)\n• Choose "Cancel" to review your HTML files first`;
+
+      if (!confirm(warningMessage)) {
+        return;
+      }
+    }
+
     const validationResult = validateAllFiles(filesWithContent);
 
     if (!validationResult.isValid) {
@@ -92,7 +131,7 @@ export default function Home() {
       return;
     }
 
-    const filenames = filesWithContent.map(file => file.fileName || `file-${Math.random().toString(36).slice(2, 8)}`);
+    const filenames = filesWithContent.map(file => file.fileName);
     const filenameValidation = validateBatchFilenames(filenames);
 
     if (!filenameValidation.valid) {
@@ -336,6 +375,7 @@ export default function Home() {
             onFileUpload={handleFileUpload}
             onClearContent={handleClearContent}
             onValidationError={handleValidationError}
+            onFileNameChange={handleFileNameChange}
           />
         )}
         <ConversionSection

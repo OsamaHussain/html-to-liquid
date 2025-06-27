@@ -17,6 +17,8 @@ export default function ConversionSection({
     downloadAllAsZip
 }) {
     const filesWithContent = files.filter(file => file.fileContent);
+    const filesWithoutNames = filesWithContent.filter(file => !file.fileName || !file.fileName.trim());
+    const hasAllRequiredFilenames = filesWithContent.length > 0 && filesWithoutNames.length === 0;
 
     if (filesWithContent.length === 0) return null;
 
@@ -84,39 +86,40 @@ export default function ConversionSection({
                 </div>
                 <button
                     onClick={convertToLiquid}
-                    disabled={isConverting || filesWithContent.length === 0}
+                    disabled={isConverting || filesWithContent.length === 0 || !hasAllRequiredFilenames}
                     style={{
-                        background: isConverting
+                        background: (isConverting || !hasAllRequiredFilenames)
                             ? 'linear-gradient(135deg, #666 0%, #888 100%)'
                             : 'linear-gradient(135deg, #00ff88 0%, #00cc6a 100%)',
-                        color: isConverting ? '#ccc' : '#000000',
+                        color: (isConverting || !hasAllRequiredFilenames) ? '#ccc' : '#000000',
                         border: 'none',
                         borderRadius: '15px',
                         padding: 'clamp(10px, 3vw, 15px) clamp(20px, 5vw, 30px)',
-                        cursor: isConverting ? 'not-allowed' : 'pointer',
+                        cursor: (isConverting || !hasAllRequiredFilenames) ? 'not-allowed' : 'pointer',
                         fontSize: 'clamp(14px, 3vw, 16px)',
                         fontWeight: '700',
                         transition: 'all 0.3s ease',
-                        boxShadow: isConverting
+                        boxShadow: (isConverting || !hasAllRequiredFilenames)
                             ? '0 4px 8px rgba(0,0,0,0.2)'
                             : '0 8px 16px rgba(0, 255, 136, 0.3)',
-                        transform: isConverting ? 'scale(0.98)' : 'scale(1)',
-                        opacity: isConverting ? 0.7 : 1,
+                        transform: (isConverting || !hasAllRequiredFilenames) ? 'scale(0.98)' : 'scale(1)',
+                        opacity: (isConverting || !hasAllRequiredFilenames) ? 0.7 : 1,
                         flexShrink: 0,
                         whiteSpace: 'nowrap'
                     }}
                     onMouseOver={(e) => {
-                        if (!isConverting) {
+                        if (!isConverting && hasAllRequiredFilenames) {
                             e.target.style.transform = 'scale(1.05)';
                             e.target.style.boxShadow = '0 12px 24px rgba(0, 255, 136, 0.4)';
                         }
                     }}
                     onMouseOut={(e) => {
-                        if (!isConverting) {
+                        if (!isConverting && hasAllRequiredFilenames) {
                             e.target.style.transform = 'scale(1)';
                             e.target.style.boxShadow = '0 8px 16px rgba(0, 255, 136, 0.3)';
                         }
-                    }}                >
+                    }}
+                >
                     {isConverting ? (
                         <>
                             <div style={{
@@ -130,6 +133,8 @@ export default function ConversionSection({
                             }} className="spinning-loader"></div>
                             Converting {filesWithContent.length} file{filesWithContent.length > 1 ? 's' : ''}...
                         </>
+                    ) : !hasAllRequiredFilenames ? (
+                        `⚠️ Enter Section Names First (${filesWithoutNames.length} missing)`
                     ) : (
                         `🚀 Convert ${filesWithContent.length} File${filesWithContent.length > 1 ? 's' : ''} to Liquid + JSON`
                     )}
@@ -554,6 +559,129 @@ export default function ConversionSection({
                                 </p>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {convertedFiles[activeTab] && !convertedFiles[activeTab].hasError && (
+                <div style={{
+                    background: 'linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%)',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    marginBottom: '20px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                    marginTop: 'clamp(20px, 5vw, 30px)',
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        marginBottom: '15px'
+                    }}>
+                        <div style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #ffd700 0%, #ffb347 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: '12px'
+                        }}>
+                            <span style={{ fontSize: '12px' }}>📋</span>
+                        </div>
+                        <h4 style={{
+                            color: '#ffffff',
+                            margin: 0,
+                            fontSize: '16px',
+                            fontWeight: '700'
+                        }}>
+                            Schema Field Requirements
+                        </h4>
+                    </div>
+
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                        gap: '15px',
+                        fontSize: '14px'
+                    }}>
+                        <div style={{
+                            background: 'rgba(255, 69, 58, 0.1)',
+                            border: '1px solid rgba(255, 69, 58, 0.3)',
+                            borderRadius: '8px',
+                            padding: '12px'
+                        }}>
+                            <div style={{
+                                color: '#ff6b6b',
+                                fontWeight: '600',
+                                marginBottom: '8px',
+                                display: 'flex',
+                                alignItems: 'center'
+                            }}>
+                                <span style={{ marginRight: '6px' }}>⚠️</span>
+                                Required Fields
+                            </div>
+                            <ul style={{
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                margin: 0,
+                                paddingLeft: '16px',
+                                fontSize: '12px',
+                                lineHeight: '1.4'
+                            }}>
+                                <li>Section titles & headings</li>
+                                <li>Block type identifiers</li>
+                                <li>Navigation links</li>
+                                <li>Form action URLs</li>
+                            </ul>
+                        </div>
+
+                        <div style={{
+                            background: 'rgba(52, 199, 89, 0.1)',
+                            border: '1px solid rgba(52, 199, 89, 0.3)',
+                            borderRadius: '8px',
+                            padding: '12px'
+                        }}>
+                            <div style={{
+                                color: '#4ade80',
+                                fontWeight: '600',
+                                marginBottom: '8px',
+                                display: 'flex',
+                                alignItems: 'center'
+                            }}>
+                                <span style={{ marginRight: '6px' }}>✅</span>
+                                Optional Fields
+                            </div>
+                            <ul style={{
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                margin: 0,
+                                paddingLeft: '16px',
+                                fontSize: '12px',
+                                lineHeight: '1.4'
+                            }}>
+                                <li>Descriptions & alt text</li>
+                                <li>Color schemes</li>
+                                <li>Advanced settings</li>
+                                <li>Decorative elements</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div style={{
+                        marginTop: '15px',
+                        padding: '12px',
+                        background: 'rgba(0, 122, 255, 0.1)',
+                        border: '1px solid rgba(0, 122, 255, 0.3)',
+                        borderRadius: '8px',
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        fontSize: '12px',
+                        lineHeight: '1.4'
+                    }}>
+                        <strong style={{ color: '#5ac8fa' }}>💡 Theme Editor Tips:</strong>
+                        <br />
+                        • Required fields are marked with * in Shopify Theme Editor
+                        • Optional fields include helpful defaults and can be left empty
+                        • All fields include descriptive labels for easy customization
                     </div>
                 </div>
             )}

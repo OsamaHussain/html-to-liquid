@@ -6,7 +6,8 @@ export default function HtmlEditorTabs({
     handleManualInput,
     onFileUpload,
     onClearContent,
-    onValidationError
+    onValidationError,
+    onFileNameChange
 }) {
     const [activeTab, setActiveTab] = useState(0);
     const filesWithContent = files.filter(file => file.fileContent || file.fileName);
@@ -166,6 +167,7 @@ export default function HtmlEditorTabs({
                     onFileUpload={onFileUpload}
                     onClearContent={onClearContent}
                     onValidationError={onValidationError}
+                    onFileNameChange={onFileNameChange}
                 />
             </div>
         </div>

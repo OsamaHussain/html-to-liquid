@@ -55,6 +55,59 @@ Generated on: ${currentDate} at ${currentTime}
    - In Shopify Admin, go to Online Store > Pages
    - Edit each page and assign the corresponding template from the dropdown
 
+## Schema Field Requirements Guide
+
+### 🚨 Required Fields (marked with *)
+These fields are **essential** for proper section functionality and must be filled:
+
+**Critical Section Fields:**
+- Section Name/Title fields - Essential for identifying the section in Theme Editor
+- Primary heading fields - Main content headings (H1, H2, etc.)
+- Block Type fields - Required for proper block functionality and content structure
+- Navigation link fields - For sections with navigation menus
+- Form action URLs - For sections containing contact forms or signup forms
+- Primary CTA button text - Main call-to-action buttons
+
+**When to Fill Required Fields:**
+- ✅ **Always fill these first** - They prevent layout breaking
+- ✅ **Use descriptive content** - Helps with SEO and user experience  
+- ✅ **Cannot be left empty** - Section may not display correctly
+
+### ✅ Optional Fields (enhance functionality)
+These fields have sensible defaults and can be customized as needed:
+
+**Enhancement Fields:**
+- Description fields - Supplementary text content
+- Image alt text - Accessibility improvement (defaults to filename)
+- Color scheme settings - Will use theme defaults if not specified
+- Advanced layout settings - Additional customization options
+- Decorative elements - Icons, dividers, background effects
+- Secondary buttons - Additional CTA options
+- Social media links - External platform connections
+
+**When to Use Optional Fields:**
+- ✅ **Customize as needed** - Enhance the design after required fields are filled
+- ✅ **Can be left empty** - Will gracefully use defaults
+- ✅ **Perfect for fine-tuning** - Adjust colors, spacing, and styling
+
+### 📋 Field Identification in Shopify Theme Editor:
+- **Required fields**: Show with `* ` asterisk in their labels
+- **Optional fields**: Show helpful placeholder text and descriptions
+- **All fields**: Include detailed descriptions explaining their purpose
+- **Default values**: Pre-filled with sensible content for faster setup
+
+### 🎯 Best Practices for Theme Editor Usage:
+1. **Start with Required Fields** - Fill these first before customizing optional ones
+2. **Use Descriptive Content** - Required fields help with SEO when filled properly
+3. **Test Thoroughly** - Required fields ensure your section displays correctly
+4. **Customize Gradually** - Use optional fields to fine-tune the design after basics work
+
+### 🔧 Technical Details:
+- Required fields use validation to prevent empty states
+- Optional fields degrade gracefully when empty
+- All field types include appropriate input validation
+- Block limit settings prevent content overflow
+
 ## Block Types Auto-Injected
 
 The following block types were automatically added to section schemas:
