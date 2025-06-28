@@ -7,7 +7,9 @@ export default function HowItWorksPopup({ isOpen, onClose }) {
         if (e.target === e.currentTarget) {
             onClose();
         }
-    }; const steps = [
+    };
+
+    const steps = [
         {
             step: "1",
             title: "Select Number of Files",
@@ -33,14 +35,14 @@ export default function HowItWorksPopup({ isOpen, onClose }) {
             step: "4",
             title: "Preview & Validate",
             description: "Use HTML preview toggle to check content visually. HTML validation ensures quality before conversion.",
-            icon: "�️",
+            icon: "👁️",
             details: "Live preview toggle, HTMLHint validation, error detection"
         },
         {
             step: "5",
             title: "Convert to Liquid",
             description: "AI converts all files sequentially. Watch real-time progress as each file is processed into Shopify sections.",
-            icon: "�",
+            icon: "🚀",
             details: "AI-powered conversion, progress tracking, sequential processing"
         },
         {
@@ -53,17 +55,17 @@ export default function HowItWorksPopup({ isOpen, onClose }) {
     ];
     const features = [
         "🔢 Convert Multiple Files - Process 1-20 HTML files at once",
-        "� Upload or Paste - Add HTML content by uploading files or pasting code",
-        "�️ Required Section Names - Enter names for all files before conversion",
-        "�️ HTML Preview - Toggle preview to see how HTML looks before converting",
+        "📤 Upload or Paste - Add HTML content by uploading files or pasting code",
+        "🏷️ Required Section Names - Enter names for all files before conversion",
+        "👁️ HTML Preview - Toggle preview to see how HTML looks before converting",
         "⚠️ Schema Conflict Warning - Alerts if HTML already has Shopify schema blocks",
         "🔄 AI-Powered Conversion - Uses OpenAI to convert HTML to Shopify Liquid",
-        "� Individual Outputs - Each file creates its own .liquid and .json files",
+        "📄 Individual Outputs - Each file creates its own .liquid and .json files",
         "🎨 Combined Head Snippet - Single file with all styles and scripts for theme.liquid",
         "🛡️ HTML Validation - Checks HTML quality before conversion starts",
         "📋 Field Requirements - Clear marking of required vs optional schema fields",
         "⬇️ Easy Downloads - Download individual files or batch download all",
-        "� Responsive Design - All original styling and responsiveness preserved"
+        "📱 Responsive Design - All original styling and responsiveness preserved"
     ];
 
     return (
