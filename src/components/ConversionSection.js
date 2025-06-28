@@ -372,7 +372,7 @@ export default function ConversionSection({
                                         }}>
                                             <span>📄 {file.fileName || `File ${index + 1}`}</span>
                                             {hasError && <span>⚠️</span>}
-                                            {convertedFile && !hasError && onReconvertFile && (
+                                            {convertedFile && !hasError && onReconvertFile && filesWithContent.length > 1 && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -460,7 +460,7 @@ export default function ConversionSection({
                                                     </span>
                                                 )}
                                             </h3>
-                                            {onReconvertFile && (
+                                            {onReconvertFile && filesWithContent.length > 1 && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
