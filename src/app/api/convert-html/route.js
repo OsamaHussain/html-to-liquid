@@ -1284,11 +1284,9 @@ CRITICAL RULES:
 
           if (parsedJsonTemplate.sections && parsedJsonTemplate.sections.main && parsedJsonTemplate.sections.main.presets) {
             delete parsedJsonTemplate.sections.main.presets;
-            processingErrors.push('Removed presets from JSON template (presets belong only in Liquid schema)');
           }
           if (parsedJsonTemplate.presets) {
             delete parsedJsonTemplate.presets;
-            processingErrors.push('Removed presets from JSON template (presets belong only in Liquid schema)');
           }
 
           correctedJsonTemplate = JSON.stringify(parsedJsonTemplate, null, 2);
