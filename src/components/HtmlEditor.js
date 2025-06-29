@@ -14,9 +14,9 @@ export default function HtmlEditor({
     onValidationError,
     onFileNameChange
 }) {
-    const [showPreview, setShowPreview] = useState(false);
     const [localFileName, setLocalFileName] = useState(fileName || '');
     const [fileNameError, setFileNameError] = useState('');
+    const [showPreview, setShowPreview] = useState(false);
 
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
@@ -46,7 +46,6 @@ export default function HtmlEditor({
                     return;
                 }
 
-                // Set the filename when file is uploaded
                 const baseFileName = file.name.replace(/\.html?$/i, '');
                 setLocalFileName(baseFileName);
                 onFileNameChange && onFileNameChange(index, baseFileName);
@@ -66,17 +65,16 @@ export default function HtmlEditor({
 
     const handleFileNameChange = (newFileName) => {
         setLocalFileName(newFileName);
-        
-        // Validate filename for Shopify compliance
+
         const { validateShopifyFilename } = require('../utils/filenameValidation');
         const validation = validateShopifyFilename(newFileName);
-        
+
         if (!validation.valid) {
             setFileNameError(validation.error);
         } else {
             setFileNameError('');
         }
-        
+
         onFileNameChange && onFileNameChange(index, newFileName);
     };
 
@@ -138,6 +136,74 @@ export default function HtmlEditor({
                 }}>
                     HTML Editor & Validator {index > 0 && `#${index + 1}`}
                 </h2>
+
+                {fileContent && fileContent.trim() && (
+                    <button
+                        onClick={() => setShowPreview(!showPreview)}
+                        style={{
+                            background: showPreview
+                                ? 'linear-gradient(135deg, #7877c6 0%, #5a59a8 100%)'
+                                : 'rgba(120, 119, 198, 0.2)',
+                            color: 'white',
+                            border: showPreview
+                                ? '1px solid rgba(120, 119, 198, 0.5)'
+                                : '1px solid rgba(120, 119, 198, 0.3)',
+                            borderRadius: '25px',
+                            padding: '8px 16px',
+                            fontSize: 'clamp(12px, 3vw, 14px)',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            transform: showPreview ? 'scale(1.05)' : 'scale(1)',
+                            boxShadow: showPreview
+                                ? '0 6px 20px rgba(120, 119, 198, 0.4)'
+                                : '0 4px 12px rgba(120, 119, 198, 0.2)'
+                        }}
+                        onMouseOver={(e) => {
+                            e.target.style.transform = 'scale(1.08)';
+                            e.target.style.boxShadow = '0 8px 25px rgba(120, 119, 198, 0.5)';
+                        }}
+                        onMouseOut={(e) => {
+                            e.target.style.transform = showPreview ? 'scale(1.05)' : 'scale(1)';
+                            e.target.style.boxShadow = showPreview
+                                ? '0 6px 20px rgba(120, 119, 198, 0.4)'
+                                : '0 4px 12px rgba(120, 119, 198, 0.2)';
+                        }}
+                    >
+                        <div style={{
+                            width: '32px',
+                            height: '18px',
+                            borderRadius: '9px',
+                            background: showPreview
+                                ? 'rgba(255, 255, 255, 0.3)'
+                                : 'rgba(255, 255, 255, 0.1)',
+                            position: 'relative',
+                            transition: 'all 0.3s ease'
+                        }}>
+                            <div style={{
+                                width: '14px',
+                                height: '14px',
+                                borderRadius: '50%',
+                                background: 'white',
+                                position: 'absolute',
+                                top: '2px',
+                                left: showPreview ? '16px' : '2px',
+                                transition: 'all 0.3s ease',
+                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                            }}></div>
+                        </div>
+
+                        <span>
+                            👁️ Preview {showPreview ? 'ON' : 'OFF'}
+                        </span>
+                    </button>
+                )}
+
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div style={{ position: 'relative' }}>
                         <input
@@ -185,53 +251,6 @@ export default function HtmlEditor({
                         </button>
                     </div>
 
-                    {fileContent && (
-                        <button
-                            onClick={() => setShowPreview(!showPreview)}
-                            style={{
-                                background: showPreview 
-                                    ? 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)'
-                                    : 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)',
-                                color: '#ffffff',
-                                border: 'none',
-                                borderRadius: '10px',
-                                padding: '8px 16px',
-                                cursor: 'pointer',
-                                fontSize: 'clamp(12px, 3vw, 14px)',
-                                fontWeight: '600',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                boxShadow: showPreview 
-                                    ? '0 4px 12px rgba(231, 76, 60, 0.3)'
-                                    : '0 4px 12px rgba(26, 143, 58, 0.3)',
-                                transition: 'all 0.2s ease',
-                                flexShrink: 0
-                            }}
-                            onMouseOver={(e) => {
-                                e.target.style.transform = 'translateY(-1px)';
-                                if (showPreview) {
-                                    e.target.style.boxShadow = '0 6px 16px rgba(231, 76, 60, 0.4)';
-                                    e.target.style.background = 'linear-gradient(135deg, #ec644b 0%, #d63447 100%)';
-                                } else {
-                                    e.target.style.boxShadow = '0 6px 16px rgba(26, 143, 58, 0.4)';
-                                    e.target.style.background = 'linear-gradient(135deg, #0c6f30 0%, #1ea042 100%)';
-                                }
-                            }}
-                            onMouseOut={(e) => {
-                                e.target.style.transform = 'translateY(0)';
-                                if (showPreview) {
-                                    e.target.style.boxShadow = '0 4px 12px rgba(231, 76, 60, 0.3)';
-                                    e.target.style.background = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
-                                } else {
-                                    e.target.style.boxShadow = '0 4px 12px rgba(26, 143, 58, 0.3)';
-                                    e.target.style.background = 'linear-gradient(135deg, #0a5f2a 0%, #1a8f3a 100%)';
-                                }
-                            }}
-                        >
-                            {showPreview ? '❌ Hide Preview' : '👁️ Show Preview'}
-                        </button>
-                    )}
                 </div>
             </div>
 
@@ -522,7 +541,7 @@ export default function HtmlEditor({
                 )}
             </div>
 
-            {fileContent && !showPreview && (
+            {fileContent && (
                 <div style={{
                     marginTop: '15px',
                     display: 'flex',

@@ -33,6 +33,7 @@ export default function Home() {
   const [showSchemaWarningPopup, setShowSchemaWarningPopup] = useState(false);
   const [pendingFilesWithSchema, setPendingFilesWithSchema] = useState([]);
   const [schemaWarningMessage, setSchemaWarningMessage] = useState('');
+  
   const handleNumberOfFilesChange = (num) => {
     setNumberOfFiles(num);
     if (num === 0) {

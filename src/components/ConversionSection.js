@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import CodeViewer from './CodeViewer';
 import ConfirmationPopup from './ConfirmationPopup';
+import SchemaFieldIndicators from './SchemaFieldIndicators';
 export default function ConversionSection({
     files,
     isConverting,
@@ -26,6 +27,7 @@ export default function ConversionSection({
     const [successTitle, setSuccessTitle] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [hasReconvertStarted, setHasReconvertStarted] = useState(false);
+    const [showFieldIndicators, setShowFieldIndicators] = useState({});
 
     const filesWithContent = files.filter(file => file.fileContent);
     const filesWithoutNames = filesWithContent.filter(file => !file.fileName || !file.fileName.trim());
@@ -56,6 +58,27 @@ export default function ConversionSection({
         setShowSuccessPopup(false);
         setPendingReconvertIndex(null);
         setHasReconvertStarted(false);
+    };
+
+    const toggleFieldIndicators = (fileIndex) => {
+        setShowFieldIndicators(prev => ({
+            ...prev,
+            [fileIndex]: prev[fileIndex] === undefined ? false : !prev[fileIndex]
+        }));
+    };
+
+    const extractSchemaFromLiquid = (liquidContent) => {
+        if (!liquidContent) return null;
+
+        const schemaMatch = liquidContent.match(/{% schema %}([\s\S]*?){% endschema %}/);
+        if (!schemaMatch) return null;
+
+        try {
+            return JSON.parse(schemaMatch[1]);
+        } catch (error) {
+            console.error('Error parsing schema:', error);
+            return null;
+        }
     };
 
     useEffect(() => {
@@ -624,6 +647,59 @@ export default function ConversionSection({
                                             onDownload={() => downloadJsonFile(convertedFiles[activeTab])}
                                         />
                                     )}
+
+                                    {convertedFiles[activeTab].liquidContent && (
+                                        <>
+                                            <div style={{
+                                                display: 'flex',
+                                                gap: '15px',
+                                                marginTop: '20px',
+                                                marginBottom: '20px',
+                                                flexWrap: 'wrap'
+                                            }}>
+                                                <button
+                                                    onClick={() => toggleFieldIndicators(activeTab)}
+                                                    style={{
+                                                        background: (showFieldIndicators[activeTab] ?? true)
+                                                            ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)'
+                                                            : 'rgba(255, 107, 107, 0.2)',
+                                                        color: 'white',
+                                                        border: (showFieldIndicators[activeTab] ?? true)
+                                                            ? '1px solid rgba(255, 107, 107, 0.5)'
+                                                            : '1px solid rgba(255, 107, 107, 0.3)',
+                                                        borderRadius: '12px',
+                                                        padding: '10px 16px',
+                                                        fontSize: 'clamp(12px, 3vw, 14px)',
+                                                        fontWeight: '600',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.3s ease',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px'
+                                                    }}
+                                                    onMouseOver={(e) => {
+                                                        if (!(showFieldIndicators[activeTab] ?? true)) {
+                                                            e.target.style.background = 'rgba(255, 107, 107, 0.3)';
+                                                        }
+                                                        e.target.style.transform = 'translateY(-2px)';
+                                                    }}
+                                                    onMouseOut={(e) => {
+                                                        if (!(showFieldIndicators[activeTab] ?? true)) {
+                                                            e.target.style.background = 'rgba(255, 107, 107, 0.2)';
+                                                        }
+                                                        e.target.style.transform = 'translateY(0)';
+                                                    }}
+                                                >
+                                                    📋 {(showFieldIndicators[activeTab] ?? true) ? 'Hide' : 'Show'} Field Requirements
+                                                </button>
+                                            </div>
+
+                                            <SchemaFieldIndicators
+                                                schema={extractSchemaFromLiquid(convertedFiles[activeTab].liquidContent)}
+                                                isVisible={showFieldIndicators[activeTab] ?? true}
+                                            />
+                                        </>
+                                    )}
                                 </div>
                             )}
 
@@ -740,129 +816,6 @@ export default function ConversionSection({
                                     </p>
                                 </div>
                             )}
-                        </div>
-                    </div>
-                )}
-
-                {convertedFiles[activeTab] && !convertedFiles[activeTab].hasError && (
-                    <div style={{
-                        background: 'linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%)',
-                        borderRadius: '12px',
-                        padding: '20px',
-                        marginBottom: '20px',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                        marginTop: 'clamp(20px, 5vw, 30px)',
-                    }}>
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            marginBottom: '15px'
-                        }}>
-                            <div style={{
-                                width: '24px',
-                                height: '24px',
-                                borderRadius: '50%',
-                                background: 'linear-gradient(135deg, #ffd700 0%, #ffb347 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginRight: '12px'
-                            }}>
-                                <span style={{ fontSize: '12px' }}>📋</span>
-                            </div>
-                            <h4 style={{
-                                color: '#ffffff',
-                                margin: 0,
-                                fontSize: '16px',
-                                fontWeight: '700'
-                            }}>
-                                Schema Field Requirements
-                            </h4>
-                        </div>
-
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                            gap: '15px',
-                            fontSize: '14px'
-                        }}>
-                            <div style={{
-                                background: 'rgba(255, 69, 58, 0.1)',
-                                border: '1px solid rgba(255, 69, 58, 0.3)',
-                                borderRadius: '8px',
-                                padding: '12px'
-                            }}>
-                                <div style={{
-                                    color: '#ff6b6b',
-                                    fontWeight: '600',
-                                    marginBottom: '8px',
-                                    display: 'flex',
-                                    alignItems: 'center'
-                                }}>
-                                    <span style={{ marginRight: '6px' }}>⚠️</span>
-                                    Required Fields
-                                </div>
-                                <ul style={{
-                                    color: 'rgba(255, 255, 255, 0.8)',
-                                    margin: 0,
-                                    paddingLeft: '16px',
-                                    fontSize: '12px',
-                                    lineHeight: '1.4'
-                                }}>
-                                    <li>Section titles & headings</li>
-                                    <li>Block type identifiers</li>
-                                    <li>Navigation links</li>
-                                    <li>Form action URLs</li>
-                                </ul>
-                            </div>
-
-                            <div style={{
-                                background: 'rgba(52, 199, 89, 0.1)',
-                                border: '1px solid rgba(52, 199, 89, 0.3)',
-                                borderRadius: '8px',
-                                padding: '12px'
-                            }}>
-                                <div style={{
-                                    color: '#4ade80',
-                                    fontWeight: '600',
-                                    marginBottom: '8px',
-                                    display: 'flex',
-                                    alignItems: 'center'
-                                }}>
-                                    <span style={{ marginRight: '6px' }}>✅</span>
-                                    Optional Fields
-                                </div>
-                                <ul style={{
-                                    color: 'rgba(255, 255, 255, 0.8)',
-                                    margin: 0,
-                                    paddingLeft: '16px',
-                                    fontSize: '12px',
-                                    lineHeight: '1.4'
-                                }}>
-                                    <li>Descriptions & alt text</li>
-                                    <li>Color schemes</li>
-                                    <li>Advanced settings</li>
-                                    <li>Decorative elements</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div style={{
-                            marginTop: '15px',
-                            padding: '12px',
-                            background: 'rgba(0, 122, 255, 0.1)',
-                            border: '1px solid rgba(0, 122, 255, 0.3)',
-                            borderRadius: '8px',
-                            color: 'rgba(255, 255, 255, 0.8)',
-                            fontSize: '12px',
-                            lineHeight: '1.4'
-                        }}>
-                            <strong style={{ color: '#5ac8fa' }}>💡 Theme Editor Tips:</strong>
-                            <br />
-                            • Required fields are marked with * in Shopify Theme Editor
-                            • Optional fields include helpful defaults and can be left empty
-                            • All fields include descriptive labels for easy customization
                         </div>
                     </div>
                 )}

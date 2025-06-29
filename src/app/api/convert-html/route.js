@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { validateShopifyFilename, generateShopifyPaths } from '../../../utils/filenameValidation';
 import { processSchemaAndBlocks } from '../../../utils/schemaProcessor';
-import { addFileComment } from '../../../utils/zipGenerator';
+import { validateAndCorrectSchema } from '../../../utils/schemaFieldTypes';
+import { generateZip, addFileComment } from '../../../utils/zipGenerator';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -148,8 +149,8 @@ STRICT REQUIREMENTS:
    - Create unique setting IDs for every text element
 8. NO GENERIC PLACEHOLDERS: Use real content from HTML in schema defaults
 9. CRITICAL SHOPIFY RULE: Never add "default" attribute to "image_picker" settings
-10. COMPLETE CONVERSION: Convert ALL sections including headers, navigation, hero, content, testimonials, products, forms, footer - EVERYTHING!
-11. CREATE COMPREHENSIVE BLOCKS: Include blocks for EVERYTHING to make it FULLY DYNAMIC:
+12. COMPLETE CONVERSION: Convert ALL sections including headers, navigation, hero, content, testimonials, products, forms, footer - EVERYTHING!
+13. CREATE COMPREHENSIVE BLOCKS: Include blocks for EVERYTHING to make it FULLY DYNAMIC:
     - Products (DYNAMIC: add/remove product cards)
     - Testimonials (DYNAMIC: add/remove customer testimonials)  
     - Education guides (DYNAMIC: add/remove educational content)
@@ -177,6 +178,17 @@ STRICT REQUIREMENTS:
     - Benefits/advantages (DYNAMIC: add/remove benefit points)
     - Reviews/ratings (DYNAMIC: add/remove customer reviews)
     - 🚨 CRITICAL: EVERYTHING should be blocks for maximum admin flexibility!
+14. 🚨 CRITICAL SCHEMA STRUCTURE REQUIREMENTS 🚨:
+    - MANDATORY PRESETS SECTION: Every schema MUST include a valid "presets" section:
+      "presets": [{
+        "name": "Default",
+        "blocks": []
+      }]
+    - SECTION TYPE CONSISTENCY: The schema section type MUST exactly match the filename
+    - If filename is "maertin-home-page.liquid", then schema should be: "type": "maertin-home-page"
+    - NO EXTRA-LONG NAMES: Keep section types concise and matching Shopify naming rules
+    - REQUIRED FIELD INDICATORS: Mark required fields with * in labels: "label": "Section Title *"
+    - OPTIONAL FIELD INDICATORS: Regular labels for optional fields: "label": "Description"
 12. MANDATORY ANCHOR TAG CONVERSION: Every single <a> tag MUST become editable:
     - Header/Navigation links: Use BLOCKS for dynamic header links (can add/remove from admin)
     - Footer links: <a href="{{ section.settings.footer_link_1_url }}">{{ section.settings.footer_link_1_text }}</a>
@@ -599,7 +611,7 @@ STEP 2: HTML CONTENT ANALYSIS
 - Scan HTML systematically section by section
 - Identify ALL major sections: header, nav, hero, about, features, services, products, testimonials, team, gallery, contact, footer
 - Count repeating elements in each section
-- Extract actual text content from each element
+- Extract actual text content from HTML as default values for EACH setting
 
 STEP 3: COMPREHENSIVE MAPPING
 - Create JSON setting for EVERY schema setting
@@ -1169,6 +1181,13 @@ CRITICAL RULES:
           }
         }
 
+        if (jsonData.sections && jsonData.sections.main && jsonData.sections.main.presets) {
+          delete jsonData.sections.main.presets;
+        }
+        if (jsonData.presets) {
+          delete jsonData.presets;
+        }
+
         correctedJsonTemplate = JSON.stringify(jsonData, null, 2);
       } catch (e) {
         console.log('JSON parsing error, using string replacement fallback');
@@ -1196,6 +1215,11 @@ CRITICAL RULES:
           /"([^"]*image[^"]*)":\s*"[^"]*"/gm,
           '"$1": ""'
         );
+
+        correctedJsonTemplate = correctedJsonTemplate.replace(
+          /,?\s*"presets":\s*\[[^\]]*\]/g,
+          ''
+        );
       }
     }
 
@@ -1215,6 +1239,63 @@ CRITICAL RULES:
         correctedJsonTemplate = schemaProcessingResult.jsonContent;
         injectedBlocks = schemaProcessingResult.injectedBlocks || [];
         usedBlockTypes = schemaProcessingResult.usedBlockTypes || [];
+
+        if (schemaProcessingResult.warnings && schemaProcessingResult.warnings.length > 0) {
+          processingErrors.push(...schemaProcessingResult.warnings.map(w => `Schema Warning: ${w}`));
+        }
+
+        if (schemaProcessingResult.hasExistingSchema) {
+          processingErrors.push('Existing schema block detected and updated.');
+        }
+
+        if (schemaProcessingResult.schemaCheck && schemaProcessingResult.schemaCheck.warning) {
+          processingErrors.push(`Schema Check: ${schemaProcessingResult.schemaCheck.warning}`);
+        }
+
+        try {
+          let parsedSchema;
+          try {
+            parsedSchema = JSON.parse(correctedJsonTemplate);
+          } catch (parseError) {
+            console.error('Schema parsing error during validation:', parseError);
+            processingErrors.push('Schema validation skipped due to JSON parsing error');
+          }
+
+          if (parsedSchema) {
+            const schemaValidation = validateAndCorrectSchema(parsedSchema);
+
+            if (!schemaValidation.valid) {
+              correctedJsonTemplate = JSON.stringify(schemaValidation.corrected, null, 2);
+              schemaValidation.errors.forEach(error => {
+                processingErrors.push(`Schema Validation: ${error}`);
+              });
+              console.log('Schema validation corrected fields:', schemaValidation.errors);
+            } else {
+              console.log('Schema validation passed successfully');
+            }
+          }
+        } catch (validationError) {
+          console.error('Schema validation error:', validationError);
+          processingErrors.push(`Schema validation failed: ${validationError.message}`);
+        }
+
+        try {
+          let parsedJsonTemplate = JSON.parse(correctedJsonTemplate);
+
+          if (parsedJsonTemplate.sections && parsedJsonTemplate.sections.main && parsedJsonTemplate.sections.main.presets) {
+            delete parsedJsonTemplate.sections.main.presets;
+            processingErrors.push('Removed presets from JSON template (presets belong only in Liquid schema)');
+          }
+          if (parsedJsonTemplate.presets) {
+            delete parsedJsonTemplate.presets;
+            processingErrors.push('Removed presets from JSON template (presets belong only in Liquid schema)');
+          }
+
+          correctedJsonTemplate = JSON.stringify(parsedJsonTemplate, null, 2);
+        } catch (jsonValidationError) {
+          console.error('JSON template validation error:', jsonValidationError);
+          processingErrors.push(`JSON template validation failed: ${jsonValidationError.message}`);
+        }
       } else {
         processingErrors = schemaProcessingResult.errors || [];
 

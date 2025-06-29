@@ -64,6 +64,8 @@ export default function HowItWorksPopup({ isOpen, onClose }) {
         "🎨 Combined Head Snippet - Single file with all styles and scripts for theme.liquid",
         "🛡️ HTML Validation - Checks HTML quality before conversion starts",
         "📋 Field Requirements - Clear marking of required vs optional schema fields",
+        "🎯 Schema Field Indicators - Visual red/gray dots show required vs optional fields after conversion",
+        "🔍 Schema Block Detection - Automatic detection and warning for existing schema blocks",
         "⬇️ Easy Downloads - Download individual files or batch download all",
         "📱 Responsive Design - All original styling and responsiveness preserved"
     ];
@@ -308,6 +310,7 @@ export default function HowItWorksPopup({ isOpen, onClose }) {
                         <li style={{ marginBottom: '8px' }}><strong>Use Preview:</strong> Toggle HTML preview to check content before converting</li>
                         <li style={{ marginBottom: '8px' }}><strong>Name Your Sections:</strong> Enter descriptive names - they become your .liquid filenames</li>
                         <li style={{ marginBottom: '8px' }}><strong>Check for Warnings:</strong> Tool will alert you if HTML already has schema blocks</li>
+                        <li style={{ marginBottom: '8px' }}><strong>After Conversion:</strong> Look for red/gray dots showing required vs optional fields</li>
                         <li><strong>Download Strategy:</strong> Get individual files or download all at once</li>
                     </ul>
                 </div>

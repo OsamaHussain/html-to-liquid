@@ -13,7 +13,10 @@ A comprehensive web application that converts HTML files into complete Shopify L
 - **No Hardcoded Content**: Converts all text, images, and links to dynamic settings
 - **Responsive Design**: Maintains full responsiveness across all devices
 - **Modern UI**: Beautiful, responsive interface with real-time feedback
-- **Field Requirements System**: Clear distinction between required and optional schema fields
+- **HTML Preview**: View your HTML before conversion to verify structure
+- **Schema Field Indicators**: Visual distinction between required and optional fields
+- **Auto Schema Detection**: Warns about existing schema blocks to prevent conflicts
+- **Section Type Validation**: Ensures schema types match filenames exactly
 
 ## 📋 Schema Field Requirements
 
@@ -46,6 +49,96 @@ These fields enhance functionality but have sensible defaults:
 2. Required fields prevent layout breaking if left empty
 3. Optional fields can be left empty - they'll gracefully degrade
 4. Use descriptive content in required fields for better SEO
+
+## 🎯 Schema Block & Presets System
+
+### Automatic Schema Structure
+Every generated Liquid section includes:
+
+- **Valid Schema Block**: `{% schema %}...{% endschema %}` with complete JSON structure
+- **Required Presets Section**: Ensures sections appear in Shopify's page dropdown menu
+- **Section Type Consistency**: Schema type exactly matches the section filename
+- **Proper Naming**: Follows Shopify naming rules (kebab-case, no special characters)
+
+### Schema Conflict Detection
+The tool automatically detects and handles existing schema blocks:
+
+- **Existing Schema Warning**: Alerts when schema blocks already exist in your content
+- **Duplicate Prevention**: Skips adding new schema if one already exists (configurable)
+- **Schema Validation**: Checks for incomplete or malformed schema blocks
+- **Type Consistency**: Ensures section type matches filename exactly
+
+### Examples:
+```liquid
+// File: custom-hero-section.liquid
+{% schema %}
+{
+  "name": "Custom Hero Section",
+  "type": "custom-hero-section",  // Matches filename exactly
+  "settings": [...],
+  "blocks": [...],
+  "presets": [{                   // Required for page dropdown
+    "name": "Default",
+    "blocks": []
+  }]
+}
+{% endschema %}
+```
+
+## 👁️ HTML Preview Feature
+
+### Interactive Preview System
+Before converting your HTML, you can preview exactly how it will look:
+
+- **🖱️ One-Click Toggle**: Click "👁️ Preview ON/OFF" button after uploading HTML
+- **📱 Live Rendering**: See your content rendered in real-time within the editor
+- **🎯 Structure Verification**: Quickly spot layout issues or missing elements
+- **💾 Preview Persistence**: Toggle on/off as needed while editing
+- **🔄 Real-Time Updates**: Preview updates automatically as you modify HTML content
+
+### When to Use Preview:
+1. **After File Upload**: Verify the HTML loaded correctly
+2. **Before Conversion**: Ensure layout and content are as expected  
+3. **During Editing**: Check changes in real-time when pasting new content
+4. **Layout Validation**: Confirm responsive design and styling work correctly
+
+### Preview Features:
+- **Responsive Layout**: Preview scales appropriately for the container
+- **Live Iframe**: Isolated rendering environment prevents conflicts
+- **Full HTML Support**: CSS, JavaScript, and all HTML elements render correctly
+- **Quick Toggle**: Easily switch between code view and visual preview
+
+## 📊 Schema Field Requirements Visual Indicators
+
+### Real-Time Field Analysis
+After conversion, each file displays a comprehensive field requirements panel with:
+
+- **🔴 Red Indicators**: Required fields (critical for functionality)
+- **⚪ Gray Indicators**: Optional fields (have defaults or are decorative)  
+- **📊 Statistics Display**: Shows total, required, and optional field counts
+- **🎯 Block-by-Block Analysis**: Separate indicators for section settings and each block type
+- **📋 Toggle Visibility**: Show/hide the indicators panel as needed
+
+### Field Classification Logic:
+- **Required Fields**: Text, textarea, titles, headings, button text, navigation links
+- **Optional Fields**: Colors, fonts, checkboxes, decorative elements, image pickers
+- **Auto-Detection**: Fields with `*` in labels are automatically marked as required
+
+### Example Output:
+```
+Schema Field Requirements
+📊 45 total fields • 28 required • 17 optional
+
+Section Settings:
+🔴 Section Title (required)
+🔴 Button Text (required)  
+⚪ Background Color (optional)
+
+Header Link Block:
+🔴 Link Text (required)
+🔴 Link URL (required)
+⚪ Link Color (optional)
+```
 
 ## 🚀 Getting Started
 
