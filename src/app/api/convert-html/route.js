@@ -4,6 +4,8 @@ import { validateShopifyFilename, generateShopifyPaths } from '../../../utils/fi
 import { processSchemaAndBlocks } from '../../../utils/schemaProcessor';
 import { validateAndCorrectSchema } from '../../../utils/schemaFieldTypes';
 import { generateZip, addFileComment } from '../../../utils/zipGenerator';
+import { fixSchemaQuotesInLiquid } from '../../../utils/quoteEscaping';
+import { fixFileSchemaConsistency } from '../../../utils/fileSchemaConsistency';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -1311,6 +1313,40 @@ CRITICAL RULES:
     } catch (schemaError) {
       console.error('Schema processing error:', schemaError);
       processingErrors.push(`Schema processing failed: ${schemaError.message}`);
+    }
+
+    try {
+      const quoteFixResult = fixSchemaQuotesInLiquid(cleanedLiquidContent);
+      if (quoteFixResult.success) {
+        cleanedLiquidContent = quoteFixResult.content;
+        if (quoteFixResult.issues && quoteFixResult.issues.length > 0) {
+          processingErrors.push(`Fixed ${quoteFixResult.issues.length} quote issue${quoteFixResult.issues.length !== 1 ? 's' : ''} in schema`);
+        }
+      } else if (quoteFixResult.error) {
+        processingErrors.push(`Quote escaping warning: ${quoteFixResult.error}`);
+      }
+    } catch (quoteError) {
+      console.error('Quote escaping error:', quoteError);
+      processingErrors.push(`Quote escaping failed: ${quoteError.message}`);
+    }
+
+    try {
+      const consistencyResult = fixFileSchemaConsistency(
+        finalFileName,
+        cleanedLiquidContent,
+        correctedJsonTemplate
+      );
+
+      if (consistencyResult.success) {
+        if (consistencyResult.changes && consistencyResult.changes.length > 0) {
+          cleanedLiquidContent = consistencyResult.liquidContent;
+          correctedJsonTemplate = consistencyResult.jsonContent;
+          processingErrors.push(`Consistency fixes: ${consistencyResult.changes.join(', ')}`);
+        }
+      }
+    } catch (consistencyError) {
+      console.error('Consistency validation error:', consistencyError);
+      processingErrors.push(`Consistency validation failed: ${consistencyError.message}`);
     }
 
     const liquidWithComments = addFileComment(

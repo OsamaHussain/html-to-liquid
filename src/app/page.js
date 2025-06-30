@@ -14,6 +14,7 @@ import { validateAndExtractHtml, validateAllFiles } from "../utils/htmlValidatio
 import { validateBatchFilenames } from "../utils/filenameValidation";
 import { generateAndDownloadZip } from "../utils/zipGenerator";
 import { detectExistingSchema } from "../utils/schemaDetection";
+import { processHeadContentWithDeduplication } from "../utils/headDeduplication";
 
 export default function Home() {
   const [numberOfFiles, setNumberOfFiles] = useState(0);
@@ -33,7 +34,7 @@ export default function Home() {
   const [showSchemaWarningPopup, setShowSchemaWarningPopup] = useState(false);
   const [pendingFilesWithSchema, setPendingFilesWithSchema] = useState([]);
   const [schemaWarningMessage, setSchemaWarningMessage] = useState('');
-  
+
   const handleNumberOfFilesChange = (num) => {
     setNumberOfFiles(num);
     if (num === 0) {
@@ -186,8 +187,8 @@ export default function Home() {
       setCombinedHeadContent('');
       setActiveTab(0);
 
-      let allHeadLines = new Set();
-      let fileSourceMap = new Map();
+      const allHeadContents = [];
+      const fileNames = [];
 
       for (let i = 0; i < filesWithContent.length; i++) {
         const file = filesWithContent[i];
@@ -216,17 +217,11 @@ export default function Home() {
           let headExtractionError = '';
 
           if (headResponse.ok) {
-            headContent = headData.headContent; if (headContent && headContent.trim()) {
-              const headLines = headContent.split('\n').filter(line => line.trim());
-              const fileName = file.fileName || `File ${i + 1}`;
+            headContent = headData.headContent;
 
-              headLines.forEach(line => {
-                const normalizedLine = line.trim().replace(/\s+/g, ' ');
-                if (normalizedLine && !allHeadLines.has(normalizedLine)) {
-                  allHeadLines.add(normalizedLine);
-                  fileSourceMap.set(normalizedLine, fileName);
-                }
-              });
+            if (headContent && headContent.trim()) {
+              allHeadContents.push(headContent);
+              fileNames.push(file.fileName || `File ${i + 1}`);
             }
           } else {
             headExtractionError = headData.error || 'Head extraction failed';
@@ -286,9 +281,14 @@ export default function Home() {
           }
         }
       }
-      if (allHeadLines.size > 0) {
-        const uniqueHeadContent = Array.from(allHeadLines).join('\n');
-        setCombinedHeadContent(uniqueHeadContent);
+
+      if (allHeadContents.length > 0) {
+        const deduplicationResult = processHeadContentWithDeduplication(allHeadContents, fileNames);
+        setCombinedHeadContent(deduplicationResult.content);
+
+        if (deduplicationResult.duplicatesRemoved > 0) {
+          console.log('Head deduplication summary:', deduplicationResult.summary);
+        }
       }
 
     } catch (error) {
@@ -299,30 +299,50 @@ export default function Home() {
     }
   };
   const downloadLiquidFile = (convertedFile) => {
-    if (!convertedFile.liquidContent) return;
+    try {
+      if (!convertedFile || !convertedFile.liquidContent) {
+        console.error('No liquid content to download');
+        setConversionError('No liquid content available for download');
+        return;
+      }
 
-    const blob = new Blob([convertedFile.liquidContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = convertedFile.fileNames?.liquidFileName || (convertedFile.originalFile?.fileName ? convertedFile.originalFile.fileName.replace('.html', '.liquid') : 'converted.liquid');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      const blob = new Blob([convertedFile.liquidContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = convertedFile.fileNames?.liquidFileName || (convertedFile.originalFile?.fileName ? convertedFile.originalFile.fileName.replace('.html', '.liquid') : 'converted.liquid');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      console.log('Liquid file download initiated successfully');
+    } catch (error) {
+      console.error('Error downloading liquid file:', error);
+      setConversionError(`Failed to download liquid file: ${error.message}`);
+    }
   };
   const downloadJsonFile = (convertedFile) => {
-    if (!convertedFile.jsonTemplate) return;
+    try {
+      if (!convertedFile || !convertedFile.jsonTemplate) {
+        console.error('No JSON content to download');
+        setConversionError('No JSON template available for download');
+        return;
+      }
 
-    const blob = new Blob([convertedFile.jsonTemplate], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = convertedFile.fileNames?.jsonFileName || (convertedFile.originalFile?.fileName ? `page.${convertedFile.originalFile.fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : 'page.custom.json');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      const blob = new Blob([convertedFile.jsonTemplate], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = convertedFile.fileNames?.jsonFileName || (convertedFile.originalFile?.fileName ? `page.${convertedFile.originalFile.fileName.replace('.html', '').replace(/[^a-zA-Z0-9-_]/g, '-')}.json` : 'page.custom.json');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      console.log('JSON file download initiated successfully');
+    } catch (error) {
+      console.error('Error downloading JSON file:', error);
+      setConversionError(`Failed to download JSON file: ${error.message}`);
+    }
   };
   const downloadHeadFile = (convertedFile) => {
     if (!convertedFile.headContent) return;
@@ -339,17 +359,27 @@ export default function Home() {
   };
 
   const downloadCombinedHeadFile = () => {
-    if (!combinedHeadContent) return;
+    try {
+      if (!combinedHeadContent || !combinedHeadContent.trim()) {
+        console.error('No combined head content to download');
+        setConversionError('No combined head content available for download');
+        return;
+      }
 
-    const blob = new Blob([combinedHeadContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'combined-theme-head.liquid';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      const blob = new Blob([combinedHeadContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'combined-theme-head.liquid';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      console.log('Combined head file download initiated successfully');
+    } catch (error) {
+      console.error('Error downloading combined head file:', error);
+      setConversionError(`Failed to download combined head file: ${error.message}`);
+    }
   };
 
   const downloadAllAsZip = async () => {
