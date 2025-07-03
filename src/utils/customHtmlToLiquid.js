@@ -281,17 +281,18 @@ export function convertHtmlToLiquid(html, fileName) {
 
     const footerColumns = $('footer div').filter((i, el) => {
         const $el = $(el);
-        const hasHeading = $el.find('h3, h4, h5').length > 0;
-        const hasList = $el.find('ul, ol').length > 0 || $el.find('a').length >= 2;
-        const hasContent = $el.find('p').length > 0 || hasList;
-        const isNotContainer = !$el.hasClass('grid') && !$el.hasClass('flex') &&
-            !$el.hasClass('max-w') && !$el.hasClass('mx-auto') &&
-            !$el.hasClass('px-') && !$el.hasClass('py-') &&
-            !$el.hasClass('pt-') && !$el.hasClass('pb-') &&
-            !$el.hasClass('gap-') && !$el.hasClass('space-') &&
-            !$el.hasClass('mb-');
+        const hasHeading = $el.find('h3, h4, h5, h6').length > 0;
+        const hasList = $el.find('ul, ol').length > 0;
+        const hasLinks = $el.find('a').length >= 2;
+        const hasContent = $el.find('p').length > 0 || hasList || hasLinks;
 
-        return hasHeading && hasContent && isNotContainer;
+        const isLayoutContainer = $el.hasClass('grid') && $el.children('div').length > 2;
+        const isMainContainer = $el.hasClass('max-w') && $el.hasClass('mx-auto');
+        const isWrapperContainer = $el.hasClass('px-4') && $el.children('div').length > 0;
+
+        const isNotMainContainer = !isLayoutContainer && !isMainContainer && !isWrapperContainer;
+
+        return hasHeading && hasContent && isNotMainContainer;
     });
 
     if (footerColumns.length >= 1) {
@@ -421,108 +422,110 @@ export function convertHtmlToLiquid(html, fileName) {
 
             const firstData = originalData[0];
 
-            if (firstData.heading) {
-                blockSettings.push({
-                    type: 'text',
-                    id: 'heading',
-                    label: `${pattern.name} Heading`,
-                    default: firstData.heading,
-                    info: 'Main heading for this item'
-                });
-            }
-
-            if (firstData.subheading) {
-                blockSettings.push({
-                    type: 'text',
-                    id: 'subheading',
-                    label: `${pattern.name} Subheading`,
-                    default: firstData.subheading
-                });
-            }
-
-            if (firstData.description && firstData.description.length > 3) {
-                blockSettings.push({
-                    type: 'richtext',
-                    id: 'description',
-                    label: `${pattern.name} Description`,
-                    default: formatAsRichtext(firstData.richtext || firstData.description),
-                    info: 'Rich text editor for formatting'
-                });
-            }
-
-            if (firstData.imageSrc) {
-                blockSettings.push({
-                    type: 'image_picker',
-                    id: 'image',
-                    label: `${pattern.name} Image`,
-                    info: 'Upload image for this item'
-                });
-
-                if (firstData.imageAlt) {
+            if (pattern.type !== 'footer_column') {
+                if (firstData.heading) {
                     blockSettings.push({
                         type: 'text',
-                        id: 'image_alt',
-                        label: `${pattern.name} Image Alt Text`,
-                        default: firstData.imageAlt,
-                        info: 'Alternative text for accessibility'
+                        id: 'heading',
+                        label: `${pattern.name} Heading`,
+                        default: firstData.heading,
+                        info: 'Main heading for this item'
                     });
                 }
-            }
 
-            if (firstData.icon) {
-                blockSettings.push({
-                    type: 'text',
-                    id: 'icon',
-                    label: `${pattern.name} Icon`,
-                    default: firstData.icon,
-                    info: 'Icon class (e.g., fa-home, fa-star)'
-                });
-            }
-
-            if (firstData.buttonText) {
-                blockSettings.push({
-                    type: 'text',
-                    id: 'button_text',
-                    label: `${pattern.name} Button Text`,
-                    default: firstData.buttonText
-                });
-
-                if (firstData.buttonUrl && firstData.buttonUrl !== '#') {
+                if (firstData.subheading) {
                     blockSettings.push({
-                        type: 'url',
-                        id: 'button_url',
-                        label: `${pattern.name} Button URL`,
-                        default: firstData.buttonUrl,
-                        info: 'Link destination'
+                        type: 'text',
+                        id: 'subheading',
+                        label: `${pattern.name} Subheading`,
+                        default: firstData.subheading
                     });
                 }
-            }
 
-            if (firstData.price) {
-                blockSettings.push({
-                    type: 'text',
-                    id: 'price',
-                    label: `${pattern.name} Price`,
-                    default: firstData.price
-                });
-            }
+                if (firstData.description && firstData.description.length > 3) {
+                    blockSettings.push({
+                        type: 'richtext',
+                        id: 'description',
+                        label: `${pattern.name} Description`,
+                        default: formatAsRichtext(firstData.richtext || firstData.description),
+                        info: 'Rich text editor for formatting'
+                    });
+                }
 
-            if (firstData.rating) {
-                blockSettings.push({
-                    type: 'range',
-                    id: 'rating',
-                    label: `${pattern.name} Rating`,
-                    min: 1,
-                    max: 5,
-                    step: 0.1,
-                    default: 5,
-                    unit: 'stars'
-                });
+                if (firstData.imageSrc) {
+                    blockSettings.push({
+                        type: 'image_picker',
+                        id: 'image',
+                        label: `${pattern.name} Image`,
+                        info: 'Upload image for this item'
+                    });
+
+                    if (firstData.imageAlt) {
+                        blockSettings.push({
+                            type: 'text',
+                            id: 'image_alt',
+                            label: `${pattern.name} Image Alt Text`,
+                            default: firstData.imageAlt,
+                            info: 'Alternative text for accessibility'
+                        });
+                    }
+                }
+
+                if (firstData.icon) {
+                    blockSettings.push({
+                        type: 'text',
+                        id: 'icon',
+                        label: `${pattern.name} Icon`,
+                        default: firstData.icon,
+                        info: 'Icon class (e.g., fa-home, fa-star)'
+                    });
+                }
+
+                if (firstData.buttonText) {
+                    blockSettings.push({
+                        type: 'text',
+                        id: 'button_text',
+                        label: `${pattern.name} Button Text`,
+                        default: firstData.buttonText
+                    });
+
+                    if (firstData.buttonUrl && firstData.buttonUrl !== '#') {
+                        blockSettings.push({
+                            type: 'url',
+                            id: 'button_url',
+                            label: `${pattern.name} Button URL`,
+                            default: firstData.buttonUrl,
+                            info: 'Link destination'
+                        });
+                    }
+                }
+
+                if (firstData.price) {
+                    blockSettings.push({
+                        type: 'text',
+                        id: 'price',
+                        label: `${pattern.name} Price`,
+                        default: firstData.price
+                    });
+                }
+
+                if (firstData.rating) {
+                    blockSettings.push({
+                        type: 'range',
+                        id: 'rating',
+                        label: `${pattern.name} Rating`,
+                        min: 1,
+                        max: 5,
+                        step: 0.1,
+                        default: 5,
+                        unit: 'stars'
+                    });
+                }
             }
 
             if (pattern.type === 'footer_column') {
-                const hasAnyLinks = originalData.some(data => data.links && data.links.length > 0);
-                const hasAnySocialLinks = originalData.some(data => data.socialLinks && data.socialLinks.length > 0);
+                const anyColumnHasLinks = originalData.some(data => data.links && data.links.length > 0);
+                const anyColumnHasSocialLinks = originalData.some(data => data.socialLinks && data.socialLinks.length > 0);
 
                 blockSettings.push({
                     type: 'text',
@@ -542,7 +545,7 @@ export function convertHtmlToLiquid(html, fileName) {
                     });
                 }
 
-                if (hasAnyLinks) {
+                if (anyColumnHasLinks) {
                     for (let i = 1; i <= 6; i++) {
                         blockSettings.push({
                             type: 'text',
@@ -562,7 +565,7 @@ export function convertHtmlToLiquid(html, fileName) {
                     }
                 }
 
-                if (hasAnySocialLinks) {
+                if (anyColumnHasSocialLinks) {
                     const socialPlatforms = ['facebook', 'instagram', 'twitter', 'youtube', 'pinterest'];
 
                     socialPlatforms.forEach((platform, index) => {
