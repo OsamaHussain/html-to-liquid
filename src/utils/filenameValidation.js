@@ -159,7 +159,7 @@ export function generateShopifyPaths(baseName) {
     return {
         liquid: `sections/${sanitized}.liquid`,
         json: `templates/${sanitized}.json`,
-        snippet: `snippets/global-head.liquid`,
+        layout: `layout/theme.liquid`,
         sectionName: sanitized
     };
 }

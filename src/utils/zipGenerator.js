@@ -25,7 +25,10 @@ Generated on: ${currentDate} at ${currentTime}
         readme += `- **Template File**: templates/${file.sectionName}.json\n`;
 
         if (file.injectedBlocks && file.injectedBlocks.length > 0) {
-            readme += `- **Auto-injected Blocks**: ${file.injectedBlocks.join(', ')}\n`;
+            const blockTypes = file.injectedBlocks.map(block => {
+                return typeof block === 'string' ? block : (block.type || String(block));
+            });
+            readme += `- **Auto-injected Blocks**: ${blockTypes.join(', ')}\n`;
         }
 
         if (file.filenameCorrected) {
@@ -47,9 +50,12 @@ Generated on: ${currentDate} at ${currentTime}
 2. **Upload Template Files**:
    - Copy all files from the \`templates/\` folder to your theme's \`templates/\` directory
 
-3. **Install Global Head Content** (if applicable):
-   - Add the content from \`snippets/global-head.liquid\` to your theme's \`layout/theme.liquid\` file
-   - Place it inside the \`<head>\` section
+3. **🎨 Install Theme Layout File (IMPORTANT)**:
+   - **Location**: \`layout/theme.liquid\` (included in this ZIP)
+   - **Action**: Replace your existing \`layout/theme.liquid\` file with the generated one
+   - **⚠️ Critical**: Use EXACTLY this theme.liquid code - it contains all optimized styles, scripts, and Shopify liquid tags
+   - **Backup**: Always backup your current theme.liquid before replacing
+   - **Why**: This file integrates all your HTML resources into proper Shopify liquid format
 
 4. **Assign Templates to Pages**:
    - In Shopify Admin, go to Online Store > Pages
@@ -117,19 +123,47 @@ The following block types were automatically added to section schemas:
     const allInjectedBlocks = new Set();
     processedFiles.forEach(file => {
         if (file.injectedBlocks) {
-            file.injectedBlocks.forEach(block => allInjectedBlocks.add(block));
+            file.injectedBlocks.forEach(block => {
+                const blockType = typeof block === 'string' ? block : (block.type || block);
+                allInjectedBlocks.add(blockType);
+            });
         }
     });
 
     if (allInjectedBlocks.size > 0) {
         Array.from(allInjectedBlocks).forEach(blockType => {
-            readme += `- **${blockType}**: Standard Shopify block for ${blockType.replace('_', ' ')} content\n`;
+            const blockTypeStr = String(blockType);
+            readme += `- **${blockTypeStr}**: Standard Shopify block for ${blockTypeStr.replace('_', ' ')} content\n`;
         });
     } else {
         readme += 'No blocks were auto-injected. All required blocks were already defined.\n';
     }
 
     readme += `
+## 🎨 Theme.liquid File Instructions
+
+### What is theme.liquid?
+The \`layout/theme.liquid\` file is the main template that wraps around all your Shopify pages. It contains:
+- All CSS styles from your HTML files
+- All JavaScript functionality  
+- Proper Shopify liquid tags
+- SEO meta tags and structured data
+- Complete HTML document structure
+
+### How to Use the Generated theme.liquid:
+1. **📁 File Location**: Find \`layout/theme.liquid\` in this ZIP package
+2. **💾 Backup First**: Always backup your current theme.liquid file
+3. **🔄 Replace**: Replace your existing theme.liquid with the generated one
+4. **✅ Use Exact Code**: The generated theme.liquid contains optimized, production-ready code
+5. **🚫 Don't Modify**: Use the exact code provided - it's already optimized for Shopify
+
+### Why This theme.liquid Code is Important:
+- ✅ **Optimized Performance**: All CSS/JS is minified and organized
+- ✅ **Shopify Compatible**: Uses proper liquid syntax and variables
+- ✅ **SEO Ready**: Includes all necessary meta tags and structured data
+- ✅ **Responsive**: Mobile-first design with proper viewport settings
+- ✅ **Production Ready**: Tested and validated for Shopify standards
+
 ## File Naming Corrections
 
 `;
@@ -155,8 +189,9 @@ After installation, you can customize these sections in the Shopify Theme Editor
 
 ## Technical Details
 
-- **Total Files Generated**: ${processedFiles.length * 2} files (${processedFiles.length} .liquid + ${processedFiles.length} .json)
+- **Total Files Generated**: ${processedFiles.length * 2 + 1} files (${processedFiles.length} .liquid + ${processedFiles.length} .json + 1 theme.liquid)
 - **Block Types Used**: ${allInjectedBlocks.size} unique block types
+- **Theme Layout**: Complete theme.liquid file with all styles and scripts integrated
 - **Shopify Compatibility**: All files follow Shopify naming conventions and structure requirements
 
 ## Support
@@ -164,7 +199,9 @@ After installation, you can customize these sections in the Shopify Theme Editor
 If you encounter any issues:
 1. Verify all files are uploaded to the correct directories
 2. Check that template assignments are correct in page settings
-3. Ensure the global head content is properly added to theme.liquid
+3. **IMPORTANT**: Ensure you're using the exact theme.liquid file provided in layout/theme.liquid
+4. Always backup your original theme.liquid before replacing
+5. Test your theme in preview mode before publishing
 
 Generated by HTML-to-Liquid Converter
 `;
@@ -200,18 +237,18 @@ Do not edit unless needed - regenerate from source HTML if major changes require
 }
 
 /**
- * Generates the global head snippet
+ * Generates the theme.liquid layout file
  * @param {string} combinedHeadContent - Combined head content from all files
- * @returns {string} - Formatted snippet content
+ * @returns {string} - Formatted theme.liquid content
  */
-export function generateGlobalHeadSnippet(combinedHeadContent) {
+export function generateThemeLayoutFile(combinedHeadContent) {
     if (!combinedHeadContent || combinedHeadContent.trim() === '') {
         return null;
     }
 
     const comment = `{%- comment -%}
-Global Head Content - Generated by HTML-to-Liquid Converter
-Add this content to your theme.liquid file inside the <head> section
+Complete Theme Layout File - Generated by HTML-to-Liquid Converter
+This file replaces your existing layout/theme.liquid file
 Generated: ${new Date().toISOString()}
 {%- endcomment -%}
 
@@ -230,7 +267,7 @@ export function prepareFilesForZip(convertedFiles, combinedHeadContent) {
     const zipFiles = {
         sections: {},
         templates: {},
-        snippets: {},
+        layout: {},
         readme: null
     };
 
@@ -269,9 +306,9 @@ export function prepareFilesForZip(convertedFiles, combinedHeadContent) {
         }
     });
 
-    const globalHeadSnippet = generateGlobalHeadSnippet(combinedHeadContent);
-    if (globalHeadSnippet) {
-        zipFiles.snippets['global-head.liquid'] = globalHeadSnippet;
+    const themeLayoutFile = generateThemeLayoutFile(combinedHeadContent);
+    if (themeLayoutFile) {
+        zipFiles.layout['theme.liquid'] = themeLayoutFile;
     }
 
     zipFiles.readme = generateREADME(processedFiles);
@@ -298,10 +335,10 @@ export async function createZipBlob(zipFiles) {
         templatesFolder.file(filename, zipFiles.templates[filename]);
     });
 
-    if (Object.keys(zipFiles.snippets).length > 0) {
-        const snippetsFolder = zip.folder('snippets');
-        Object.keys(zipFiles.snippets).forEach(filename => {
-            snippetsFolder.file(filename, zipFiles.snippets[filename]);
+    if (Object.keys(zipFiles.layout).length > 0) {
+        const layoutFolder = zip.folder('layout');
+        Object.keys(zipFiles.layout).forEach(filename => {
+            layoutFolder.file(filename, zipFiles.layout[filename]);
         });
     }
 
