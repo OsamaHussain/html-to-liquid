@@ -279,6 +279,51 @@ export function convertHtmlToLiquid(html, fileName) {
         });
     }
 
+    const footerColumns = $('footer div').filter((i, el) => {
+        const $el = $(el);
+        const hasHeading = $el.find('h3, h4, h5').length > 0;
+        const hasList = $el.find('ul, ol').length > 0 || $el.find('a').length >= 2;
+        const hasContent = $el.find('p').length > 0 || hasList;
+        const isNotContainer = !$el.hasClass('grid') && !$el.hasClass('flex') &&
+            !$el.hasClass('max-w') && !$el.hasClass('mx-auto') &&
+            !$el.hasClass('px-') && !$el.hasClass('py-') &&
+            !$el.hasClass('pt-') && !$el.hasClass('pb-') &&
+            !$el.hasClass('gap-') && !$el.hasClass('space-') &&
+            !$el.hasClass('mb-');
+
+        return hasHeading && hasContent && isNotContainer;
+    });
+
+    if (footerColumns.length >= 1) {
+        contentBlocks.push({
+            elements: footerColumns,
+            selector: 'footer-column-detected',
+            name: 'Footer Column',
+            type: 'footer_column',
+            max: 8
+        });
+    }
+
+    const socialLinks = $('footer a').filter((i, el) => {
+        const $el = $(el);
+        const hasIcon = $el.find('i[class*="fa-"], .icon').length > 0;
+        const linkClass = $el.attr('class') || '';
+        const hasHoverClass = linkClass.includes('hover') || linkClass.includes('transition');
+        const isInColumn = $el.closest('div').find('h3, h4, h5').length > 0;
+
+        return hasIcon && (hasHoverClass || $el.parent().find('a').length >= 3) && !isInColumn;
+    });
+
+    if (socialLinks.length >= 2) {
+        contentBlocks.push({
+            elements: socialLinks,
+            selector: 'social-link-detected',
+            name: 'Social Link',
+            type: 'social_link',
+            max: 10
+        });
+    }
+
     const allBlockPatterns = [...blockPatterns, ...contentBlocks];
 
     const seenTypes = new Set();
@@ -313,7 +358,7 @@ export function convertHtmlToLiquid(html, fileName) {
                 const imageEl = $el.find('img').first();
                 const iconEl = $el.find('i[class*="fa"], .icon').first();
 
-                const data = {
+                let data = {
                     heading: headingEl.length ? headingEl.text().trim() : '',
                     subheading: $el.find('h1, h2, h3, h4, h5, h6').eq(1).text().trim(),
                     description: descriptionEl.length ? descriptionEl.text().trim() : '',
@@ -326,6 +371,37 @@ export function convertHtmlToLiquid(html, fileName) {
                     price: $el.find('.price, [class*="price"], span:contains("$")').first().text().trim(),
                     rating: $el.find('.rating, [class*="rating"]').first().text().trim()
                 };
+
+                if (pattern.type === 'footer_column') {
+                    const listItems = $el.find('ul li a, ol li a');
+                    data.links = [];
+                    listItems.each((i, link) => {
+                        const $link = $(link);
+                        data.links.push({
+                            text: $link.text().trim(),
+                            url: $link.attr('href') || '#'
+                        });
+                    });
+
+                    const socialLinksInColumn = $el.find('a').filter((i, link) => {
+                        const $link = $(link);
+                        return $link.find('i[class*="fa-"]').length > 0;
+                    });
+
+                    data.socialLinks = [];
+                    socialLinksInColumn.each((i, link) => {
+                        const $link = $(link);
+                        data.socialLinks.push({
+                            url: $link.attr('href') || '#',
+                            icon: $link.find('i').attr('class') || '',
+                            text: $link.attr('title') || $link.attr('aria-label') || ''
+                        });
+                    });
+                } else if (pattern.type === 'social_link') {
+                    data.url = $el.attr('href') || '#';
+                    data.text = $el.text().trim() || $el.attr('title') || $el.attr('aria-label') || '';
+                    data.icon = $el.find('i').attr('class') || '';
+                }
 
                 if (!data.heading) {
                     const directHeading = $el.children('h1, h2, h3, h4, h5, h6').first();
@@ -444,6 +520,82 @@ export function convertHtmlToLiquid(html, fileName) {
                 });
             }
 
+            if (pattern.type === 'footer_column') {
+                const hasAnyLinks = originalData.some(data => data.links && data.links.length > 0);
+                const hasAnySocialLinks = originalData.some(data => data.socialLinks && data.socialLinks.length > 0);
+
+                blockSettings.push({
+                    type: 'text',
+                    id: 'column_title',
+                    label: 'Column Title',
+                    default: firstData.heading || '',
+                    info: 'Footer column heading'
+                });
+
+                if (firstData.description && firstData.description !== '<p></p>') {
+                    blockSettings.push({
+                        type: 'richtext',
+                        id: 'column_description',
+                        label: 'Column Description',
+                        default: formatAsRichtext(firstData.description),
+                        info: 'Footer column description text'
+                    });
+                }
+
+                if (hasAnyLinks) {
+                    for (let i = 1; i <= 6; i++) {
+                        blockSettings.push({
+                            type: 'text',
+                            id: `link_${i}_text`,
+                            label: `Link ${i} Text`,
+                            default: `Link ${i}`,
+                            info: `Text for footer link ${i}`
+                        });
+
+                        blockSettings.push({
+                            type: 'url',
+                            id: `link_${i}_url`,
+                            label: `Link ${i} URL`,
+                            default: "/",
+                            info: `URL for footer link ${i}`
+                        });
+                    }
+                }
+
+                if (hasAnySocialLinks) {
+                    const socialPlatforms = ['facebook', 'instagram', 'twitter', 'youtube', 'pinterest'];
+
+                    socialPlatforms.forEach((platform, index) => {
+                        blockSettings.push({
+                            type: 'url',
+                            id: `social_${platform}_url`,
+                            label: `${platform.charAt(0).toUpperCase() + platform.slice(1)} URL`,
+                            default: "/",
+                            info: `${platform} profile URL`
+                        });
+                    });
+                }
+            } else if (pattern.type === 'social_link') {
+                if (firstData.url) {
+                    blockSettings.push({
+                        type: 'url',
+                        id: 'url',
+                        label: `${pattern.name} URL`,
+                        default: firstData.url,
+                        info: 'Social media profile URL'
+                    });
+                }
+                if (firstData.text) {
+                    blockSettings.push({
+                        type: 'text',
+                        id: 'text',
+                        label: `${pattern.name} Text`,
+                        default: firstData.text,
+                        info: 'Social link text or title'
+                    });
+                }
+            }
+
             if (blockSettings.length > 0) {
                 blocks.push({
                     type: blockType,
@@ -463,6 +615,12 @@ export function convertHtmlToLiquid(html, fileName) {
                         switch (setting.id) {
                             case 'heading':
                                 blockData.settings[setting.id] = data.heading || setting.default;
+                                break;
+                            case 'column_title':
+                                blockData.settings[setting.id] = data.heading || setting.default;
+                                break;
+                            case 'column_description':
+                                blockData.settings[setting.id] = formatAsRichtext(data.richtext || data.description) || setting.default;
                                 break;
                             case 'subheading':
                                 blockData.settings[setting.id] = data.subheading || setting.default;
@@ -488,8 +646,43 @@ export function convertHtmlToLiquid(html, fileName) {
                             case 'rating':
                                 blockData.settings[setting.id] = parseFloat(data.rating) || setting.default;
                                 break;
+                            case 'url':
+                                blockData.settings[setting.id] = data.url || setting.default;
+                                break;
+                            case 'text':
+                                blockData.settings[setting.id] = data.text || setting.default;
+                                break;
                             default:
-                                blockData.settings[setting.id] = setting.default;
+                                if (setting.id.startsWith('link_') && setting.id.endsWith('_text')) {
+                                    const linkIndex = parseInt(setting.id.split('_')[1]) - 1;
+                                    if (data.links && data.links[linkIndex]) {
+                                        blockData.settings[setting.id] = data.links[linkIndex].text || setting.default;
+                                    } else {
+                                        blockData.settings[setting.id] = setting.default;
+                                    }
+                                } else if (setting.id.startsWith('link_') && setting.id.endsWith('_url')) {
+                                    const linkIndex = parseInt(setting.id.split('_')[1]) - 1;
+                                    if (data.links && data.links[linkIndex]) {
+                                        blockData.settings[setting.id] = data.links[linkIndex].url || setting.default;
+                                    } else {
+                                        blockData.settings[setting.id] = setting.default;
+                                    }
+                                } else if (setting.id.startsWith('social_') && setting.id.endsWith('_url')) {
+                                    const platform = setting.id.replace('social_', '').replace('_url', '');
+                                    if (data.socialLinks) {
+                                        const socialLink = data.socialLinks.find(link =>
+                                            link.icon && (
+                                                link.icon.includes(platform) ||
+                                                link.text && link.text.toLowerCase().includes(platform)
+                                            )
+                                        );
+                                        blockData.settings[setting.id] = socialLink ? socialLink.url : setting.default;
+                                    } else {
+                                        blockData.settings[setting.id] = setting.default;
+                                    }
+                                } else {
+                                    blockData.settings[setting.id] = setting.default;
+                                }
                         }
                     });
 
@@ -500,36 +693,88 @@ export function convertHtmlToLiquid(html, fileName) {
                 elements.each((index, element) => {
                     const $el = $(element);
 
-                    $el.find('h1, h2, h3, h4, h5, h6').each((i, heading) => {
-                        if ($(heading).text().trim()) {
+                    if (pattern.type === 'footer_column') {
+                        $el.find('h1, h2, h3, h4, h5, h6').each((i, heading) => {
+                            if ($(heading).text().trim() && i === 0) {
+                                $(heading).text('{{ block.settings.column_title }}');
+                            }
+                        });
+
+                        $el.find('p').each((i, p) => {
+                            if ($(p).text().trim() && i === 0) {
+                                $(p).html('{{ block.settings.column_description }}');
+                            }
+                        });
+
+                        $el.find('ul, ol').each((i, list) => {
                             if (i === 0) {
-                                $(heading).text('{{ block.settings.heading }}');
-                            } else if (i === 1 && firstData.subheading) {
-                                $(heading).text('{{ block.settings.subheading }}');
+                                $(list).html(`
+                                    {% for i in (1..6) %}
+                                      {% assign link_text_id = 'link_' | append: i | append: '_text' %}
+                                      {% assign link_url_id = 'link_' | append: i | append: '_url' %}
+                                      {% if block.settings[link_text_id] != blank and block.settings[link_url_id] != blank and block.settings[link_url_id] != "/" %}
+                                        <li><a href="{{ block.settings[link_url_id] }}">{{ block.settings[link_text_id] }}</a></li>
+                                      {% endif %}
+                                    {% endfor %}
+                                `);
                             }
-                        }
-                    });
+                        });
 
-                    $el.find('p').each((i, p) => {
-                        if ($(p).text().trim() && i === 0) {
-                            $(p).html('{{ block.settings.description }}');
-                        }
-                    });
-
-                    $el.find('.content, .description, .text').each((i, content) => {
-                        if ($(content).html() && i === 0) {
-                            $(content).html('{{ block.settings.description }}');
-                        }
-                    });
-
-                    $el.find('a, .btn, .button').each((i, btn) => {
-                        if ($(btn).text().trim() && i === 0) {
-                            $(btn).text('{{ block.settings.button_text }}');
-                            if ($(btn).attr('href')) {
-                                $(btn).attr('href', '{{ block.settings.button_url }}');
+                        $el.find('div').filter((i, socialDiv) => {
+                            return $(socialDiv).find('a i[class*="fa-"]').length > 0;
+                        }).each((i, socialDiv) => {
+                            if (i === 0) {
+                                $(socialDiv).html(`
+                                    {% assign social_platforms = 'facebook,instagram,twitter,youtube,pinterest' | split: ',' %}
+                                    {% for platform in social_platforms %}
+                                      {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
+                                      {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
+                                        <a href="{{ block.settings[social_url_id] }}" class="hover:text-white text-2xl transition" title="{{ platform | capitalize }}">
+                                          <i class="fab fa-{{ platform }}"></i>
+                                        </a>
+                                      {% endif %}
+                                    {% endfor %}
+                                `);
                             }
+                        });
+                    } else if (pattern.type === 'social_link') {
+                        $el.attr('href', '{{ block.settings.url }}');
+                        $el.find('i').attr('class', '{{ block.settings.icon }}');
+                        if ($el.text().trim()) {
+                            $el.text('{{ block.settings.text }}');
                         }
-                    });
+                    } else {
+                        $el.find('h1, h2, h3, h4, h5, h6').each((i, heading) => {
+                            if ($(heading).text().trim()) {
+                                if (i === 0) {
+                                    $(heading).text('{{ block.settings.heading }}');
+                                } else if (i === 1 && firstData.subheading) {
+                                    $(heading).text('{{ block.settings.subheading }}');
+                                }
+                            }
+                        });
+
+                        $el.find('p').each((i, p) => {
+                            if ($(p).text().trim() && i === 0) {
+                                $(p).html('{{ block.settings.description }}');
+                            }
+                        });
+
+                        $el.find('.content, .description, .text').each((i, content) => {
+                            if ($(content).html() && i === 0) {
+                                $(content).html('{{ block.settings.description }}');
+                            }
+                        });
+
+                        $el.find('a, .btn, .button').each((i, btn) => {
+                            if ($(btn).text().trim() && i === 0) {
+                                $(btn).text('{{ block.settings.button_text }}');
+                                if ($(btn).attr('href')) {
+                                    $(btn).attr('href', '{{ block.settings.button_url }}');
+                                }
+                            }
+                        });
+                    }
 
                     $el.find('img').each((i, img) => {
                         if ($(img).attr('src') && i === 0) {
@@ -553,10 +798,81 @@ export function convertHtmlToLiquid(html, fileName) {
                     });
                 });
 
-                const firstElementHtml = $.html($(elements[0]));
-                const blockHtml = formatBlockHtml(firstElementHtml);
+                if (pattern.type === 'footer_column') {
+                    const footerContainer = $(elements[0]).closest('footer, .footer');
 
-                const wrapper = `
+                    if (footerContainer.length > 0) {
+                        const gridContainer = $(elements[0]).parent();
+
+                        const footerWrapper = `
+{%- comment -%} Footer Column Blocks {%- endcomment -%}
+{% for block in section.blocks %}
+  {% case block.type %}
+    {% when 'footer_column' %}
+      <div>
+        {% if block.settings.column_title != blank %}
+          <h3 class="text-2xl font-semibold mb-4">{{ block.settings.column_title }}</h3>
+        {% endif %}
+        {% if block.settings.column_description != blank %}
+          {{ block.settings.column_description }}
+        {% endif %}
+        
+        {%- comment -%} Individual Link Settings {%- endcomment -%}
+        {% assign has_links = false %}
+        {% for i in (1..6) %}
+          {% assign link_text_id = 'link_' | append: i | append: '_text' %}
+          {% assign link_url_id = 'link_' | append: i | append: '_url' %}
+          {% if block.settings[link_text_id] != blank and block.settings[link_url_id] != blank and block.settings[link_url_id] != "/" %}
+            {% assign has_links = true %}
+            {% break %}
+          {% endif %}
+        {% endfor %}
+        
+        {% if has_links %}
+          <ul class="space-y-1">
+            {% for i in (1..6) %}
+              {% assign link_text_id = 'link_' | append: i | append: '_text' %}
+              {% assign link_url_id = 'link_' | append: i | append: '_url' %}
+              {% if block.settings[link_text_id] != blank and block.settings[link_url_id] != blank and block.settings[link_url_id] != "/" %}
+                <li><a href="{{ block.settings[link_url_id] }}">{{ block.settings[link_text_id] }}</a></li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        {% endif %}
+        
+        {%- comment -%} Individual Social Link Settings {%- endcomment -%}
+        {% assign has_social = false %}
+        {% assign social_platforms = 'facebook,instagram,twitter,youtube,pinterest' | split: ',' %}
+        {% for platform in social_platforms %}
+          {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
+          {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
+            {% assign has_social = true %}
+            {% break %}
+          {% endif %}
+        {% endfor %}
+        
+        {% if has_social %}
+          <div class="flex space-x-5 mt-2">
+            {% for platform in social_platforms %}
+              {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
+              {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
+                <a href="{{ block.settings[social_url_id] }}" class="hover:text-white text-2xl transition" title="{{ platform | capitalize }}">
+                  <i class="fab fa-{{ platform }}"></i>
+                </a>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    {% endcase %}
+{% endfor %}`;
+
+                        gridContainer.html(footerWrapper);
+                    } else {
+                        const firstElementHtml = $.html($(elements[0]));
+                        const blockHtml = formatBlockHtml(firstElementHtml);
+
+                        const wrapper = `
 {%- comment -%} ${pattern.name} Blocks {%- endcomment -%}
 {% for block in section.blocks %}
   {% case block.type %}
@@ -565,10 +881,29 @@ ${blockHtml}
     {% endcase %}
 {% endfor %}`;
 
-                $(elements[0]).replaceWith(wrapper);
-                elements.slice(1).each((index, el) => {
-                    $(el).remove();
-                });
+                        $(elements[0]).replaceWith(wrapper);
+                        elements.slice(1).each((index, el) => {
+                            $(el).remove();
+                        });
+                    }
+                } else {
+                    const firstElementHtml = $.html($(elements[0]));
+                    const blockHtml = formatBlockHtml(firstElementHtml);
+
+                    const wrapper = `
+{%- comment -%} ${pattern.name} Blocks {%- endcomment -%}
+{% for block in section.blocks %}
+  {% case block.type %}
+    {% when '${blockType}' %}
+${blockHtml}
+    {% endcase %}
+{% endfor %}`;
+
+                    $(elements[0]).replaceWith(wrapper);
+                    elements.slice(1).each((index, el) => {
+                        $(el).remove();
+                    });
+                }
             }
         }
     });
@@ -584,7 +919,7 @@ ${blockHtml}
 
     $('h1, h2, h3, h4, h5, h6').each((i, el) => {
         const text = $(el).text().trim() || '';
-        const isInsideBlock = $(el).closest('.feature, .card, .product, .product-card, .testimonial, .team-member, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide').length > 0;
+        const isInsideBlock = $(el).closest('.feature, .card, .product, .product-card, .testimonial, .team-member, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide, footer').length > 0;
 
         if (text && !text.includes('{{') && !isInsideBlock) {
             const tagName = el.tagName.toLowerCase();
@@ -604,7 +939,7 @@ ${blockHtml}
 
     $('p').each((i, el) => {
         const text = $(el).text().trim() || '';
-        const isInsideBlock = $(el).closest('.feature, .card, .product, .product-card, .testimonial, .team-member, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide').length > 0;
+        const isInsideBlock = $(el).closest('.feature, .card, .product, .product-card, .testimonial, .team-member, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide, footer').length > 0;
 
         if (text && text.length > 10 && !text.includes('{{') && !isInsideBlock) {
             const settingId = `section_text_${settingCounter++}`;
@@ -624,7 +959,7 @@ ${blockHtml}
     $('a, button, .btn, .button').each((i, el) => {
         const text = $(el).text().trim() || '';
         const href = $(el).attr('href') || '';
-        const isInsideBlock = $(el).closest('.feature, .card, .product, .product-card, .testimonial, .team-member, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide').length > 0;
+        const isInsideBlock = $(el).closest('.feature, .card, .product, .product-card, .testimonial, .team-member, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide, footer').length > 0;
 
         if (text && !text.includes('{{') && !isInsideBlock) {
             const textSettingId = `section_button_text_${settingCounter++}`;
@@ -656,7 +991,7 @@ ${blockHtml}
     $('img').each((i, el) => {
         const src = $(el).attr('src') || '';
         const alt = $(el).attr('alt') || '';
-        const isInsideBlock = $(el).closest('.feature, .card, .product, .product-card, .testimonial, .team-member, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide').length > 0;
+        const isInsideBlock = $(el).closest('.feature, .card, .product, .product-card, .testimonial, .team-member, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide, footer').length > 0;
 
         if (src && !src.includes('{{') && !isInsideBlock) {
             const imgSettingId = `section_image_${imageCounter}`;
