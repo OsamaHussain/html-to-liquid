@@ -174,6 +174,15 @@ export function validateSchemaQuotes(schemaString) {
  * @returns {object} - Result with fixed content and validation info
  */
 export function fixSchemaQuotesInLiquid(liquidContent) {
+    if (!liquidContent || typeof liquidContent !== 'string') {
+        return {
+            success: false,
+            error: 'Invalid liquidContent: must be a non-empty string',
+            content: liquidContent || '',
+            issues: []
+        };
+    }
+
     const schemaMatch = liquidContent.match(/{% schema %}([\s\S]*?){% endschema %}/);
 
     if (!schemaMatch) {

@@ -272,18 +272,19 @@ export default function ConversionSection({
                     </div>
                 )}
 
-                {combinedHeadContent && (
+                {(combinedHeadContent || convertedFiles.length > 0) && (
                     <div style={{
                         marginTop: 'clamp(20px, 5vw, 30px)',
                         padding: 'clamp(15px, 4vw, 20px)',
-                        background: 'rgba(0, 212, 255, 0.1)',
+                        background: 'rgba(0, 255, 136, 0.15)',
                         borderRadius: 'clamp(10px, 3vw, 15px)',
-                        border: '1px solid rgba(0, 212, 255, 0.3)'
+                        border: '2px solid rgba(0, 255, 136, 0.4)',
+                        boxShadow: '0 8px 25px rgba(0, 255, 136, 0.2)'
                     }}>
                         <div style={{
                             marginBottom: 'clamp(15px, 4vw, 20px)',
                             padding: 'clamp(10px, 3vw, 15px)',
-                            background: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
+                            background: 'linear-gradient(135deg, #00ff88 0%, #00cc66 100%)',
                             borderRadius: '10px',
                             textAlign: 'center'
                         }}>
@@ -294,7 +295,7 @@ export default function ConversionSection({
                                 fontWeight: '700',
                                 textShadow: '0 2px 4px rgba(0,0,0,0.3)'
                             }}>
-                                🎨 Combined Theme Head Section
+                                🎨 Production-Ready Theme.liquid File
                             </h3>
                             <p style={{
                                 color: 'rgba(255, 255, 255, 0.9)',
@@ -302,16 +303,19 @@ export default function ConversionSection({
                                 fontSize: 'clamp(12px, 3vw, 14px)',
                                 fontWeight: '500'
                             }}>
-                                All head content from your files combined for theme.liquid ({combinedHeadContent.split('\n').filter(line => line.trim()).length} unique lines)
+                                {combinedHeadContent
+                                    ? `Clean Shopify theme.liquid file with all your resources properly integrated (${combinedHeadContent.split('\n').filter(line => line.trim()).length} lines)`
+                                    : 'Upload and convert HTML files to generate your theme.liquid file'
+                                }
                             </p>
                         </div>
 
                         <CodeViewer
-                            content={combinedHeadContent}
-                            fileName="combined-theme-head.liquid"
+                            content={combinedHeadContent || '<!-- No combined head content available yet. Upload and convert HTML files to see the theme.liquid output here. -->'}
+                            fileName="theme.liquid"
                             fileType="Liquid"
-                            title="Combined Head Content for Theme.liquid"
-                            onDownload={downloadCombinedHeadFile}
+                            title="🎨 Production-Ready Theme.liquid File"
+                            onDownload={combinedHeadContent ? downloadCombinedHeadFile : null}
                         />
                     </div>
                 )}

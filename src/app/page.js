@@ -14,7 +14,6 @@ import { validateAndExtractHtml, validateAllFiles } from "../utils/htmlValidatio
 import { validateBatchFilenames } from "../utils/filenameValidation";
 import { generateAndDownloadZip } from "../utils/zipGenerator";
 import { detectExistingSchema } from "../utils/schemaDetection";
-import { processHeadContentWithDeduplication } from "../utils/headDeduplication";
 
 export default function Home() {
   const [numberOfFiles, setNumberOfFiles] = useState(0);
@@ -283,12 +282,71 @@ export default function Home() {
       }
 
       if (allHeadContents.length > 0) {
-        const deduplicationResult = processHeadContentWithDeduplication(allHeadContents, fileNames);
-        setCombinedHeadContent(deduplicationResult.content);
+        console.log('🔄 Combining head content from', allHeadContents.length, 'files...');
 
-        if (deduplicationResult.duplicatesRemoved > 0) {
-          console.log('Head deduplication summary:', deduplicationResult.summary);
-        }
+        const allResources = new Set();
+
+        allHeadContents.forEach((content, index) => {
+          const resourceMatch = content.match(/\{\{\s*content_for_header\s*\}\}([\s\S]*?)<\/head>/i);
+          if (resourceMatch) {
+            const resources = resourceMatch[1].trim();
+            if (resources) {
+              resources.split('\n').forEach(line => {
+                const trimmedLine = line.trim();
+                if (trimmedLine &&
+                  (trimmedLine.startsWith('<link') || trimmedLine.startsWith('<script'))) {
+                  allResources.add(trimmedLine);
+                }
+              });
+            }
+          }
+        });
+
+        const combinedResources = Array.from(allResources).join('\n    ');
+
+        const finalThemeContent = `<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="{{ settings.color_button }}">
+    <link rel="canonical" href="{{ canonical_url }}">
+
+    <title>
+      {% if title != blank %}{{ title }}{% else %}{{ shop.name }}{% endif %}
+    </title>
+    <meta name="description" content="{{ page_description | escape }}">
+
+    <!-- CSS -->
+    {{ 'base.css' | asset_url | stylesheet_tag }}
+    {{ 'theme.css' | asset_url | stylesheet_tag }}
+
+    <!-- Scripts -->
+    <script>
+      document.documentElement.className = document.documentElement.className.replace('no-js', 'js');
+    </script>
+
+    {{ content_for_header }}
+    ${combinedResources ? '\n    ' + combinedResources + '\n    ' : ''}
+  </head>
+
+  <body class="template-{{ template | handle }}">
+    <a href="#MainContent" class="skip-to-content visually-hidden">Skip to content</a>
+
+    <main id="MainContent" role="main">
+      {{ content_for_layout }}
+    </main>
+
+    {{ content_for_footer }}
+
+    <!-- JavaScript -->
+    {{ 'theme.js' | asset_url | script_tag }}
+  </body>
+</html>`;
+
+        setCombinedHeadContent(finalThemeContent);
+        console.log('✅ Successfully combined resources from all', allHeadContents.length, 'files');
+        console.log('📊 Total unique resources found:', allResources.size);
       }
 
     } catch (error) {

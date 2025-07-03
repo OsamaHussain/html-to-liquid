@@ -11,6 +11,7 @@
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "axios": "^1.10.0",
+    "cheerio": "^1.1.0",
     "file-saver": "^2.0.5",
     "htmlhint": "^1.2.0",
     "jszip": "^3.10.1",

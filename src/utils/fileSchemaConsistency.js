@@ -9,6 +9,15 @@
  * @returns {object} - Schema information including name and type
  */
 export function extractSchemaInfo(liquidContent) {
+    if (!liquidContent || typeof liquidContent !== 'string') {
+        return {
+            hasSchema: false,
+            schemaName: null,
+            schemaType: null,
+            error: 'Invalid liquidContent: must be a non-empty string'
+        };
+    }
+
     const schemaMatch = liquidContent.match(/{% schema %}([\s\S]*?){% endschema %}/);
 
     if (!schemaMatch) {
