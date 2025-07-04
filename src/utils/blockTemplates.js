@@ -734,6 +734,47 @@ export const STANDARD_BLOCK_TYPES = {
                 default: "left"
             }
         ]
+    },
+
+    transformation: {
+        type: "transformation",
+        name: "Transformation",
+        settings: [
+            {
+                type: "text",
+                id: "heading",
+                label: "Transformation Heading",
+                default: "Before & After"
+            },
+            {
+                type: "richtext",
+                id: "description",
+                label: "Transformation Description",
+                default: "<p>See the amazing transformation results</p>"
+            },
+            {
+                type: "image_picker",
+                id: "before_image",
+                label: "Before Image"
+            },
+            {
+                type: "text",
+                id: "before_image_alt",
+                label: "Before Image Alt Text",
+                default: "Before transformation"
+            },
+            {
+                type: "image_picker",
+                id: "after_image",
+                label: "After Image"
+            },
+            {
+                type: "text",
+                id: "after_image_alt",
+                label: "After Image Alt Text",
+                default: "After transformation"
+            }
+        ]
     }
 };
 

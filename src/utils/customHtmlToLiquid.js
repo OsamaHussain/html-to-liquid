@@ -452,7 +452,37 @@ export function convertHtmlToLiquid(html, fileName) {
                     });
                 }
 
-                if (firstData.imageSrc) {
+                if (pattern.type === 'transformation') {
+                    blockSettings.push({
+                        type: 'image_picker',
+                        id: 'before_image',
+                        label: 'Before Image',
+                        info: 'Upload the before transformation image'
+                    });
+
+                    blockSettings.push({
+                        type: 'text',
+                        id: 'before_image_alt',
+                        label: 'Before Image Alt Text',
+                        default: 'Before transformation',
+                        info: 'Alt text for before image'
+                    });
+
+                    blockSettings.push({
+                        type: 'image_picker',
+                        id: 'after_image',
+                        label: 'After Image',
+                        info: 'Upload the after transformation image'
+                    });
+
+                    blockSettings.push({
+                        type: 'text',
+                        id: 'after_image_alt',
+                        label: 'After Image Alt Text',
+                        default: 'After transformation',
+                        info: 'Alt text for after image'
+                    });
+                } else if (firstData.imageSrc) {
                     blockSettings.push({
                         type: 'image_picker',
                         id: 'image',
@@ -779,14 +809,43 @@ export function convertHtmlToLiquid(html, fileName) {
                         });
                     }
 
-                    $el.find('img').each((i, img) => {
-                        if ($(img).attr('src') && i === 0) {
-                            $(img).attr('src', 'LIQUID_BLOCK_IMAGE_SRC_PLACEHOLDER');
-                            if ($(img).attr('alt')) {
-                                $(img).attr('alt', 'LIQUID_BLOCK_IMAGE_ALT_PLACEHOLDER');
+                    if (pattern.type === 'transformation') {
+                        $el.find('.before-image, .before img').each((i, img) => {
+                            if ($(img).attr('src') && i === 0) {
+                                $(img).attr('src', '{{ block.settings.before_image | img_url: \'master\' }}');
+                                if ($(img).attr('alt')) {
+                                    $(img).attr('alt', '{{ block.settings.before_image_alt }}');
+                                }
                             }
+                        });
+
+                        $el.find('.after-image, .after img').each((i, img) => {
+                            if ($(img).attr('src') && i === 0) {
+                                $(img).attr('src', '{{ block.settings.after_image | img_url: \'master\' }}');
+                                if ($(img).attr('alt')) {
+                                    $(img).attr('alt', '{{ block.settings.after_image_alt }}');
+                                }
+                            }
+                        });
+
+                        const allImages = $el.find('img');
+                        if (allImages.length >= 2 &&
+                            $el.find('.before-image, .after-image, .before, .after').length === 0) {
+                            $(allImages[0]).attr('src', '{{ block.settings.before_image | img_url: \'master\' }}');
+                            $(allImages[0]).attr('alt', '{{ block.settings.before_image_alt }}');
+                            $(allImages[1]).attr('src', '{{ block.settings.after_image | img_url: \'master\' }}');
+                            $(allImages[1]).attr('alt', '{{ block.settings.after_image_alt }}');
                         }
-                    });
+                    } else {
+                        $el.find('img').each((i, img) => {
+                            if ($(img).attr('src') && i === 0) {
+                                $(img).attr('src', 'LIQUID_BLOCK_IMAGE_SRC_PLACEHOLDER');
+                                if ($(img).attr('alt')) {
+                                    $(img).attr('alt', 'LIQUID_BLOCK_IMAGE_ALT_PLACEHOLDER');
+                                }
+                            }
+                        });
+                    }
 
                     $el.find('i[class*="fa"], .icon').each((i, icon) => {
                         if ($(icon).attr('class') && i === 0) {
