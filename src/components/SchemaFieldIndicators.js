@@ -1,9 +1,10 @@
-import { getFieldRequirement, getSchemaFieldStats, FIELD_REQUIREMENT_TYPES } from '../utils/schemaFieldTypes';
+import { getFieldRequirement, getSchemaFieldStats, getAdvancedSchemaStats, FIELD_REQUIREMENT_TYPES } from '../utils/schemaFieldTypes';
 
 export default function SchemaFieldIndicators({ schema, isVisible = true }) {
     if (!isVisible || !schema) return null;
 
     const stats = getSchemaFieldStats(schema);
+    const advancedStats = getAdvancedSchemaStats(schema);
 
     const renderFieldIndicator = (field, index) => {
         const requirement = getFieldRequirement(field);
@@ -308,6 +309,82 @@ export default function SchemaFieldIndicators({ schema, isVisible = true }) {
                     </div>
                 </div>
             </div>
+
+            {advancedStats.recommendations.length > 0 && (
+                <div style={{
+                    marginTop: '20px',
+                    padding: '16px',
+                    background: 'rgba(255, 193, 7, 0.1)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255, 193, 7, 0.3)',
+                    position: 'relative',
+                    zIndex: 1
+                }}>
+                    <h5 style={{
+                        margin: '0 0 12px 0',
+                        fontSize: 'clamp(14px, 3.5vw, 16px)',
+                        fontWeight: '600',
+                        color: '#ffc107',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}>
+                        💡 Recommendations
+                    </h5>
+                    <ul style={{
+                        margin: 0,
+                        paddingLeft: '20px',
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        fontSize: 'clamp(12px, 3vw, 14px)'
+                    }}>
+                        {advancedStats.recommendations.map((recommendation, index) => (
+                            <li key={index} style={{ marginBottom: '4px' }}>
+                                {recommendation}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            {advancedStats.criticalMissing.length > 0 && (
+                <div style={{
+                    marginTop: '15px',
+                    padding: '16px',
+                    background: 'rgba(220, 53, 69, 0.1)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(220, 53, 69, 0.3)',
+                    position: 'relative',
+                    zIndex: 1
+                }}>
+                    <h5 style={{
+                        margin: '0 0 12px 0',
+                        fontSize: 'clamp(14px, 3.5vw, 16px)',
+                        fontWeight: '600',
+                        color: '#dc3545',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}>
+                        ⚠️ Missing Critical Fields
+                    </h5>
+                    <div style={{
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        fontSize: 'clamp(12px, 3vw, 14px)'
+                    }}>
+                        {advancedStats.criticalMissing.map((missing, index) => (
+                            <div key={index} style={{
+                                marginBottom: '6px',
+                                padding: '6px 10px',
+                                background: 'rgba(220, 53, 69, 0.1)',
+                                borderRadius: '6px',
+                                border: '1px solid rgba(220, 53, 69, 0.2)'
+                            }}>
+                                <strong>{missing.blockType}:</strong> {missing.missing.description}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

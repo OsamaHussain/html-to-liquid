@@ -27,18 +27,47 @@ export function getFieldRequirement(field) {
 
     const criticalIds = [
         'title', 'heading', 'section_title', 'button_text',
-        'link_url', 'link_text', 'nav_link', 'menu_item'
+        'link_url', 'link_text', 'nav_link', 'menu_item',
+        'name', 'content', 'description', 'subtitle'
     ];
 
     if (field.id && criticalIds.some(id => field.id.includes(id))) {
         return FIELD_REQUIREMENT_TYPES.REQUIRED;
     }
 
+    const requiredPatterns = [
+        /^(heading|title|name|content|description)$/i,
+        /_(heading|title|name|text|content)$/i,
+        /^(button|link|nav|menu)_/i,
+        /^section_(title|heading|name)$/i
+    ];
+
+    if (field.id && requiredPatterns.some(pattern => pattern.test(field.id))) {
+        return FIELD_REQUIREMENT_TYPES.REQUIRED;
+    }
+
     if (field.type && requiredFieldTypes.includes(field.type)) {
+        if (field.type === 'textarea' && field.id &&
+            (field.id.includes('description') || field.id.includes('bio') || field.id.includes('details'))) {
+            return FIELD_REQUIREMENT_TYPES.OPTIONAL;
+        }
         return FIELD_REQUIREMENT_TYPES.REQUIRED;
     }
 
     if (field.type && optionalFieldTypes.includes(field.type)) {
+        return FIELD_REQUIREMENT_TYPES.OPTIONAL;
+    }
+
+    const specialOptionalTypes = [
+        'image_picker', 'url', 'richtext', 'html', 'number', 'range',
+        'collection', 'product', 'blog', 'page', 'link_list', 'video_url', 'article'
+    ];
+
+    if (field.type && specialOptionalTypes.includes(field.type)) {
+        if (field.type === 'url' && field.id &&
+            (field.id.includes('button') || field.id.includes('link') || field.id.includes('nav'))) {
+            return FIELD_REQUIREMENT_TYPES.REQUIRED;
+        }
         return FIELD_REQUIREMENT_TYPES.OPTIONAL;
     }
 
@@ -140,6 +169,32 @@ export function formatFieldLabel(label, isRequired) {
     const cleanLabel = label.replace(/^\*\s*/, '').replace(/\s*\*$/, '');
 
     return isRequired ? `${cleanLabel} *` : cleanLabel;
+}
+
+/**
+ * Enhanced field requirement detection with context awareness
+ */
+export function getEnhancedFieldRequirement(field, blockContext = null) {
+    const basicRequirement = getFieldRequirement(field);
+
+    if (blockContext) {
+        if (blockContext.type === 'header' && field.id &&
+            (field.id.includes('nav') || field.id.includes('logo'))) {
+            return FIELD_REQUIREMENT_TYPES.REQUIRED;
+        }
+
+        if (blockContext.type === 'button' && field.id &&
+            (field.id.includes('text') || field.id.includes('url'))) {
+            return FIELD_REQUIREMENT_TYPES.REQUIRED;
+        }
+
+        if (blockContext.type === 'product' && field.id &&
+            (field.id.includes('title') || field.id.includes('price'))) {
+            return FIELD_REQUIREMENT_TYPES.REQUIRED;
+        }
+    }
+
+    return basicRequirement;
 }
 
 /**
@@ -458,4 +513,107 @@ export function validateAndCorrectSchema(schema) {
         errors,
         corrected: correctedSchema
     };
+}
+
+/**
+ * Advanced schema field requirement analysis with context
+ * @param {object} schema - Complete schema object
+ * @returns {object} - Enhanced statistics with context analysis
+ */
+export function getAdvancedSchemaStats(schema) {
+    const basicStats = getSchemaFieldStats(schema);
+    const analysis = {
+        ...basicStats,
+        blockAnalysis: [],
+        criticalMissing: [],
+        recommendations: []
+    };
+
+    if (schema.blocks) {
+        schema.blocks.forEach((block, index) => {
+            const blockStats = {
+                blockType: block.type || `Block ${index + 1}`,
+                blockName: block.name || block.type,
+                totalFields: 0,
+                requiredFields: 0,
+                optionalFields: 0,
+                missingCritical: []
+            };
+
+            if (block.settings) {
+                block.settings.forEach(field => {
+                    blockStats.totalFields++;
+                    const requirement = getEnhancedFieldRequirement(field, block);
+                    if (requirement === FIELD_REQUIREMENT_TYPES.REQUIRED) {
+                        blockStats.requiredFields++;
+                    } else {
+                        blockStats.optionalFields++;
+                    }
+                });
+            }
+
+            const criticalFieldsForType = getCriticalFieldsForBlockType(block.type);
+            criticalFieldsForType.forEach(criticalField => {
+                const hasField = block.settings?.some(field =>
+                    field.id === criticalField.id ||
+                    field.id.includes(criticalField.pattern)
+                );
+                if (!hasField) {
+                    blockStats.missingCritical.push(criticalField);
+                    analysis.criticalMissing.push({
+                        blockType: block.type,
+                        missing: criticalField
+                    });
+                }
+            });
+
+            analysis.blockAnalysis.push(blockStats);
+        });
+    }
+
+    if (analysis.criticalMissing.length > 0) {
+        analysis.recommendations.push(
+            'Consider adding missing critical fields for better user experience'
+        );
+    }
+
+    if (basicStats.requiredFields === 0) {
+        analysis.recommendations.push(
+            'Schema has no required fields - consider marking important fields as required'
+        );
+    }
+
+    return analysis;
+}
+
+/**
+ * Get critical fields that should exist for specific block types
+ * @param {string} blockType - The type of block
+ * @returns {array} - Array of critical field definitions
+ */
+function getCriticalFieldsForBlockType(blockType) {
+    const criticalFields = {
+        'header': [
+            { id: 'logo_image', pattern: 'logo', description: 'Logo image for branding' },
+            { id: 'nav_link_1_text', pattern: 'nav', description: 'Navigation links' }
+        ],
+        'button': [
+            { id: 'button_text', pattern: 'text', description: 'Button text' },
+            { id: 'button_url', pattern: 'url', description: 'Button URL' }
+        ],
+        'product': [
+            { id: 'product_title', pattern: 'title', description: 'Product title' },
+            { id: 'product_price', pattern: 'price', description: 'Product price' }
+        ],
+        'testimonial': [
+            { id: 'customer_name', pattern: 'name', description: 'Customer name' },
+            { id: 'testimonial_text', pattern: 'text', description: 'Testimonial content' }
+        ],
+        'feature': [
+            { id: 'feature_title', pattern: 'title', description: 'Feature title' },
+            { id: 'feature_description', pattern: 'description', description: 'Feature description' }
+        ]
+    };
+
+    return criticalFields[blockType] || [];
 }
