@@ -979,11 +979,60 @@ ${blockHtml}
         advanced: { label: 'Advanced Settings', settings: [] }
     };
 
+    $('header h1, header h2, header h3, nav h1, nav h2, nav h3, .navbar h1, .navbar h2, .navbar h3, .logo-text, .brand-text, .site-title').each((i, el) => {
+        const text = $(el).text().trim() || '';
+        if (text && !text.includes('{{')) {
+            const settingId = `header_title_${settingCounter++}`;
+
+            sectionGroups.content.settings.push({
+                type: 'text',
+                id: settingId,
+                label: `Header Title: ${text.substring(0, 30)}${text.length > 30 ? '...' : ''}`,
+                default: text,
+                info: 'Header/brand title text'
+            });
+
+            $(el).text(`{{ section.settings.${settingId} }}`);
+        }
+    });
+
+    $('header a, nav a, .navbar a, .nav-link').each((i, el) => {
+        const text = $(el).text().trim() || '';
+        const href = $(el).attr('href') || '';
+        const isLogo = $(el).find('img').length > 0 || $(el).closest('.logo, .brand').length > 0;
+
+        if (text && !text.includes('{{') && !isLogo && href && href !== '#') {
+            const textSettingId = `nav_link_text_${settingCounter}`;
+            const urlSettingId = `nav_link_url_${settingCounter++}`;
+
+            sectionGroups.content.settings.push({
+                type: 'text',
+                id: textSettingId,
+                label: `Navigation: ${text}`,
+                default: text,
+                info: 'Navigation link text'
+            });
+
+            sectionGroups.content.settings.push({
+                type: 'url',
+                id: urlSettingId,
+                label: `Navigation URL: ${text}`,
+                default: href,
+                info: 'Navigation link destination'
+            });
+
+            $(el).text(`{{ section.settings.${textSettingId} }}`);
+            $(el).attr('href', `{{ section.settings.${urlSettingId} }}`);
+        }
+    });
+
     $('h1, h2, h3, h4, h5, h6').each((i, el) => {
         const text = $(el).text().trim() || '';
         const isInsideBlock = $(el).closest('.feature, .card, .product, .product-card, .testimonial, .team-member, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide, footer').length > 0;
+        const isInHeader = $(el).closest('header, nav, .navbar, .logo, .brand').length > 0 ||
+            $(el).hasClass('logo-text') || $(el).hasClass('brand-text') || $(el).hasClass('site-title');
 
-        if (text && !text.includes('{{') && !isInsideBlock) {
+        if (text && !text.includes('{{') && !isInsideBlock && !isInHeader) {
             const tagName = el.tagName.toLowerCase();
             const settingId = `section_${tagName}_${settingCounter++}`;
 
@@ -1022,8 +1071,10 @@ ${blockHtml}
         const text = $(el).text().trim() || '';
         const href = $(el).attr('href') || '';
         const isInsideBlock = $(el).closest('.feature, .card, .product, .product-card, .testimonial, .team-member, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide, footer').length > 0;
+        const isInHeader = $(el).closest('header, nav, .navbar').length > 0 || $(el).hasClass('nav-link');
+        const isLogoLink = $(el).find('img').length > 0 || $(el).closest('.logo, .brand').length > 0;
 
-        if (text && !text.includes('{{') && !isInsideBlock) {
+        if (text && !text.includes('{{') && !isInsideBlock && !isInHeader && !isLogoLink) {
             const textSettingId = `section_button_text_${settingCounter++}`;
 
             sectionGroups.content.settings.push({
@@ -1050,12 +1101,47 @@ ${blockHtml}
     });
 
     let imageCounter = 1;
+
+    $('header img, nav img, .navbar img, .logo img, .brand img, img[alt*="logo"], img[src*="logo"], .header img').each((i, el) => {
+        const src = $(el).attr('src') || '';
+        const alt = $(el).attr('alt') || '';
+
+        if (src && !src.includes('{{')) {
+            const imgSettingId = `header_logo_${imageCounter}`;
+
+            sectionGroups.content.settings.push({
+                type: 'image_picker',
+                id: imgSettingId,
+                label: `Header Logo ${imageCounter}`,
+                info: 'Upload header/logo image'
+            });
+
+            if (alt) {
+                const altSettingId = `header_logo_alt_${imageCounter}`;
+                sectionGroups.content.settings.push({
+                    type: 'text',
+                    id: altSettingId,
+                    label: `Header Logo Alt Text ${imageCounter}`,
+                    default: alt,
+                    info: 'Alt text for header/logo image'
+                });
+                $(el).attr('alt', `{{ section.settings.${altSettingId} }}`);
+            }
+
+            $(el).attr('src', `{{ section.settings.${imgSettingId} | img_url: 'master' }}`);
+            imageCounter++;
+        }
+    });
+
     $('img').each((i, el) => {
         const src = $(el).attr('src') || '';
         const alt = $(el).attr('alt') || '';
         const isInsideBlock = $(el).closest('.feature, .card, .product, .product-card, .testimonial, .team-member, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide, footer').length > 0;
+        const isHeaderImage = $(el).closest('header, nav, .navbar, .logo, .brand, .header').length > 0 ||
+            $(el).attr('alt') && $(el).attr('alt').toLowerCase().includes('logo') ||
+            $(el).attr('src') && $(el).attr('src').toLowerCase().includes('logo');
 
-        if (src && !src.includes('{{') && !isInsideBlock) {
+        if (src && !src.includes('{{') && !isInsideBlock && !isHeaderImage) {
             const imgSettingId = `section_image_${imageCounter}`;
 
             sectionGroups.content.settings.push({
@@ -1066,7 +1152,7 @@ ${blockHtml}
             });
 
             if (alt) {
-                const altSettingId = `section_image_alt_${imageCounter + 1}`;
+                const altSettingId = `section_image_alt_${imageCounter}`;
                 sectionGroups.content.settings.push({
                     type: 'text',
                     id: altSettingId,
