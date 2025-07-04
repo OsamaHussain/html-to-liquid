@@ -201,63 +201,114 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                             If the first result doesn't meet your expectations, simply click generate again for improved results.
                         </p>
                         <div style={{
-                            background: 'rgba(255, 152, 0, 0.1)',
-                            border: '1px solid rgba(255, 152, 0, 0.3)',
-                            borderRadius: 'clamp(6px, 1.5vw, 8px)',
-                            padding: 'clamp(10px, 2.5vw, 12px)',
-                            marginTop: '12px'
+                            background: 'rgba(0, 255, 136, 0.1)',
+                            border: '1px solid rgba(0, 255, 136, 0.3)',
+                            borderRadius: 'clamp(8px, 2vw, 12px)',
+                            padding: 'clamp(15px, 4vw, 20px)',
+                            marginTop: '15px'
                         }}>
-                            <p style={{
-                                color: '#ff9800',
-                                fontSize: 'clamp(11px, 2.5vw, 13px)',
-                                lineHeight: '1.5',
-                                margin: 0,
-                                fontWeight: '600'
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 'clamp(8px, 2vw, 10px)',
+                                marginBottom: 'clamp(12px, 3vw, 15px)'
                             }}>
-                                <span style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}>🤝</span> I assume you have provided well-structured HTML code with proper semantic markup.
-                                The tool works best with organized HTML layouts. If AI repeatedly generates incorrect results, please verify your HTML structure and formatting.
-                            </p>
+                                <span style={{ fontSize: 'clamp(16px, 4vw, 18px)' }}>🎯</span>
+                                <h4 style={{
+                                    margin: 0,
+                                    color: '#00ff88',
+                                    fontSize: 'clamp(13px, 3.2vw, 15px)',
+                                    fontWeight: '700'
+                                }}>
+                                    Best Results Instructions
+                                </h4>
+                            </div>
+
+                            <div style={{ marginBottom: '15px' }}>
+                                <h5 style={{
+                                    margin: '0 0 8px 0',
+                                    color: '#ffffff',
+                                    fontSize: 'clamp(12px, 3vw, 14px)',
+                                    fontWeight: '600',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                }}>
+                                    <span>✅</span> HTML Structure Requirements:
+                                </h5>
+                                <ul style={{
+                                    margin: '0 0 15px 0',
+                                    paddingLeft: '20px',
+                                    color: '#e6e6e6',
+                                    fontSize: 'clamp(11px, 2.5vw, 13px)',
+                                    lineHeight: '1.5'
+                                }}>
+                                    <li><strong style={{ color: '#00ff88' }}>Clean HTML:</strong> Well-structured, semantic markup with proper indentation</li>
+                                    <li><strong style={{ color: '#00ff88' }}>CSS Classes:</strong> Use descriptive classes like <code style={{
+                                        background: 'rgba(0, 0, 0, 0.3)',
+                                        padding: '2px 5px',
+                                        borderRadius: '3px',
+                                        color: '#ffc107',
+                                        fontSize: '11px'
+                                    }}>.feature, .card, .testimonial, .product</code></li>
+                                    <li><strong style={{ color: '#00ff88' }}>Content Structure:</strong> Clear headings (h1-h6), paragraphs, images with alt text</li>
+                                    <li><strong style={{ color: '#00ff88' }}>No Inline Styles:</strong> External CSS files work better than inline styles</li>
+                                </ul>
+                            </div>
+
+                            <div style={{ marginBottom: '15px' }}>
+                                <h5 style={{
+                                    margin: '0 0 8px 0',
+                                    color: '#ffffff',
+                                    fontSize: 'clamp(12px, 3vw, 14px)',
+                                    fontWeight: '600',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                }}>
+                                    <span>🚀</span> Layout Types (All Supported):
+                                </h5>
+                                <ul style={{
+                                    margin: '0 0 15px 0',
+                                    paddingLeft: '20px',
+                                    color: '#e6e6e6',
+                                    fontSize: 'clamp(11px, 2.5vw, 13px)',
+                                    lineHeight: '1.5'
+                                }}>
+                                    <li><strong style={{ color: '#00d4ff' }}>E-commerce:</strong> Product pages, pricing tables, shopping layouts</li>
+                                    <li><strong style={{ color: '#00d4ff' }}>Business:</strong> Corporate sites, portfolios, service pages</li>
+                                    <li><strong style={{ color: '#00d4ff' }}>Landing Pages:</strong> Marketing pages, lead generation forms</li>
+                                    <li><strong style={{ color: '#00d4ff' }}>Content:</strong> Blogs, news sites, documentation</li>
+                                    <li><strong style={{ color: '#00d4ff' }}>Complex:</strong> Dashboards, admin panels, web apps</li>
+                                </ul>
+                            </div>
+
+                            <div style={{ marginBottom: '10px' }}>
+                                <h5 style={{
+                                    margin: '0 0 8px 0',
+                                    color: '#ffffff',
+                                    fontSize: 'clamp(12px, 3vw, 14px)',
+                                    fontWeight: '600',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                }}>
+                                    <span>⚡</span> Pro Tips:
+                                </h5>
+                                <ul style={{
+                                    margin: 0,
+                                    paddingLeft: '20px',
+                                    color: '#e6e6e6',
+                                    fontSize: 'clamp(11px, 2.5vw, 13px)',
+                                    lineHeight: '1.5'
+                                }}>
+                                    <li>Remove unnecessary comments and debug code</li>
+                                    <li>Ensure all images have proper alt attributes</li>
+                                    <li>Use meaningful IDs and classes for sections</li>
+                                    <li>If results aren't perfect, click generate again</li>
+                                </ul>
+                            </div>
                         </div>
-                    </div>
-                    <div style={{
-                        background: 'rgba(0, 212, 255, 0.1)',
-                        border: '1px solid rgba(0, 212, 255, 0.3)',
-                        borderRadius: 'clamp(8px, 2vw, 12px)',
-                        padding: 'clamp(15px, 4vw, 20px)',
-                        marginBottom: 'clamp(20px, 5vw, 25px)'
-                    }}>
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 'clamp(8px, 2vw, 10px)',
-                            marginBottom: 'clamp(8px, 2vw, 10px)'
-                        }}>
-                            <span style={{ fontSize: 'clamp(16px, 4vw, 18px)' }}>📝</span>
-                            <h4 style={{
-                                margin: 0,
-                                color: '#00d4ff',
-                                fontSize: 'clamp(12px, 3vw, 14px)',
-                                fontWeight: '600'
-                            }}>
-                                Important: JSON Schema Configuration
-                            </h4>
-                        </div>
-                        <p style={{
-                            color: '#e6e6e6',
-                            fontSize: 'clamp(11px, 2.5vw, 13px)',
-                            lineHeight: '1.5',
-                            margin: 0
-                        }}>
-                            In the generated JSON file, make sure to set the <strong style={{ color: '#00ff88' }}>"type"</strong> value
-                            to match your <strong style={{ color: '#00ff88' }}>.liquid</strong> file name.
-                            For example: <code style={{
-                                background: 'rgba(0, 0, 0, 0.3)',
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                color: '#00ff88',
-                                fontSize: 'clamp(10px, 2.5vw, 12px)'
-                            }}>"type": "your-liquid-filename"</code>
-                        </p>
                     </div>
                     <div style={{
                         background: 'rgba(138, 43, 226, 0.1)',
