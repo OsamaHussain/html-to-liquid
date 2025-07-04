@@ -9,17 +9,20 @@ import * as cheerio from 'cheerio';
  * Validates and sanitizes setting defaults to ensure Shopify compatibility
  */
 function validateSettingDefault(value, type, fallback = '') {
-    if (value === null || value === undefined) {
-        return fallback;
+    if (value === null || value === undefined || value === '') {
+        return type === 'url' ? '/' : (typeof fallback === 'string' ? fallback : '');
     }
 
     switch (type) {
         case 'text':
         case 'textarea':
         case 'richtext':
-            return typeof value === 'string' ? value : fallback;
+            return typeof value === 'string' ? value : (typeof fallback === 'string' ? fallback : '');
         case 'url':
-            return (typeof value === 'string' && value !== '#' && value.trim() !== '') ? value : '/';
+            if (typeof value === 'string' && value.trim() !== '' && value !== '#') {
+                return value;
+            }
+            return '/';
         case 'number':
         case 'range':
             return typeof value === 'number' ? value : (typeof fallback === 'number' ? fallback : 0);
@@ -28,8 +31,25 @@ function validateSettingDefault(value, type, fallback = '') {
         case 'color':
             return (typeof value === 'string' && value.startsWith('#')) ? value : '#000000';
         default:
-            return value || fallback;
+            return value || fallback || '';
     }
+}
+
+/**
+ * Truncates labels to meet Shopify's 70 character limit
+ */
+function truncateLabel(label, maxLength = 70) {
+    if (typeof label !== 'string') return 'Setting';
+    if (label.length <= maxLength) return label;
+
+    const truncated = label.substring(0, maxLength - 3);
+    const lastSpace = truncated.lastIndexOf(' ');
+
+    if (lastSpace > maxLength * 0.7) {
+        return truncated.substring(0, lastSpace) + '...';
+    }
+
+    return truncated + '...';
 }
 
 /**
@@ -158,7 +178,7 @@ export function convertHtmlToLiquid(html, fileName) {
         { selector: '.card, .info-card', name: 'Card', type: 'card', max: 8 },
         { selector: '.testimonial, .review', name: 'Testimonial', type: 'testimonial', max: 6 },
         { selector: '.faq-item, .faq', name: 'FAQ', type: 'faq', max: 20 },
-        { selector: '.team-member, .team', name: 'Team Member', type: 'team_member', max: 8 },
+        { selector: '.team-member, .team, .team-card', name: 'Team Member', type: 'team_member', max: 8 },
         { selector: '.service, .service-item', name: 'Service', type: 'service', max: 10 },
         { selector: '.benefit, .benefit-item', name: 'Benefit', type: 'benefit', max: 8 },
         { selector: '.step, .process-step', name: 'Step', type: 'step', max: 6 },
@@ -453,6 +473,33 @@ export function convertHtmlToLiquid(html, fileName) {
                     data.url = $el.attr('href') || '#';
                     data.text = $el.text().trim() || $el.attr('title') || $el.attr('aria-label') || '';
                     data.icon = $el.find('i').attr('class') || '';
+                } else if (pattern.type === 'team_member') {
+                    data.name = headingEl.length ? headingEl.text().trim() : '';
+
+                    const positionEl = $el.find('p').first();
+                    data.position = positionEl.length ? positionEl.text().trim() : '';
+
+                    const descPara = $el.find('p').eq(1);
+                    if (descPara.length && descPara.text().trim().length > 50) {
+                        data.description = descPara.html();
+                    } else if (descriptionEl.length && descriptionEl.text().trim().length > 50) {
+                        data.description = descriptionEl.html();
+                    }
+
+                    data.socialLinks = [];
+                    $el.find('a').each((i, link) => {
+                        const $link = $(link);
+                        const href = $link.attr('href') || '';
+                        const icon = $link.find('i').attr('class') || '';
+
+                        if (href !== '#' && href.trim() !== '') {
+                            data.socialLinks.push({
+                                url: href,
+                                icon: icon,
+                                text: $link.attr('title') || $link.attr('aria-label') || ''
+                            });
+                        }
+                    });
                 }
 
                 if (!data.heading) {
@@ -478,7 +525,7 @@ export function convertHtmlToLiquid(html, fileName) {
                     blockSettings.push({
                         type: 'text',
                         id: 'heading',
-                        label: `${pattern.name} Heading`,
+                        label: truncateLabel(`${pattern.name} Heading`),
                         default: validateSettingDefault(firstData.heading, 'text', `${pattern.name} Title`),
                         info: 'Main heading for this item'
                     });
@@ -488,7 +535,7 @@ export function convertHtmlToLiquid(html, fileName) {
                     blockSettings.push({
                         type: 'text',
                         id: 'subheading',
-                        label: `${pattern.name} Subheading`,
+                        label: truncateLabel(`${pattern.name} Subheading`),
                         default: validateSettingDefault(firstData.subheading, 'text', `${pattern.name} Subtitle`)
                     });
                 }
@@ -497,7 +544,7 @@ export function convertHtmlToLiquid(html, fileName) {
                     blockSettings.push({
                         type: 'richtext',
                         id: 'description',
-                        label: `${pattern.name} Description`,
+                        label: truncateLabel(`${pattern.name} Description`),
                         default: validateSettingDefault(formatAsRichtext(firstData.richtext || firstData.description), 'richtext', `<p>${pattern.name} description</p>`),
                         info: 'Rich text editor for formatting'
                     });
@@ -544,7 +591,7 @@ export function convertHtmlToLiquid(html, fileName) {
                     blockSettings.push({
                         type: 'image_picker',
                         id: 'image',
-                        label: `${pattern.name} Image`,
+                        label: truncateLabel(`${pattern.name} Image`),
                         info: 'Upload image for this item'
                     });
 
@@ -552,8 +599,8 @@ export function convertHtmlToLiquid(html, fileName) {
                         blockSettings.push({
                             type: 'text',
                             id: 'image_alt',
-                            label: `${pattern.name} Image Alt Text`,
-                            default: firstData.imageAlt,
+                            label: truncateLabel(`${pattern.name} Image Alt Text`),
+                            default: validateSettingDefault(firstData.imageAlt, 'text', 'Image'),
                             info: 'Alternative text for accessibility'
                         });
                     }
@@ -563,7 +610,7 @@ export function convertHtmlToLiquid(html, fileName) {
                     blockSettings.push({
                         type: 'text',
                         id: 'icon',
-                        label: `${pattern.name} Icon`,
+                        label: truncateLabel(`${pattern.name} Icon`),
                         default: validateSettingDefault(firstData.icon, 'text', 'fas fa-star'),
                         info: 'Icon class (e.g., fa-home, fa-star)'
                     });
@@ -573,14 +620,14 @@ export function convertHtmlToLiquid(html, fileName) {
                     blockSettings.push({
                         type: 'text',
                         id: 'button_text',
-                        label: `${pattern.name} Button Text`,
+                        label: truncateLabel(`${pattern.name} Button Text`),
                         default: validateSettingDefault(firstData.buttonText, 'text', 'View Details')
                     });
 
                     blockSettings.push({
                         type: 'url',
                         id: 'button_url',
-                        label: `${pattern.name} Button URL`,
+                        label: truncateLabel(`${pattern.name} Button URL`),
                         default: validateSettingDefault(firstData.buttonUrl, 'url', '/'),
                         info: 'Link destination'
                     });
@@ -590,7 +637,7 @@ export function convertHtmlToLiquid(html, fileName) {
                     blockSettings.push({
                         type: 'text',
                         id: 'price',
-                        label: `${pattern.name} Price`,
+                        label: truncateLabel(`${pattern.name} Price`),
                         default: validateSettingDefault(firstData.price, 'text', '$0.00')
                     });
                 }
@@ -599,7 +646,7 @@ export function convertHtmlToLiquid(html, fileName) {
                     blockSettings.push({
                         type: 'range',
                         id: 'rating',
-                        label: `${pattern.name} Rating`,
+                        label: truncateLabel(`${pattern.name} Rating`),
                         min: 1,
                         max: 5,
                         step: 0.1,
@@ -627,7 +674,7 @@ export function convertHtmlToLiquid(html, fileName) {
                     type: 'text',
                     id: 'column_title',
                     label: 'Column Title',
-                    default: firstData.heading || '',
+                    default: validateSettingDefault(firstData.heading, 'text', 'Column Title'),
                     info: 'Footer column heading'
                 });
 
@@ -668,7 +715,7 @@ export function convertHtmlToLiquid(html, fileName) {
                         blockSettings.push({
                             type: 'url',
                             id: `social_${platform}_url`,
-                            label: `${platform.charAt(0).toUpperCase() + platform.slice(1)} URL`,
+                            label: truncateLabel(`${platform.charAt(0).toUpperCase() + platform.slice(1)} URL`),
                             default: "/",
                             info: `${platform} profile URL`
                         });
@@ -728,7 +775,7 @@ export function convertHtmlToLiquid(html, fileName) {
                     blockSettings.push({
                         type: 'text',
                         id: `nav_link_${i + 1}_text`,
-                        label: link ? `Navigation Link: ${link.text}` : `Navigation Link ${i + 1}`,
+                        label: link ? truncateLabel(`Navigation Link: ${link.text}`) : `Navigation Link ${i + 1}`,
                         default: validateSettingDefault(link ? link.text : `Link ${i + 1}`, 'text', `Link ${i + 1}`),
                         info: `Navigation link ${i + 1} text`
                     });
@@ -736,7 +783,7 @@ export function convertHtmlToLiquid(html, fileName) {
                     blockSettings.push({
                         type: 'url',
                         id: `nav_link_${i + 1}_url`,
-                        label: link ? `Navigation URL: ${link.text}` : `Navigation URL ${i + 1}`,
+                        label: link ? truncateLabel(`Navigation URL: ${link.text}`) : `Navigation URL ${i + 1}`,
                         default: validateSettingDefault(link ? link.href : '/', 'url', '/'),
                         info: `Navigation link ${i + 1} URL`
                     });
@@ -746,8 +793,8 @@ export function convertHtmlToLiquid(html, fileName) {
                     blockSettings.push({
                         type: 'url',
                         id: 'url',
-                        label: `${pattern.name} URL`,
-                        default: firstData.url,
+                        label: truncateLabel(`${pattern.name} URL`),
+                        default: validateSettingDefault(firstData.url, 'url', '/'),
                         info: 'Social media profile URL'
                     });
                 }
@@ -755,11 +802,67 @@ export function convertHtmlToLiquid(html, fileName) {
                     blockSettings.push({
                         type: 'text',
                         id: 'text',
-                        label: `${pattern.name} Text`,
-                        default: firstData.text,
+                        label: truncateLabel(`${pattern.name} Text`),
+                        default: validateSettingDefault(firstData.text, 'text', 'Social Link'),
                         info: 'Social link text or title'
                     });
                 }
+            } else if (pattern.type === 'team_member') {
+                blockSettings.push({
+                    type: 'image_picker',
+                    id: 'member_image',
+                    label: 'Team Member Photo',
+                    info: 'Upload team member photo'
+                });
+
+                if (firstData.name) {
+                    blockSettings.push({
+                        type: 'text',
+                        id: 'member_name',
+                        label: 'Team Member Name',
+                        default: validateSettingDefault(firstData.name, 'text', 'Team Member'),
+                        info: 'Full name of team member'
+                    });
+                }
+
+                if (firstData.position) {
+                    blockSettings.push({
+                        type: 'text',
+                        id: 'member_position',
+                        label: 'Position/Title',
+                        default: validateSettingDefault(firstData.position, 'text', 'Team Member'),
+                        info: 'Job title or position'
+                    });
+                }
+
+                if (firstData.description) {
+                    blockSettings.push({
+                        type: 'richtext',
+                        id: 'member_description',
+                        label: 'Team Member Bio',
+                        default: formatAsRichtext(firstData.description),
+                        info: 'Brief description or bio'
+                    });
+                }
+
+                const socialPlatforms = ['linkedin', 'twitter', 'instagram', 'facebook'];
+                socialPlatforms.forEach(platform => {
+                    blockSettings.push({
+                        type: 'url',
+                        id: `${platform}_url`,
+                        label: truncateLabel(`${platform.charAt(0).toUpperCase() + platform.slice(1)} URL`),
+                        default: '/',
+                        info: `Team member's ${platform} profile URL`
+                    });
+                });
+
+                blockSettings.push({
+                    type: 'text',
+                    id: 'member_image_alt',
+                    label: 'Image Alt Text',
+                    default: firstData.name ? `Photo of ${firstData.name}` : 'Team Member',
+                    info: 'Alt text for team member photo'
+                });
             }
 
             if (blockSettings.length > 0) {
@@ -818,6 +921,18 @@ export function convertHtmlToLiquid(html, fileName) {
                             case 'text':
                                 blockData.settings[setting.id] = data.text || setting.default;
                                 break;
+                            case 'member_name':
+                                blockData.settings[setting.id] = data.name || setting.default;
+                                break;
+                            case 'member_position':
+                                blockData.settings[setting.id] = data.position || setting.default;
+                                break;
+                            case 'member_description':
+                                blockData.settings[setting.id] = formatAsRichtext(data.description) || setting.default;
+                                break;
+                            case 'member_image_alt':
+                                blockData.settings[setting.id] = data.imageAlt || (data.name ? `Photo of ${data.name}` : setting.default);
+                                break;
                             default:
                                 if (setting.id.startsWith('nav_link_') && setting.id.endsWith('_text')) {
                                     const linkIndex = parseInt(setting.id.split('_')[2]) - 1;
@@ -873,6 +988,19 @@ export function convertHtmlToLiquid(html, fileName) {
                                     }
                                 } else if (setting.id.startsWith('social_') && setting.id.endsWith('_url')) {
                                     const platform = setting.id.replace('social_', '').replace('_url', '');
+                                    if (data.socialLinks) {
+                                        const socialLink = data.socialLinks.find(link =>
+                                            link.icon && (
+                                                link.icon.includes(platform) ||
+                                                link.text && link.text.toLowerCase().includes(platform)
+                                            )
+                                        );
+                                        blockData.settings[setting.id] = socialLink ? socialLink.url : setting.default;
+                                    } else {
+                                        blockData.settings[setting.id] = setting.default;
+                                    }
+                                } else if (setting.id.endsWith('_url') && ['linkedin_url', 'twitter_url', 'instagram_url', 'facebook_url'].includes(setting.id)) {
+                                    const platform = setting.id.replace('_url', '');
                                     if (data.socialLinks) {
                                         const socialLink = data.socialLinks.find(link =>
                                             link.icon && (
@@ -987,6 +1115,54 @@ export function convertHtmlToLiquid(html, fileName) {
                             }
 
                             $mobileMenu.html(mobileMenuHtml.trim());
+                        });
+                    } else if (pattern.type === 'team_member') {
+                        $el.find('img').each((i, img) => {
+                            if ($(img).attr('src') && i === 0) {
+                                $(img).attr('src', '{{ block.settings.member_image | img_url: \'master\' }}');
+                                if ($(img).attr('alt')) {
+                                    $(img).attr('alt', '{{ block.settings.member_image_alt }}');
+                                }
+                            }
+                        });
+
+                        $el.find('h3, h4, h5, .name, .member-name, strong').each((i, nameEl) => {
+                            if ($(nameEl).text().trim() && i === 0) {
+                                $(nameEl).text('{{ block.settings.member_name }}');
+                            }
+                        });
+
+                        $el.find('p').each((i, p) => {
+                            const $p = $(p);
+                            const text = $p.text().trim();
+                            if (text && i === 0 && text.length < 100) {
+                                $p.html('{{ block.settings.member_position }}');
+                            } else if (text && i === 1 && text.length > 50) {
+                                $p.html('{{ block.settings.member_description }}');
+                            }
+                        });
+
+                        $el.find('a').each((i, link) => {
+                            const $link = $(link);
+                            const href = $link.attr('href') || '';
+                            const icon = $link.find('i').attr('class') || '';
+
+                            if (href.includes('linkedin') || icon.includes('linkedin')) {
+                                $link.attr('href', '{{ block.settings.linkedin_url }}');
+                                $link.html('{% if block.settings.linkedin_url != blank and block.settings.linkedin_url != "/" %}<i class="fab fa-linkedin-in"></i>{% endif %}');
+                            }
+                            else if (href.includes('twitter') || icon.includes('twitter')) {
+                                $link.attr('href', '{{ block.settings.twitter_url }}');
+                                $link.html('{% if block.settings.twitter_url != blank and block.settings.twitter_url != "/" %}<i class="fab fa-twitter"></i>{% endif %}');
+                            }
+                            else if (href.includes('instagram') || icon.includes('instagram')) {
+                                $link.attr('href', '{{ block.settings.instagram_url }}');
+                                $link.html('{% if block.settings.instagram_url != blank and block.settings.instagram_url != "/" %}<i class="fab fa-instagram"></i>{% endif %}');
+                            }
+                            else if (href.includes('facebook') || icon.includes('facebook')) {
+                                $link.attr('href', '{{ block.settings.facebook_url }}');
+                                $link.html('{% if block.settings.facebook_url != blank and block.settings.facebook_url != "/" %}<i class="fab fa-facebook"></i>{% endif %}');
+                            }
                         });
                     } else {
                         $el.find('h1, h2, h3, h4, h5, h6').each((i, heading) => {
@@ -1240,23 +1416,23 @@ ${blockHtml}
             processedHeaderElements.has(headerEl)
         );
 
-        if (text && !text.includes('{{') && !isLogo && href && href !== '#' && !isInsideProcessedHeaderBlock) {
+        if (text && !text.includes('{{') && !isLogo && href && href !== '#' && href.trim() !== '' && !isInsideProcessedHeaderBlock) {
             const textSettingId = `nav_link_text_${settingCounter}`;
             const urlSettingId = `nav_link_url_${settingCounter++}`;
 
             sectionGroups.content.settings.push({
                 type: 'text',
                 id: textSettingId,
-                label: `Navigation: ${text}`,
-                default: text,
+                label: truncateLabel(`Navigation: ${text}`),
+                default: validateSettingDefault(text, 'text', 'Navigation'),
                 info: 'Navigation link text'
             });
 
             sectionGroups.content.settings.push({
                 type: 'url',
                 id: urlSettingId,
-                label: `Navigation URL: ${text}`,
-                default: href,
+                label: truncateLabel(`Navigation URL: ${text}`),
+                default: validateSettingDefault(href, 'url', '/'),
                 info: 'Navigation link destination'
             });
 
@@ -1309,27 +1485,27 @@ ${blockHtml}
     $('a, button, .btn, .button').each((i, el) => {
         const text = $(el).text().trim() || '';
         const href = $(el).attr('href') || '';
-        const isInsideBlock = $(el).closest('.feature, .card, .product, .product-card, .testimonial, .team-member, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide, footer').length > 0;
+        const isInsideBlock = $(el).closest('.feature, .card, .product, .product-card, .testimonial, .team-member, .team, .team-card, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide, footer').length > 0;
         const isInHeader = $(el).closest('header, nav, .navbar').length > 0 || $(el).hasClass('nav-link');
         const isLogoLink = $(el).find('img').length > 0 || $(el).closest('.logo, .brand').length > 0;
 
-        if (text && !text.includes('{{') && !isInsideBlock && !isInHeader && !isLogoLink) {
+        if (text && !text.includes('{{') && !href.includes('{{') && !isInsideBlock && !isInHeader && !isLogoLink) {
             const textSettingId = `section_button_text_${settingCounter++}`;
 
             sectionGroups.content.settings.push({
                 type: 'text',
                 id: textSettingId,
-                label: `Button: ${text}`,
-                default: text
+                label: truncateLabel(`Button: ${text}`),
+                default: validateSettingDefault(text, 'text', 'Button')
             });
 
-            if (href && href !== '#') {
+            if (href && href !== '#' && href.trim() !== '') {
                 const urlSettingId = `section_button_url_${settingCounter++}`;
                 sectionGroups.content.settings.push({
                     type: 'url',
                     id: urlSettingId,
-                    label: `Button URL: ${text}`,
-                    default: href,
+                    label: truncateLabel(`Button URL: ${text}`),
+                    default: validateSettingDefault(href, 'url', '/'),
                     info: 'Button destination URL'
                 });
                 $(el).attr('href', `{{ section.settings.${urlSettingId} }}`);
