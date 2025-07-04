@@ -36,6 +36,46 @@ function validateSettingDefault(value, type, fallback = '') {
 }
 
 /**
+ * Validates JSON setting values to prevent Liquid template syntax
+ */
+function validateJsonSettingValue(value, settingDefault, type = 'text') {
+    if (typeof value === 'string' && (value.includes('{{') || value.includes('{%'))) {
+        return getCleanDefault(settingDefault, type);
+    }
+
+    if (value === null || value === undefined || value === '') {
+        return getCleanDefault(settingDefault, type);
+    }
+
+    return value;
+}
+
+/**
+ * Gets a clean default value without Liquid syntax
+ */
+function getCleanDefault(settingDefault, type = 'text') {
+    if (typeof settingDefault === 'string' && (settingDefault.includes('{{') || settingDefault.includes('{%'))) {
+        switch (type) {
+            case 'text':
+                return 'Product Title';
+            case 'richtext':
+                return '<p>Product description</p>';
+            case 'url':
+                return '/';
+            case 'number':
+            case 'range':
+                return 0;
+            case 'checkbox':
+                return false;
+            default:
+                return '';
+        }
+    }
+
+    return settingDefault;
+}
+
+/**
  * Truncates labels to meet Shopify's 70 character limit
  */
 function truncateLabel(label, maxLength = 70) {
@@ -881,57 +921,58 @@ export function convertHtmlToLiquid(html, fileName) {
                     };
 
                     blockSettings.forEach(setting => {
+                        let settingValue;
                         switch (setting.id) {
                             case 'heading':
-                                blockData.settings[setting.id] = data.heading || setting.default;
+                                settingValue = data.heading || setting.default;
                                 break;
                             case 'column_title':
-                                blockData.settings[setting.id] = data.heading || setting.default;
+                                settingValue = data.heading || setting.default;
                                 break;
                             case 'column_description':
-                                blockData.settings[setting.id] = formatAsRichtext(data.richtext || data.description) || setting.default;
+                                settingValue = formatAsRichtext(data.richtext || data.description) || setting.default;
                                 break;
                             case 'subheading':
-                                blockData.settings[setting.id] = data.subheading || setting.default;
+                                settingValue = data.subheading || setting.default;
                                 break;
                             case 'description':
-                                blockData.settings[setting.id] = formatAsRichtext(data.richtext || data.description) || setting.default;
+                                settingValue = formatAsRichtext(data.richtext || data.description) || setting.default;
                                 break;
                             case 'button_text':
-                                blockData.settings[setting.id] = data.buttonText || setting.default;
+                                settingValue = data.buttonText || setting.default;
                                 break;
                             case 'button_url':
-                                blockData.settings[setting.id] = (data.buttonUrl && data.buttonUrl !== '#') ? data.buttonUrl : setting.default;
+                                settingValue = (data.buttonUrl && data.buttonUrl !== '#') ? data.buttonUrl : setting.default;
                                 break;
                             case 'image_alt':
-                                blockData.settings[setting.id] = data.imageAlt || setting.default;
+                                settingValue = data.imageAlt || setting.default;
                                 break;
                             case 'icon':
-                                blockData.settings[setting.id] = data.icon || setting.default;
+                                settingValue = data.icon || setting.default;
                                 break;
                             case 'price':
-                                blockData.settings[setting.id] = data.price || setting.default;
+                                settingValue = data.price || setting.default;
                                 break;
                             case 'rating':
-                                blockData.settings[setting.id] = parseFloat(data.rating) || setting.default;
+                                settingValue = parseFloat(data.rating) || setting.default;
                                 break;
                             case 'url':
-                                blockData.settings[setting.id] = data.url || setting.default;
+                                settingValue = data.url || setting.default;
                                 break;
                             case 'text':
-                                blockData.settings[setting.id] = data.text || setting.default;
+                                settingValue = data.text || setting.default;
                                 break;
                             case 'member_name':
-                                blockData.settings[setting.id] = data.name || setting.default;
+                                settingValue = data.name || setting.default;
                                 break;
                             case 'member_position':
-                                blockData.settings[setting.id] = data.position || setting.default;
+                                settingValue = data.position || setting.default;
                                 break;
                             case 'member_description':
-                                blockData.settings[setting.id] = formatAsRichtext(data.description) || setting.default;
+                                settingValue = formatAsRichtext(data.description) || setting.default;
                                 break;
                             case 'member_image_alt':
-                                blockData.settings[setting.id] = data.imageAlt || (data.name ? `Photo of ${data.name}` : setting.default);
+                                settingValue = data.imageAlt || (data.name ? `Photo of ${data.name}` : setting.default);
                                 break;
                             default:
                                 if (setting.id.startsWith('nav_link_') && setting.id.endsWith('_text')) {
@@ -947,11 +988,11 @@ export function convertHtmlToLiquid(html, fileName) {
                                                 navLinks.push({ text: text, href: $link.attr('href') || '/' });
                                             }
                                         });
-                                        blockData.settings[setting.id] = navLinks[linkIndex] ? navLinks[linkIndex].text : setting.default;
+                                        settingValue = navLinks[linkIndex] ? navLinks[linkIndex].text : setting.default;
                                     } else if (data.links && data.links[linkIndex]) {
-                                        blockData.settings[setting.id] = data.links[linkIndex].text || setting.default;
+                                        settingValue = data.links[linkIndex].text || setting.default;
                                     } else {
-                                        blockData.settings[setting.id] = setting.default;
+                                        settingValue = setting.default;
                                     }
                                 } else if (setting.id.startsWith('nav_link_') && setting.id.endsWith('_url')) {
                                     const linkIndex = parseInt(setting.id.split('_')[2]) - 1;
@@ -966,25 +1007,25 @@ export function convertHtmlToLiquid(html, fileName) {
                                                 navLinks.push({ text: text, href: $link.attr('href') || '/' });
                                             }
                                         });
-                                        blockData.settings[setting.id] = navLinks[linkIndex] ? (navLinks[linkIndex].href !== '#' ? navLinks[linkIndex].href : '/') : setting.default;
+                                        settingValue = navLinks[linkIndex] ? (navLinks[linkIndex].href !== '#' ? navLinks[linkIndex].href : '/') : setting.default;
                                     } else if (data.links && data.links[linkIndex]) {
-                                        blockData.settings[setting.id] = data.links[linkIndex].url || setting.default;
+                                        settingValue = data.links[linkIndex].url || setting.default;
                                     } else {
-                                        blockData.settings[setting.id] = setting.default;
+                                        settingValue = setting.default;
                                     }
                                 } else if (setting.id.startsWith('link_') && setting.id.endsWith('_text')) {
                                     const linkIndex = parseInt(setting.id.split('_')[1]) - 1;
                                     if (data.links && data.links[linkIndex]) {
-                                        blockData.settings[setting.id] = data.links[linkIndex].text || setting.default;
+                                        settingValue = data.links[linkIndex].text || setting.default;
                                     } else {
-                                        blockData.settings[setting.id] = setting.default;
+                                        settingValue = setting.default;
                                     }
                                 } else if (setting.id.startsWith('link_') && setting.id.endsWith('_url')) {
                                     const linkIndex = parseInt(setting.id.split('_')[1]) - 1;
                                     if (data.links && data.links[linkIndex]) {
-                                        blockData.settings[setting.id] = data.links[linkIndex].url || setting.default;
+                                        settingValue = data.links[linkIndex].url || setting.default;
                                     } else {
-                                        blockData.settings[setting.id] = setting.default;
+                                        settingValue = setting.default;
                                     }
                                 } else if (setting.id.startsWith('social_') && setting.id.endsWith('_url')) {
                                     const platform = setting.id.replace('social_', '').replace('_url', '');
@@ -995,9 +1036,9 @@ export function convertHtmlToLiquid(html, fileName) {
                                                 link.text && link.text.toLowerCase().includes(platform)
                                             )
                                         );
-                                        blockData.settings[setting.id] = socialLink ? socialLink.url : setting.default;
+                                        settingValue = socialLink ? socialLink.url : setting.default;
                                     } else {
-                                        blockData.settings[setting.id] = setting.default;
+                                        settingValue = setting.default;
                                     }
                                 } else if (setting.id.endsWith('_url') && ['linkedin_url', 'twitter_url', 'instagram_url', 'facebook_url'].includes(setting.id)) {
                                     const platform = setting.id.replace('_url', '');
@@ -1008,14 +1049,16 @@ export function convertHtmlToLiquid(html, fileName) {
                                                 link.text && link.text.toLowerCase().includes(platform)
                                             )
                                         );
-                                        blockData.settings[setting.id] = socialLink ? socialLink.url : setting.default;
+                                        settingValue = socialLink ? socialLink.url : setting.default;
                                     } else {
-                                        blockData.settings[setting.id] = setting.default;
+                                        settingValue = setting.default;
                                     }
                                 } else {
-                                    blockData.settings[setting.id] = setting.default;
+                                    settingValue = setting.default;
                                 }
                         }
+
+                        blockData.settings[setting.id] = validateJsonSettingValue(settingValue, setting.default, setting.type);
                     });
 
                     jsonBlocks[blockId] = blockData;
