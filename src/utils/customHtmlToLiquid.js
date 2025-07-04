@@ -358,7 +358,7 @@ export function convertHtmlToLiquid(html, fileName) {
         const hasNavLinks = $el.find('a').filter((j, link) => {
             const $link = $(link);
             return $link.text().trim() && !$link.find('img').length;
-        }).length >= 2;
+        }).length >= 1;
 
         return hasLogo || hasNavLinks;
     });
@@ -393,7 +393,10 @@ export function convertHtmlToLiquid(html, fileName) {
             elements = $(pattern.selector);
         }
 
-        if (elements.length >= 2) {
+        const allowSingleElement = ['header', 'footer_column'].includes(pattern.type);
+        const minimumElements = allowSingleElement ? 1 : 2;
+
+        if (elements.length >= minimumElements) {
             const blockType = pattern.type;
             const blockSettings = [];
 
@@ -673,8 +676,9 @@ export function convertHtmlToLiquid(html, fileName) {
                 }
             } else if (pattern.type === 'header') {
                 const headerData = originalData[0];
+                const headerElement = $(elements[0]);
 
-                const logoImg = $el.find('img').first();
+                const logoImg = headerElement.find('img').first();
                 if (logoImg.length) {
                     blockSettings.push({
                         type: 'image_picker',
@@ -695,37 +699,48 @@ export function convertHtmlToLiquid(html, fileName) {
                 }
 
                 const navLinks = [];
-                $el.find('a').each((i, link) => {
+
+                const allNavLinks = new Set();
+
+                headerElement.find('a').each((i, link) => {
                     const $link = $(link);
                     const text = $link.text().trim();
                     const href = $link.attr('href') || '';
                     const isLogo = $link.find('img').length > 0;
+                    const isIcon = $link.find('i').length > 0 && !text;
 
-                    if (text && !isLogo && i < 5) {
-                        navLinks.push({
-                            text: text,
-                            href: href
-                        });
+                    if (text && !isLogo && !isIcon) {
+                        const linkKey = `${text}:${href}`;
+                        if (!allNavLinks.has(linkKey) && navLinks.length < 8) {
+                            allNavLinks.add(linkKey);
+                            navLinks.push({
+                                text: text,
+                                href: href
+                            });
+                        }
                     }
                 });
 
-                navLinks.forEach((link, index) => {
+                const minNavLinks = Math.max(navLinks.length, 3);
+
+                for (let i = 0; i < minNavLinks; i++) {
+                    const link = navLinks[i];
                     blockSettings.push({
                         type: 'text',
-                        id: `nav_link_${index + 1}_text`,
-                        label: `Navigation Link: ${link.text}`,
-                        default: validateSettingDefault(link.text, 'text', `Link ${index + 1}`),
-                        info: `Navigation link ${index + 1} text`
+                        id: `nav_link_${i + 1}_text`,
+                        label: link ? `Navigation Link: ${link.text}` : `Navigation Link ${i + 1}`,
+                        default: validateSettingDefault(link ? link.text : `Link ${i + 1}`, 'text', `Link ${i + 1}`),
+                        info: `Navigation link ${i + 1} text`
                     });
 
                     blockSettings.push({
                         type: 'url',
-                        id: `nav_link_${index + 1}_url`,
-                        label: `Navigation URL: ${link.text}`,
-                        default: validateSettingDefault(link.href, 'url', '/'),
-                        info: `Navigation link ${index + 1} URL`
+                        id: `nav_link_${i + 1}_url`,
+                        label: link ? `Navigation URL: ${link.text}` : `Navigation URL ${i + 1}`,
+                        default: validateSettingDefault(link ? link.href : '/', 'url', '/'),
+                        info: `Navigation link ${i + 1} URL`
                     });
-                });
+                }
             } else if (pattern.type === 'social_link') {
                 if (firstData.url) {
                     blockSettings.push({
@@ -947,12 +962,31 @@ export function convertHtmlToLiquid(html, fileName) {
                             const $link = $(link);
                             const text = $link.text().trim();
                             const isLogo = $link.find('img').length > 0;
+                            const isMobileMenu = $link.closest('.mobile-menu, #mobile-menu').length > 0;
+                            const isIcon = $link.find('i').length > 0 && !text;
 
-                            if (text && !isLogo && navLinkIndex <= 5) {
+                            if (text && !isLogo && !isIcon && navLinkIndex <= 8) {
                                 $link.text(`{{ block.settings.nav_link_${navLinkIndex}_text }}`);
                                 $link.attr('href', `{{ block.settings.nav_link_${navLinkIndex}_url }}`);
-                                navLinkIndex++;
+
+                                if (!isMobileMenu) {
+                                    navLinkIndex++;
+                                }
                             }
+                        });
+
+                        $el.find('.mobile-menu, #mobile-menu').each((i, mobileMenu) => {
+                            const $mobileMenu = $(mobileMenu);
+                            let mobileMenuHtml = '';
+
+                            for (let i = 1; i <= 8; i++) {
+                                mobileMenuHtml += `
+                                    {% if block.settings.nav_link_${i}_text != blank and block.settings.nav_link_${i}_url != blank %}
+                                        <a href="{{ block.settings.nav_link_${i}_url }}">{{ block.settings.nav_link_${i}_text }}</a>
+                                    {% endif %}`;
+                            }
+
+                            $mobileMenu.html(mobileMenuHtml.trim());
                         });
                     } else {
                         $el.find('h1, h2, h3, h4, h5, h6').each((i, heading) => {
@@ -1166,11 +1200,23 @@ ${blockHtml}
         advanced: { label: 'Advanced Settings', settings: [] }
     };
 
+    const processedHeaderElements = new Set();
+
+    uniqueBlockPatterns.forEach(pattern => {
+        if (pattern.type === 'header' && pattern.elements) {
+            pattern.elements.each((index, element) => {
+                processedHeaderElements.add(element);
+            });
+        }
+    });
     $('header h1, header h2, header h3, nav h1, nav h2, nav h3, .navbar h1, .navbar h2, .navbar h3, .logo-text, .brand-text, .site-title').each((i, el) => {
         const text = $(el).text().trim() || '';
-        const isInsideHeaderBlock = $(el).closest('header, nav, .navbar').length > 0;
 
-        if (text && !text.includes('{{') && !isInsideHeaderBlock) {
+        const isInsideProcessedHeaderBlock = $(el).closest('header, nav, .navbar').get().some(headerEl =>
+            processedHeaderElements.has(headerEl)
+        );
+
+        if (text && !text.includes('{{') && !isInsideProcessedHeaderBlock) {
             const settingId = `header_title_${settingCounter++}`;
 
             sectionGroups.content.settings.push({
@@ -1189,9 +1235,12 @@ ${blockHtml}
         const text = $(el).text().trim() || '';
         const href = $(el).attr('href') || '';
         const isLogo = $(el).find('img').length > 0 || $(el).closest('.logo, .brand').length > 0;
-        const isInsideHeaderBlock = $(el).closest('header, nav, .navbar').length > 0;
 
-        if (text && !text.includes('{{') && !isLogo && href && href !== '#' && !isInsideHeaderBlock) {
+        const isInsideProcessedHeaderBlock = $(el).closest('header, nav, .navbar').get().some(headerEl =>
+            processedHeaderElements.has(headerEl)
+        );
+
+        if (text && !text.includes('{{') && !isLogo && href && href !== '#' && !isInsideProcessedHeaderBlock) {
             const textSettingId = `nav_link_text_${settingCounter}`;
             const urlSettingId = `nav_link_url_${settingCounter++}`;
 
@@ -1339,9 +1388,12 @@ ${blockHtml}
     $('header img, nav img, .navbar img, .logo img, .brand img, img[alt*="logo"], img[src*="logo"], .header img').each((i, el) => {
         const src = $(el).attr('src') || '';
         const alt = $(el).attr('alt') || '';
-        const isInsideHeaderBlock = $(el).closest('header, nav, .navbar').length > 0;
 
-        if (src && !src.includes('{{') && !isInsideHeaderBlock) {
+        const isInsideProcessedHeaderBlock = $(el).closest('header, nav, .navbar').get().some(headerEl =>
+            processedHeaderElements.has(headerEl)
+        );
+
+        if (src && !src.includes('{{') && !isInsideProcessedHeaderBlock) {
             const imgSettingId = `header_logo_${imageCounter}`;
 
             sectionGroups.content.settings.push({
@@ -1425,7 +1477,11 @@ ${blockHtml}
         const href = $el.attr('href') || '';
         const isLogo = $el.find('img').length > 0 || $el.closest('.logo, .brand').length > 0;
 
-        if (text && !text.includes('{{') && !isLogo && href && i < 5) {
+        const isInsideProcessedHeaderBlock = $el.closest('header, nav, .navbar').get().some(headerEl =>
+            processedHeaderElements.has(headerEl)
+        );
+
+        if (text && !text.includes('{{') && !isLogo && href && i < 5 && !isInsideProcessedHeaderBlock) {
             actualNavLinks.push({
                 text: text,
                 href: href
