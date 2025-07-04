@@ -651,7 +651,7 @@ export function convertHtmlToLiquid(html, fileName) {
                         max: 5,
                         step: 0.1,
                         default: 5,
-                        unit: 'stars'
+                        unit: '★'
                     });
                 }
 
