@@ -6,6 +6,33 @@
 import * as cheerio from 'cheerio';
 
 /**
+ * Validates and sanitizes setting defaults to ensure Shopify compatibility
+ */
+function validateSettingDefault(value, type, fallback = '') {
+    if (value === null || value === undefined) {
+        return fallback;
+    }
+
+    switch (type) {
+        case 'text':
+        case 'textarea':
+        case 'richtext':
+            return typeof value === 'string' ? value : fallback;
+        case 'url':
+            return (typeof value === 'string' && value !== '#' && value.trim() !== '') ? value : '/';
+        case 'number':
+        case 'range':
+            return typeof value === 'number' ? value : (typeof fallback === 'number' ? fallback : 0);
+        case 'checkbox':
+            return typeof value === 'boolean' ? value : false;
+        case 'color':
+            return (typeof value === 'string' && value.startsWith('#')) ? value : '#000000';
+        default:
+            return value || fallback;
+    }
+}
+
+/**
  * Extracts head content from HTML
  */
 export function extractHeadContent(html) {
@@ -325,6 +352,27 @@ export function convertHtmlToLiquid(html, fileName) {
         });
     }
 
+    const headerElements = $('header, nav, .navbar').filter((i, el) => {
+        const $el = $(el);
+        const hasLogo = $el.find('img').length > 0;
+        const hasNavLinks = $el.find('a').filter((j, link) => {
+            const $link = $(link);
+            return $link.text().trim() && !$link.find('img').length;
+        }).length >= 2;
+
+        return hasLogo || hasNavLinks;
+    });
+
+    if (headerElements.length >= 1) {
+        contentBlocks.push({
+            elements: headerElements,
+            selector: 'header-detected',
+            name: 'Header',
+            type: 'header',
+            max: 1
+        });
+    }
+
     const allBlockPatterns = [...blockPatterns, ...contentBlocks];
 
     const seenTypes = new Set();
@@ -428,7 +476,7 @@ export function convertHtmlToLiquid(html, fileName) {
                         type: 'text',
                         id: 'heading',
                         label: `${pattern.name} Heading`,
-                        default: firstData.heading,
+                        default: validateSettingDefault(firstData.heading, 'text', `${pattern.name} Title`),
                         info: 'Main heading for this item'
                     });
                 }
@@ -438,7 +486,7 @@ export function convertHtmlToLiquid(html, fileName) {
                         type: 'text',
                         id: 'subheading',
                         label: `${pattern.name} Subheading`,
-                        default: firstData.subheading
+                        default: validateSettingDefault(firstData.subheading, 'text', `${pattern.name} Subtitle`)
                     });
                 }
 
@@ -447,12 +495,19 @@ export function convertHtmlToLiquid(html, fileName) {
                         type: 'richtext',
                         id: 'description',
                         label: `${pattern.name} Description`,
-                        default: formatAsRichtext(firstData.richtext || firstData.description),
+                        default: validateSettingDefault(formatAsRichtext(firstData.richtext || firstData.description), 'richtext', `<p>${pattern.name} description</p>`),
                         info: 'Rich text editor for formatting'
                     });
                 }
 
-                if (pattern.type === 'transformation') {
+                if (pattern.type === 'sustainability_slide') {
+                    blockSettings.push({
+                        type: 'image_picker',
+                        id: 'background_image',
+                        label: 'Slide Background Image',
+                        info: 'Upload background image for this slide'
+                    });
+                } else if (pattern.type === 'transformation') {
                     blockSettings.push({
                         type: 'image_picker',
                         id: 'before_image',
@@ -506,7 +561,7 @@ export function convertHtmlToLiquid(html, fileName) {
                         type: 'text',
                         id: 'icon',
                         label: `${pattern.name} Icon`,
-                        default: firstData.icon,
+                        default: validateSettingDefault(firstData.icon, 'text', 'fas fa-star'),
                         info: 'Icon class (e.g., fa-home, fa-star)'
                     });
                 }
@@ -516,18 +571,16 @@ export function convertHtmlToLiquid(html, fileName) {
                         type: 'text',
                         id: 'button_text',
                         label: `${pattern.name} Button Text`,
-                        default: firstData.buttonText
+                        default: validateSettingDefault(firstData.buttonText, 'text', 'View Details')
                     });
 
-                    if (firstData.buttonUrl && firstData.buttonUrl !== '#') {
-                        blockSettings.push({
-                            type: 'url',
-                            id: 'button_url',
-                            label: `${pattern.name} Button URL`,
-                            default: firstData.buttonUrl,
-                            info: 'Link destination'
-                        });
-                    }
+                    blockSettings.push({
+                        type: 'url',
+                        id: 'button_url',
+                        label: `${pattern.name} Button URL`,
+                        default: validateSettingDefault(firstData.buttonUrl, 'url', '/'),
+                        info: 'Link destination'
+                    });
                 }
 
                 if (firstData.price) {
@@ -535,7 +588,7 @@ export function convertHtmlToLiquid(html, fileName) {
                         type: 'text',
                         id: 'price',
                         label: `${pattern.name} Price`,
-                        default: firstData.price
+                        default: validateSettingDefault(firstData.price, 'text', '$0.00')
                     });
                 }
 
@@ -549,6 +602,16 @@ export function convertHtmlToLiquid(html, fileName) {
                         step: 0.1,
                         default: 5,
                         unit: 'stars'
+                    });
+                }
+
+                if (pattern.type === 'product_card') {
+                    blockSettings.push({
+                        type: 'text',
+                        id: 'rating_count',
+                        label: 'Rating Count',
+                        default: '(128)',
+                        info: 'Number of reviews (e.g., (128))'
                     });
                 }
             }
@@ -608,6 +671,61 @@ export function convertHtmlToLiquid(html, fileName) {
                         });
                     });
                 }
+            } else if (pattern.type === 'header') {
+                const headerData = originalData[0];
+
+                const logoImg = $el.find('img').first();
+                if (logoImg.length) {
+                    blockSettings.push({
+                        type: 'image_picker',
+                        id: 'logo_image',
+                        label: 'Header Logo',
+                        info: 'Upload header logo image'
+                    });
+
+                    if (logoImg.attr('alt')) {
+                        blockSettings.push({
+                            type: 'text',
+                            id: 'logo_alt',
+                            label: 'Logo Alt Text',
+                            default: validateSettingDefault(logoImg.attr('alt'), 'text', 'Logo'),
+                            info: 'Alt text for logo'
+                        });
+                    }
+                }
+
+                const navLinks = [];
+                $el.find('a').each((i, link) => {
+                    const $link = $(link);
+                    const text = $link.text().trim();
+                    const href = $link.attr('href') || '';
+                    const isLogo = $link.find('img').length > 0;
+
+                    if (text && !isLogo && i < 5) {
+                        navLinks.push({
+                            text: text,
+                            href: href
+                        });
+                    }
+                });
+
+                navLinks.forEach((link, index) => {
+                    blockSettings.push({
+                        type: 'text',
+                        id: `nav_link_${index + 1}_text`,
+                        label: `Navigation Link: ${link.text}`,
+                        default: validateSettingDefault(link.text, 'text', `Link ${index + 1}`),
+                        info: `Navigation link ${index + 1} text`
+                    });
+
+                    blockSettings.push({
+                        type: 'url',
+                        id: `nav_link_${index + 1}_url`,
+                        label: `Navigation URL: ${link.text}`,
+                        default: validateSettingDefault(link.href, 'url', '/'),
+                        info: `Navigation link ${index + 1} URL`
+                    });
+                });
             } else if (pattern.type === 'social_link') {
                 if (firstData.url) {
                     blockSettings.push({
@@ -665,7 +783,7 @@ export function convertHtmlToLiquid(html, fileName) {
                                 blockData.settings[setting.id] = data.buttonText || setting.default;
                                 break;
                             case 'button_url':
-                                blockData.settings[setting.id] = data.buttonUrl || setting.default;
+                                blockData.settings[setting.id] = (data.buttonUrl && data.buttonUrl !== '#') ? data.buttonUrl : setting.default;
                                 break;
                             case 'image_alt':
                                 blockData.settings[setting.id] = data.imageAlt || setting.default;
@@ -686,7 +804,45 @@ export function convertHtmlToLiquid(html, fileName) {
                                 blockData.settings[setting.id] = data.text || setting.default;
                                 break;
                             default:
-                                if (setting.id.startsWith('link_') && setting.id.endsWith('_text')) {
+                                if (setting.id.startsWith('nav_link_') && setting.id.endsWith('_text')) {
+                                    const linkIndex = parseInt(setting.id.split('_')[2]) - 1;
+                                    if (pattern.type === 'header') {
+                                        const headerEl = $(elements[0]);
+                                        const navLinks = [];
+                                        headerEl.find('a').each((i, link) => {
+                                            const $link = $(link);
+                                            const text = $link.text().trim();
+                                            const isLogo = $link.find('img').length > 0;
+                                            if (text && !isLogo) {
+                                                navLinks.push({ text: text, href: $link.attr('href') || '/' });
+                                            }
+                                        });
+                                        blockData.settings[setting.id] = navLinks[linkIndex] ? navLinks[linkIndex].text : setting.default;
+                                    } else if (data.links && data.links[linkIndex]) {
+                                        blockData.settings[setting.id] = data.links[linkIndex].text || setting.default;
+                                    } else {
+                                        blockData.settings[setting.id] = setting.default;
+                                    }
+                                } else if (setting.id.startsWith('nav_link_') && setting.id.endsWith('_url')) {
+                                    const linkIndex = parseInt(setting.id.split('_')[2]) - 1;
+                                    if (pattern.type === 'header') {
+                                        const headerEl = $(elements[0]);
+                                        const navLinks = [];
+                                        headerEl.find('a').each((i, link) => {
+                                            const $link = $(link);
+                                            const text = $link.text().trim();
+                                            const isLogo = $link.find('img').length > 0;
+                                            if (text && !isLogo) {
+                                                navLinks.push({ text: text, href: $link.attr('href') || '/' });
+                                            }
+                                        });
+                                        blockData.settings[setting.id] = navLinks[linkIndex] ? (navLinks[linkIndex].href !== '#' ? navLinks[linkIndex].href : '/') : setting.default;
+                                    } else if (data.links && data.links[linkIndex]) {
+                                        blockData.settings[setting.id] = data.links[linkIndex].url || setting.default;
+                                    } else {
+                                        blockData.settings[setting.id] = setting.default;
+                                    }
+                                } else if (setting.id.startsWith('link_') && setting.id.endsWith('_text')) {
                                     const linkIndex = parseInt(setting.id.split('_')[1]) - 1;
                                     if (data.links && data.links[linkIndex]) {
                                         blockData.settings[setting.id] = data.links[linkIndex].text || setting.default;
@@ -776,6 +932,28 @@ export function convertHtmlToLiquid(html, fileName) {
                         if ($el.text().trim()) {
                             $el.text('{{ block.settings.text }}');
                         }
+                    } else if (pattern.type === 'header') {
+                        $el.find('img').each((i, img) => {
+                            if ($(img).attr('src') && i === 0) {
+                                $(img).attr('src', '{{ block.settings.logo_image | img_url: \'master\' }}');
+                                if ($(img).attr('alt')) {
+                                    $(img).attr('alt', '{{ block.settings.logo_alt }}');
+                                }
+                            }
+                        });
+
+                        let navLinkIndex = 1;
+                        $el.find('a').each((i, link) => {
+                            const $link = $(link);
+                            const text = $link.text().trim();
+                            const isLogo = $link.find('img').length > 0;
+
+                            if (text && !isLogo && navLinkIndex <= 5) {
+                                $link.text(`{{ block.settings.nav_link_${navLinkIndex}_text }}`);
+                                $link.attr('href', `{{ block.settings.nav_link_${navLinkIndex}_url }}`);
+                                navLinkIndex++;
+                            }
+                        });
                     } else {
                         $el.find('h1, h2, h3, h4, h5, h6').each((i, heading) => {
                             if ($(heading).text().trim()) {
@@ -858,6 +1036,15 @@ export function convertHtmlToLiquid(html, fileName) {
                             $(price).text('{{ block.settings.price }}');
                         }
                     });
+
+                    if (pattern.type === 'product_card') {
+                        $el.find('span').each((i, span) => {
+                            const text = $(span).text().trim();
+                            if (text.includes('(') && text.includes(')') && /\d/.test(text)) {
+                                $(span).text('{{ block.settings.rating_count }}');
+                            }
+                        });
+                    }
                 });
 
                 if (pattern.type === 'footer_column') {
@@ -981,7 +1168,9 @@ ${blockHtml}
 
     $('header h1, header h2, header h3, nav h1, nav h2, nav h3, .navbar h1, .navbar h2, .navbar h3, .logo-text, .brand-text, .site-title').each((i, el) => {
         const text = $(el).text().trim() || '';
-        if (text && !text.includes('{{')) {
+        const isInsideHeaderBlock = $(el).closest('header, nav, .navbar').length > 0;
+
+        if (text && !text.includes('{{') && !isInsideHeaderBlock) {
             const settingId = `header_title_${settingCounter++}`;
 
             sectionGroups.content.settings.push({
@@ -1000,8 +1189,9 @@ ${blockHtml}
         const text = $(el).text().trim() || '';
         const href = $(el).attr('href') || '';
         const isLogo = $(el).find('img').length > 0 || $(el).closest('.logo, .brand').length > 0;
+        const isInsideHeaderBlock = $(el).closest('header, nav, .navbar').length > 0;
 
-        if (text && !text.includes('{{') && !isLogo && href && href !== '#') {
+        if (text && !text.includes('{{') && !isLogo && href && href !== '#' && !isInsideHeaderBlock) {
             const textSettingId = `nav_link_text_${settingCounter}`;
             const urlSettingId = `nav_link_url_${settingCounter++}`;
 
@@ -1100,13 +1290,58 @@ ${blockHtml}
         }
     });
 
+    $('[style*="background-image"]').each((i, el) => {
+        const $el = $(el);
+        const style = $el.attr('style') || '';
+
+        if (style.includes('background-image')) {
+            if ($el.hasClass('relative') && $el.find('h1').length > 0) {
+                const newStyle = style.replace(/background-image:[^;]+;?/g, '');
+                $el.attr('style', newStyle);
+                $el.attr('style', ($el.attr('style') || '') + ' background-image: url({{ section.settings.hero_background_image | img_url: \'master\' }});');
+            }
+            else if ($el.find('h2').text().toLowerCase().includes('elevate') || $el.find('h2').text().toLowerCase().includes('shop')) {
+                const newStyle = style.replace(/background-image:[^;]+;?/g, '');
+                $el.attr('style', newStyle);
+                $el.attr('style', ($el.attr('style') || '') + ' background-image: url({{ section.settings.shop_background_image | img_url: \'master\' }});');
+            }
+            else if ($el.hasClass('sustainability-slide')) {
+                const newStyle = style.replace(/background-image:[^;]+;?/g, '');
+                $el.attr('style', newStyle);
+                $el.attr('style', ($el.attr('style') || '') + ' background-image: url({{ block.settings.background_image | img_url: \'master\' }});');
+            }
+        }
+    });
+
+    $('nav a, .navbar a').each((i, el) => {
+        const $el = $(el);
+        const text = $el.text().trim();
+        const href = $el.attr('href');
+        const isLogo = $el.find('img').length > 0;
+        const isInsideHeaderBlock = $el.closest('header, nav, .navbar').parent().find('header, nav, .navbar').length > 0;
+
+        if (!isLogo && text && href && i < 5 && !isInsideHeaderBlock) {
+            $el.text(`{{ section.settings.nav_link_${i + 1}_text }}`);
+            $el.attr('href', `{{ section.settings.nav_link_${i + 1}_url }}`);
+        }
+    });
+
+    $('footer p').each((i, el) => {
+        const $el = $(el);
+        const text = $el.text().trim();
+        if (text.includes('©') || text.includes('copyright') || text.includes('rights reserved')) {
+            $el.text('{{ section.settings.footer_copyright }}');
+        }
+    });
+
     let imageCounter = 1;
 
     $('header img, nav img, .navbar img, .logo img, .brand img, img[alt*="logo"], img[src*="logo"], .header img').each((i, el) => {
         const src = $(el).attr('src') || '';
         const alt = $(el).attr('alt') || '';
+        const isInsideHeaderBlock = $(el).closest('header, nav, .navbar').length > 0;
 
-        if (src && !src.includes('{{')) {
+        if (src && !src.includes('{{') && !isInsideHeaderBlock) {
             const imgSettingId = `header_logo_${imageCounter}`;
 
             sectionGroups.content.settings.push({
@@ -1168,6 +1403,61 @@ ${blockHtml}
         }
     });
 
+
+    sectionGroups.content.settings.push({
+        type: 'image_picker',
+        id: 'hero_background_image',
+        label: 'Hero Background Image',
+        info: 'Upload hero section background image'
+    });
+
+    sectionGroups.content.settings.push({
+        type: 'image_picker',
+        id: 'shop_background_image',
+        label: 'Shop Section Background Image',
+        info: 'Upload shop section background image'
+    });
+
+    const actualNavLinks = [];
+    $('header a, nav a, .navbar a, .nav-link').each((i, el) => {
+        const $el = $(el);
+        const text = $el.text().trim();
+        const href = $el.attr('href') || '';
+        const isLogo = $el.find('img').length > 0 || $el.closest('.logo, .brand').length > 0;
+
+        if (text && !text.includes('{{') && !isLogo && href && i < 5) {
+            actualNavLinks.push({
+                text: text,
+                href: href
+            });
+        }
+    });
+
+    actualNavLinks.forEach((link, index) => {
+        sectionGroups.content.settings.push({
+            type: 'text',
+            id: `nav_link_${index + 1}_text`,
+            label: `Navigation Link: ${link.text}`,
+            default: link.text,
+            info: `Navigation link ${index + 1} text`
+        });
+
+        sectionGroups.content.settings.push({
+            type: 'url',
+            id: `nav_link_${index + 1}_url`,
+            label: `Navigation URL: ${link.text}`,
+            default: link.href !== '#' ? link.href : '/',
+            info: `Navigation link ${index + 1} URL`
+        });
+    });
+
+    sectionGroups.content.settings.push({
+        type: 'text',
+        id: 'footer_copyright',
+        label: 'Footer Copyright Text',
+        default: '© 2025 Mäertin. All rights reserved.',
+        info: 'Footer copyright text'
+    });
 
     sectionGroups.styling.settings.push(
         {
