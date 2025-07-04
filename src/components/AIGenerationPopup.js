@@ -194,11 +194,11 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                             lineHeight: '1.6',
                             margin: '0 0 15px 0'
                         }}>
-                            This tool uses AI to generate Shopify Liquid templates and JSON schema files.
+                            This AI-powered tool converts any structured HTML layout into Shopify Liquid templates with JSON schema files.
+                            <strong style={{ color: '#00ff88' }}> Works with any HTML structure, preserves JavaScript functionality, and maintains styling.</strong>
                             <strong style={{ color: '#ffc107' }}> AI provides 95%-98% accuracy, not 100%.</strong> Having
                             <strong style={{ color: '#00ff88' }}> Liquid knowledge is essential</strong> for fine-tuning results.
-                            If the first result doesn't meet your expectations, simply click generate again
-                            for improved results.
+                            If the first result doesn't meet your expectations, simply click generate again for improved results.
                         </p>
                         <div style={{
                             background: 'rgba(255, 152, 0, 0.1)',
@@ -214,8 +214,8 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                                 margin: 0,
                                 fontWeight: '600'
                             }}>
-                                <span style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}>🤝</span> I assume you have provided correct HTML code for conversion.
-                                If AI repeatedly generates incorrect results, please double-check your HTML code first.
+                                <span style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}>🤝</span> I assume you have provided well-structured HTML code with proper semantic markup.
+                                The tool works best with organized HTML layouts. If AI repeatedly generates incorrect results, please verify your HTML structure and formatting.
                             </p>
                         </div>
                     </div>
@@ -287,7 +287,7 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                             lineHeight: '1.4',
                             margin: 0
                         }}>
-                            Less code = faster conversion ⚡ | Large code = 3-5 minutes ⏳ | More complex code = may take longer
+                            Simple HTML = faster conversion ⚡ | Complex layouts with JS = 3-5 minutes ⏳ | Large files with animations = may take longer
                         </p>
                     </div>
                     <div style={{
@@ -310,7 +310,7 @@ const AIGenerationPopup = ({ isVisible, onClose, onConfirm }) => {
                                 fontWeight: '600',
                                 lineHeight: '1.3'
                             }}>
-                                Pro Tip: Generate multiple times for better results if needed!
+                                Pro Tip: For best results, use clean, well-structured HTML with semantic elements and consistent CSS classes!
                             </span>
                         </div>
                     </div>
