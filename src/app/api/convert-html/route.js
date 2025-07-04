@@ -4,6 +4,7 @@ import { generateZip, addFileComment } from '../../../utils/zipGenerator';
 import { fixSchemaQuotesInLiquid } from '../../../utils/quoteEscaping';
 import { fixFileSchemaConsistency } from '../../../utils/fileSchemaConsistency';
 import { generateLiquidTemplate } from '../../../utils/customHtmlToLiquid';
+import { generateLiquidWithOpenAI, checkOpenAIConnection } from '../../../utils/openaiHtmlToLiquid';
 
 export async function POST(request) {
   try {
@@ -49,7 +50,75 @@ export async function POST(request) {
 
     const shopifyPaths = generateShopifyPaths(finalFileName);
 
-    console.log('Starting custom HTML-to-Liquid conversion for:', finalFileName);
+    const htmlLines = htmlContent.split('\n').length;
+    console.log(`📏 [SIZE CHECK] HTML content has ${htmlLines} lines`);
+
+    let openaiResult = null;
+    let skippedOpenAI = false;
+
+    if (htmlLines > 1500) {
+      console.log('⚠️ [SIZE LIMIT] HTML content exceeds 1500 lines - skipping OpenAI conversion');
+      console.log('⏰ [WAIT] Waiting 2 minutes before starting custom conversion...');
+
+      await new Promise(resolve => setTimeout(resolve, 120000));
+
+      console.log('✅ [WAIT COMPLETE] 2 minutes elapsed - starting custom conversion');
+      console.log('🎯 [CUSTOM ONLY] Converting with custom algorithm only');
+
+      skippedOpenAI = true;
+      openaiResult = {
+        success: false,
+        skipped: true,
+        reason: 'Content exceeds 1500 lines',
+        metadata: { skippedAt: new Date().toISOString() }
+      };
+
+    } else {
+      console.log('✅ [SIZE CHECK] HTML content within limits - proceeding with OpenAI conversion');
+      console.log('🔍 [PRECHECK] Checking OpenAI API status before conversion...');
+
+      const openaiStatus = await checkOpenAIConnection();
+
+      if (!openaiStatus.isWorking) {
+        console.log('❌ [PRECHECK] OpenAI API not working:', openaiStatus.error);
+        console.log('🚫 [BLOCKED] Custom conversion blocked - OpenAI API must be working');
+
+        return NextResponse.json(
+          {
+            error: `Conversion blocked: OpenAI API is required but not working`,
+            details: openaiStatus.error,
+            status: openaiStatus.status,
+            apiStatus: 'failed'
+          },
+          { status: 503 }
+        );
+      }
+
+      console.log('✅ [PRECHECK] OpenAI API is working - proceeding with conversion');
+      console.log('🤖 [STEP 1] Starting OpenAI HTML-to-Liquid conversion first...');
+
+      openaiResult = await generateLiquidWithOpenAI(htmlContent, finalFileName);
+
+      if (!openaiResult.success) {
+        console.log('❌ [STEP 1] OpenAI conversion failed:', openaiResult.error);
+        console.log('🚫 [BLOCKED] Custom conversion blocked - OpenAI conversion must complete first');
+
+        return NextResponse.json(
+          {
+            error: `Conversion blocked: OpenAI conversion failed`,
+            details: openaiResult.error,
+            step: 'openai_conversion',
+            apiStatus: 'conversion_failed'
+          },
+          { status: 500 }
+        );
+      }
+
+      console.log('✅ [STEP 1] OpenAI conversion completed successfully');
+      console.log('📊 [STEP 1] OpenAI Usage - Tokens:', openaiResult.metadata.totalTokens);
+    }
+
+    console.log('🎯 [STEP 2] Now starting custom HTML-to-Liquid conversion...');
 
     const conversionResult = generateLiquidTemplate(htmlContent, finalFileName);
 
@@ -58,7 +127,13 @@ export async function POST(request) {
     let injectedBlocks = conversionResult.schema.blocks || [];
     let usedBlockTypes = injectedBlocks.map(block => block.type);
 
-    console.log('Custom conversion completed successfully');
+    if (skippedOpenAI) {
+      console.log('✅ [STEP 2] Custom conversion completed successfully for:', finalFileName);
+      console.log('🎉 [COMPLETE] Custom conversion finished (OpenAI skipped due to size limit)');
+    } else {
+      console.log('✅ [STEP 2] Custom conversion completed successfully for:', finalFileName);
+      console.log('🎉 [COMPLETE] Both OpenAI and Custom conversions finished - returning Custom results');
+    }
 
     try {
       const quoteFixResult = fixSchemaQuotesInLiquid(liquidContent);
@@ -113,7 +188,15 @@ export async function POST(request) {
       hasJavascript: liquidContent && liquidContent.includes('{% javascript %}'),
       liquidLineCount: liquidContent ? liquidContent.split('\n').length : 0,
       jsonLineCount: jsonTemplate.split('\n').length,
-      conversionMethod: 'custom-deterministic'
+      conversionMethod: 'custom-deterministic',
+      openaiGenerationCompleted: openaiResult?.success || false,
+      openaiSkipped: skippedOpenAI,
+      openaiSkipReason: skippedOpenAI ? 'Content exceeds 1500 lines' : null,
+      openaiMetadata: openaiResult?.metadata || null,
+      apiValidated: !skippedOpenAI,
+      sequentialProcessing: !skippedOpenAI,
+      inputLines: htmlLines,
+      sizeLimitApplied: htmlLines > 1500
     };
 
     return NextResponse.json({
@@ -137,8 +220,14 @@ export async function POST(request) {
         jsonFileName: `${finalFileName}.json`,
         sectionType: finalFileName,
         htmlSize: htmlContent.length,
-        htmlLines: htmlContent.split('\n').length,
-        conversionMethod: 'Custom Deterministic Converter'
+        htmlLines: htmlLines,
+        conversionMethod: 'Custom Deterministic Converter',
+        aiGenerationEnabled: !skippedOpenAI,
+        openaiSkipped: skippedOpenAI,
+        openaiSkipReason: skippedOpenAI ? 'Content exceeds 1500 lines - 2 minute wait applied' : null,
+        openaiTokensUsed: openaiResult?.metadata?.totalTokens || 0,
+        processingSequence: skippedOpenAI ? 'Custom-Only-After-Wait' : 'OpenAI-First-Then-Custom',
+        waitTimeApplied: skippedOpenAI ? '2 minutes' : null
       }
     });
 
