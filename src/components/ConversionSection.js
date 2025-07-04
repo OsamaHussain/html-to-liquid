@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import CodeViewer from './CodeViewer';
-import ConfirmationPopup from './ConfirmationPopup';
 import SchemaFieldIndicators from './SchemaFieldIndicators';
 export default function ConversionSection({
     files,
@@ -16,56 +15,13 @@ export default function ConversionSection({
     downloadJsonFile,
     downloadHeadFile,
     downloadCombinedHeadFile,
-    downloadAllAsZip,
-    onReconvertFile
+    downloadAllAsZip
 }) {
-    const [showConfirmPopup, setShowConfirmPopup] = useState(false);
-    const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-    const [pendingReconvertIndex, setPendingReconvertIndex] = useState(null);
-    const [popupTitle, setPopupTitle] = useState('');
-    const [popupMessage, setPopupMessage] = useState('');
-    const [successTitle, setSuccessTitle] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
-    const [hasReconvertStarted, setHasReconvertStarted] = useState(false);
     const [showFieldIndicators, setShowFieldIndicators] = useState({});
 
     const filesWithContent = files.filter(file => file.fileContent);
     const filesWithoutNames = filesWithContent.filter(file => !file.fileName || !file.fileName.trim());
     const hasAllRequiredFilenames = filesWithContent.length > 0 && filesWithoutNames.length === 0;
-
-    const handleReconvertRequest = (index, fileName) => {
-        setPendingReconvertIndex(index);
-        setPopupTitle('Reconvert File');
-        setPopupMessage(`Are you sure you want to reconvert "${fileName || `File ${index + 1}`}"?\n\nThis will replace the current conversion with a new one.`);
-        setShowConfirmPopup(true);
-    };
-
-    const handleConfirmReconvert = () => {
-        if (pendingReconvertIndex !== null && onReconvertFile) {
-            setHasReconvertStarted(true);
-            onReconvertFile(pendingReconvertIndex);
-        }
-        setShowConfirmPopup(false);
-    };
-
-    const handleCancelReconvert = () => {
-        setShowConfirmPopup(false);
-        setPendingReconvertIndex(null);
-        setHasReconvertStarted(false);
-    };
-
-    const handleSuccessClose = () => {
-        setShowSuccessPopup(false);
-        setPendingReconvertIndex(null);
-        setHasReconvertStarted(false);
-    };
-
-    const toggleFieldIndicators = (fileIndex) => {
-        setShowFieldIndicators(prev => ({
-            ...prev,
-            [fileIndex]: prev[fileIndex] === undefined ? false : !prev[fileIndex]
-        }));
-    };
 
     const extractSchemaFromLiquid = (liquidContent) => {
         if (!liquidContent) return null;
@@ -81,25 +37,12 @@ export default function ConversionSection({
         }
     };
 
-    useEffect(() => {
-        if (convertedFiles.length > 0 && hasReconvertStarted && pendingReconvertIndex !== null) {
-            const reconvertedFile = convertedFiles.find(file =>
-                file.isReconverted &&
-                !currentlyConverting &&
-                file.index === pendingReconvertIndex
-            );
-
-            if (reconvertedFile) {
-                const fileName = reconvertedFile.originalFile?.fileName || `File ${pendingReconvertIndex + 1}`;
-                setSuccessTitle('Reconversion Complete! ✅');
-                setSuccessMessage(`File "${fileName}" has been successfully reconverted!\n\nThe updated liquid template and JSON are ready for download.`);
-                setShowSuccessPopup(true);
-
-                setPendingReconvertIndex(null);
-                setHasReconvertStarted(false);
-            }
-        }
-    }, [convertedFiles, currentlyConverting, pendingReconvertIndex, hasReconvertStarted]);
+    const toggleFieldIndicators = (fileIndex) => {
+        setShowFieldIndicators(prev => ({
+            ...prev,
+            [fileIndex]: prev[fileIndex] === undefined ? false : !prev[fileIndex]
+        }));
+    };
 
     if (filesWithContent.length === 0) return null;
 
@@ -399,41 +342,6 @@ export default function ConversionSection({
                                         }}>
                                             <span>📄 {file.fileName || `File ${index + 1}`}</span>
                                             {hasError && <span>⚠️</span>}
-                                            {convertedFile && !hasError && onReconvertFile && filesWithContent.length > 1 && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleReconvertRequest(index, file.fileName);
-                                                    }}
-                                                    disabled={isCurrentlyConverting}
-                                                    style={{
-                                                        background: 'none',
-                                                        border: 'none',
-                                                        color: activeTab === index ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.6)',
-                                                        cursor: isCurrentlyConverting ? 'not-allowed' : 'pointer',
-                                                        fontSize: '12px',
-                                                        padding: '2px 4px',
-                                                        borderRadius: '4px',
-                                                        transition: 'all 0.2s ease',
-                                                        opacity: isCurrentlyConverting ? 0.5 : 1
-                                                    }}
-                                                    onMouseOver={(e) => {
-                                                        if (!isCurrentlyConverting) {
-                                                            e.target.style.background = 'rgba(255, 107, 53, 0.3)';
-                                                            e.target.style.color = '#ffffff';
-                                                        }
-                                                    }}
-                                                    onMouseOut={(e) => {
-                                                        if (!isCurrentlyConverting) {
-                                                            e.target.style.background = 'none';
-                                                            e.target.style.color = activeTab === index ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.6)';
-                                                        }
-                                                    }}
-                                                    title={`Reconvert ${file.fileName || `File ${index + 1}`}`}
-                                                >
-                                                    🔄
-                                                </button>
-                                            )}
                                             {isCurrentlyConverting && !convertedFile && (
                                                 <div style={{
                                                     width: '8px',
@@ -476,76 +384,7 @@ export default function ConversionSection({
                                                 flex: 1
                                             }}>
                                                 📄 File {activeTab + 1}: {convertedFiles[activeTab].originalFile.fileName || `File-${activeTab + 1}.html`}
-                                                {convertedFiles[activeTab].isReconverted && (
-                                                    <span style={{
-                                                        fontSize: 'clamp(12px, 3vw, 14px)',
-                                                        marginLeft: '10px',
-                                                        color: '#90EE90',
-                                                        fontWeight: '600'
-                                                    }}>
-                                                        🔄 Reconverted
-                                                    </span>
-                                                )}
                                             </h3>
-                                            {onReconvertFile && filesWithContent.length > 1 && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleReconvertRequest(activeTab, convertedFiles[activeTab].originalFile.fileName);
-                                                    }}
-                                                    disabled={currentlyConverting && currentlyConverting.index === activeTab}
-                                                    style={{
-                                                        background: currentlyConverting && currentlyConverting.index === activeTab
-                                                            ? 'linear-gradient(135deg, #666 0%, #888 100%)'
-                                                            : 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
-                                                        color: 'white',
-                                                        border: 'none',
-                                                        borderRadius: '8px',
-                                                        padding: 'clamp(8px, 2vw, 12px) clamp(12px, 3vw, 16px)',
-                                                        cursor: currentlyConverting && currentlyConverting.index === activeTab ? 'not-allowed' : 'pointer',
-                                                        fontSize: 'clamp(12px, 3vw, 14px)',
-                                                        fontWeight: '600',
-                                                        transition: 'all 0.3s ease',
-                                                        boxShadow: currentlyConverting && currentlyConverting.index === activeTab
-                                                            ? '0 2px 4px rgba(0,0,0,0.2)'
-                                                            : '0 4px 8px rgba(255, 107, 53, 0.3)',
-                                                        opacity: currentlyConverting && currentlyConverting.index === activeTab ? 0.7 : 1,
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '6px',
-                                                        whiteSpace: 'nowrap'
-                                                    }}
-                                                    onMouseOver={(e) => {
-                                                        if (!currentlyConverting || currentlyConverting.index !== activeTab) {
-                                                            e.target.style.transform = 'scale(1.05)';
-                                                            e.target.style.boxShadow = '0 6px 12px rgba(255, 107, 53, 0.4)';
-                                                        }
-                                                    }}
-                                                    onMouseOut={(e) => {
-                                                        if (!currentlyConverting || currentlyConverting.index !== activeTab) {
-                                                            e.target.style.transform = 'scale(1)';
-                                                            e.target.style.boxShadow = '0 4px 8px rgba(255, 107, 53, 0.3)';
-                                                        }
-                                                    }}
-                                                >
-                                                    {currentlyConverting && currentlyConverting.index === activeTab ? (
-                                                        <>
-                                                            <div style={{
-                                                                width: '12px',
-                                                                height: '12px',
-                                                                border: '2px solid rgba(255, 255, 255, 0.3)',
-                                                                borderTop: '2px solid #ffffff',
-                                                                borderRadius: '50%'
-                                                            }} className="spinning-loader"></div>
-                                                            Reconverting...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            🔄 Reconvert File
-                                                        </>
-                                                    )}
-                                                </button>
-                                            )}
                                         </div>
                                     </div>
 
@@ -743,7 +582,7 @@ export default function ConversionSection({
                                         position: 'relative',
                                         zIndex: 1
                                     }}>
-                                        {hasReconvertStarted && pendingReconvertIndex === activeTab ? 'Reconverting File' : 'Converting File'} {activeTab + 1}
+                                        Converting File {activeTab + 1}
                                     </h3>
 
                                     <p style={{
@@ -971,28 +810,6 @@ export default function ConversionSection({
                     </div>
                 )}
             </div>
-
-            <ConfirmationPopup
-                isOpen={showConfirmPopup}
-                onConfirm={handleConfirmReconvert}
-                onClose={handleCancelReconvert}
-                title={popupTitle}
-                message={popupMessage}
-                confirmText="Yes, Reconvert"
-                cancelText="Cancel"
-                type="warning"
-            />
-
-            <ConfirmationPopup
-                isOpen={showSuccessPopup}
-                onConfirm={handleSuccessClose}
-                onClose={handleSuccessClose}
-                title={successTitle}
-                message={successMessage}
-                confirmText="Great!"
-                cancelText=""
-                type="info"
-            />
         </>
     );
 }

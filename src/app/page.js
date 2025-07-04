@@ -465,118 +465,6 @@ export default function Home() {
     setShowHowItWorksPopup(true);
   };
 
-  const reconvertSingleFile = async (fileIndex) => {
-    const filesWithContent = files.filter(file => file.fileContent);
-    const fileToReconvert = filesWithContent[fileIndex];
-
-    if (!fileToReconvert) {
-      setConversionError(`File ${fileIndex + 1} not found`);
-      return;
-    }
-
-    setCurrentlyConverting({
-      index: fileIndex,
-      fileName: fileToReconvert.fileName || `File ${fileIndex + 1}`,
-      total: 1,
-      remaining: 1
-    });
-
-    try {
-      setConvertedFiles(prev => prev.filter(cf => cf.index !== fileIndex));
-
-      const headResponse = await fetch('/api/extract-head', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          htmlContent: fileToReconvert.fileContent,
-          fileName: fileToReconvert.fileName || `reconvert-${fileIndex + 1}.html`,
-        }),
-      });
-
-      const headData = await headResponse.json();
-      let headContent = '';
-      let headExtractionError = '';
-
-      if (headResponse.ok) {
-        headContent = headData.headContent;
-      } else {
-        headExtractionError = headData.error || 'Head extraction failed';
-      }
-
-      const response = await fetch('/api/convert-html', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          htmlContent: fileToReconvert.fileContent,
-          fileName: fileToReconvert.fileName || `reconvert-${fileIndex + 1}.html`,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || `Reconversion failed for ${fileToReconvert.fileName || `File ${fileIndex + 1}`}`);
-      }
-
-      const newResult = {
-        originalFile: fileToReconvert,
-        liquidContent: data.liquidContent,
-        jsonTemplate: data.jsonTemplate,
-        fileNames: data.metadata,
-        headExtractionError: headExtractionError,
-        index: fileIndex,
-        shopifyInfo: data.shopifyInfo || {},
-        sectionName: data.shopifyInfo?.sectionName || `page-${fileIndex + 1}`,
-        injectedBlocks: data.shopifyInfo?.injectedBlocks || [],
-        usedBlockTypes: data.shopifyInfo?.usedBlockTypes || [],
-        filenameCorrected: data.shopifyInfo?.filenameCorrected || false,
-        processingErrors: data.shopifyInfo?.processingErrors || [],
-        validation: data.validation || {},
-        isReconverted: true
-      };
-
-      setConvertedFiles(prev => {
-        const updated = [...prev, newResult];
-        return updated.sort((a, b) => a.index - b.index);
-      });
-
-      if (headContent && headContent.trim()) {
-        setCombinedHeadContent(prev => {
-          const existingLines = new Set(prev.split('\n').filter(line => line.trim()));
-          const newLines = headContent.split('\n').filter(line => line.trim());
-          newLines.forEach(line => {
-            const normalizedLine = line.trim().replace(/\s+/g, ' ');
-            if (normalizedLine && !existingLines.has(normalizedLine)) {
-              existingLines.add(normalizedLine);
-            }
-          });
-          return Array.from(existingLines).join('\n');
-        });
-      }
-
-      setCurrentlyConverting(null);
-      setConversionError('');
-
-
-    } catch (error) {
-      console.error('Reconversion error:', error);
-      setConversionError(`❌ Reconversion failed for "${fileToReconvert.fileName || `File ${fileIndex + 1}`}": ${error.message}`);
-      setCurrentlyConverting(null);
-
-      const originalConverted = convertedFiles.find(cf => cf.index === fileIndex);
-      if (originalConverted) {
-        setConvertedFiles(prev => {
-          const updated = [...prev, { ...originalConverted, hasError: true }];
-          return updated.sort((a, b) => a.index - b.index);
-        });
-      }
-    }
-  };
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -617,7 +505,6 @@ export default function Home() {
           downloadHeadFile={downloadHeadFile}
           downloadCombinedHeadFile={downloadCombinedHeadFile}
           downloadAllAsZip={downloadAllAsZip}
-          onReconvertFile={reconvertSingleFile}
         />
       </div>
       <ErrorPopup
