@@ -5,6 +5,7 @@ import { fixSchemaQuotesInLiquid } from '../../../utils/quoteEscaping';
 import { fixFileSchemaConsistency } from '../../../utils/fileSchemaConsistency';
 import { generateLiquidTemplate } from '../../../utils/customHtmlToLiquid';
 import { generateLiquidWithOpenAI, checkOpenAIConnection } from '../../../utils/openaiHtmlToLiquid';
+import { shouldUseOpenAI, getConfig } from '../config/conversion.config.js';
 
 export async function POST(request) {
   try {
@@ -50,38 +51,66 @@ export async function POST(request) {
 
     const shopifyPaths = generateShopifyPaths(finalFileName);
 
+    const config = getConfig();
+    const useOpenAI = shouldUseOpenAI();
+
     const htmlLines = htmlContent.split('\n').length;
-    console.log(`📏 [SIZE CHECK] HTML content has ${htmlLines} lines`);
+    if (config.ENABLE_LOGS) {
+      console.log(`📏 [SIZE CHECK] HTML content has ${htmlLines} lines`);
+      console.log(`⚙️ [CONFIG] Conversion mode: ${config.mode}`);
+    }
 
     let openaiResult = null;
     let skippedOpenAI = false;
 
-    if (htmlLines > 1500) {
-      console.log('⚠️ [SIZE LIMIT] HTML content exceeds 1500 lines - skipping OpenAI conversion');
-      console.log('⏰ [WAIT] Waiting 2 minutes before starting custom conversion...');
-
-      await new Promise(resolve => setTimeout(resolve, 120000));
-
-      console.log('✅ [WAIT COMPLETE] 2 minutes elapsed - starting custom conversion');
-      console.log('🎯 [CUSTOM ONLY] Converting with custom algorithm only');
+    if (!useOpenAI) {
+      if (config.ENABLE_LOGS) {
+        console.log('⚙️ [CONFIG] CUSTOM_ONLY mode enabled - skipping OpenAI conversion');
+        console.log('🎯 [CUSTOM ONLY] Converting with custom algorithm only');
+      }
 
       skippedOpenAI = true;
       openaiResult = {
         success: false,
         skipped: true,
-        reason: 'Content exceeds 1500 lines',
+        reason: 'CUSTOM_ONLY mode enabled in configuration',
+        metadata: { skippedAt: new Date().toISOString(), configMode: config.mode }
+      };
+
+    } else if (htmlLines > config.SIZE_LIMIT) {
+      if (config.ENABLE_LOGS) {
+        console.log(`⚠️ [SIZE LIMIT] HTML content exceeds ${config.SIZE_LIMIT} lines - skipping OpenAI conversion`);
+        console.log(`⏰ [WAIT] Waiting ${config.WAIT_TIME / 1000} seconds before starting custom conversion...`);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, config.WAIT_TIME));
+
+      if (config.ENABLE_LOGS) {
+        console.log(`✅ [WAIT COMPLETE] ${config.WAIT_TIME / 1000} seconds elapsed - starting custom conversion`);
+        console.log('🎯 [CUSTOM ONLY] Converting with custom algorithm only');
+      }
+
+      skippedOpenAI = true;
+      openaiResult = {
+        success: false,
+        skipped: true,
+        reason: `Content exceeds ${config.SIZE_LIMIT} lines`,
         metadata: { skippedAt: new Date().toISOString() }
       };
 
     } else {
-      console.log('✅ [SIZE CHECK] HTML content within limits - proceeding with OpenAI conversion');
-      console.log('🔍 [PRECHECK] Checking OpenAI API status before conversion...');
+      if (config.ENABLE_LOGS) {
+        console.log('✅ [SIZE CHECK] HTML content within limits - proceeding with OpenAI conversion');
+        console.log('🔍 [PRECHECK] Checking OpenAI API status before conversion...');
+      }
 
       const openaiStatus = await checkOpenAIConnection();
 
       if (!openaiStatus.isWorking) {
-        console.log('❌ [PRECHECK] OpenAI API not working:', openaiStatus.error);
-        console.log('🚫 [BLOCKED] Custom conversion blocked - OpenAI API must be working');
+        if (config.ENABLE_LOGS) {
+          console.log('❌ [PRECHECK] OpenAI API not working:', openaiStatus.error);
+          console.log('🚫 [BLOCKED] Custom conversion blocked - OpenAI API must be working');
+        }
 
         return NextResponse.json(
           {
@@ -94,14 +123,18 @@ export async function POST(request) {
         );
       }
 
-      console.log('✅ [PRECHECK] OpenAI API is working - proceeding with conversion');
-      console.log('🤖 [STEP 1] Starting OpenAI HTML-to-Liquid conversion first...');
+      if (config.ENABLE_LOGS) {
+        console.log('✅ [PRECHECK] OpenAI API is working - proceeding with conversion');
+        console.log('🤖 [STEP 1] Starting OpenAI HTML-to-Liquid conversion first...');
+      }
 
       openaiResult = await generateLiquidWithOpenAI(htmlContent, finalFileName);
 
       if (!openaiResult.success) {
-        console.log('❌ [STEP 1] OpenAI conversion failed:', openaiResult.error);
-        console.log('🚫 [BLOCKED] Custom conversion blocked - OpenAI conversion must complete first');
+        if (config.ENABLE_LOGS) {
+          console.log('❌ [STEP 1] OpenAI conversion failed:', openaiResult.error);
+          console.log('🚫 [BLOCKED] Custom conversion blocked - OpenAI conversion must complete first');
+        }
 
         return NextResponse.json(
           {
@@ -114,11 +147,15 @@ export async function POST(request) {
         );
       }
 
-      console.log('✅ [STEP 1] OpenAI conversion completed successfully');
-      console.log('📊 [STEP 1] OpenAI Usage - Tokens:', openaiResult.metadata.totalTokens);
+      if (config.ENABLE_LOGS) {
+        console.log('✅ [STEP 1] OpenAI conversion completed successfully');
+        console.log('📊 [STEP 1] OpenAI Usage - Tokens:', openaiResult.metadata.totalTokens);
+      }
     }
 
-    console.log('🎯 [STEP 2] Now starting custom HTML-to-Liquid conversion...');
+    if (config.ENABLE_LOGS) {
+      console.log('🎯 [STEP 2] Now starting custom HTML-to-Liquid conversion...');
+    }
 
     const conversionResult = generateLiquidTemplate(htmlContent, finalFileName);
 
@@ -128,11 +165,15 @@ export async function POST(request) {
     let usedBlockTypes = injectedBlocks.map(block => block.type);
 
     if (skippedOpenAI) {
-      console.log('✅ [STEP 2] Custom conversion completed successfully for:', finalFileName);
-      console.log('🎉 [COMPLETE] Custom conversion finished (OpenAI skipped due to size limit)');
+      if (config.ENABLE_LOGS) {
+        console.log('✅ [STEP 2] Custom conversion completed successfully for:', finalFileName);
+        console.log('🎉 [COMPLETE] Custom conversion finished (OpenAI skipped:', openaiResult.reason + ')');
+      }
     } else {
-      console.log('✅ [STEP 2] Custom conversion completed successfully for:', finalFileName);
-      console.log('🎉 [COMPLETE] Both OpenAI and Custom conversions finished - returning Custom results');
+      if (config.ENABLE_LOGS) {
+        console.log('✅ [STEP 2] Custom conversion completed successfully for:', finalFileName);
+        console.log('🎉 [COMPLETE] Both OpenAI and Custom conversions finished - returning Custom results');
+      }
     }
 
     try {
@@ -189,14 +230,16 @@ export async function POST(request) {
       liquidLineCount: liquidContent ? liquidContent.split('\n').length : 0,
       jsonLineCount: jsonTemplate.split('\n').length,
       conversionMethod: 'custom-deterministic',
+      conversionMode: config.mode,
       openaiGenerationCompleted: openaiResult?.success || false,
       openaiSkipped: skippedOpenAI,
-      openaiSkipReason: skippedOpenAI ? 'Content exceeds 1500 lines' : null,
+      openaiSkipReason: skippedOpenAI ? openaiResult.reason : null,
       openaiMetadata: openaiResult?.metadata || null,
       apiValidated: !skippedOpenAI,
       sequentialProcessing: !skippedOpenAI,
       inputLines: htmlLines,
-      sizeLimitApplied: htmlLines > 1500
+      sizeLimitApplied: htmlLines > config.SIZE_LIMIT,
+      configUsed: config
     };
 
     return NextResponse.json({
@@ -222,12 +265,16 @@ export async function POST(request) {
         htmlSize: htmlContent.length,
         htmlLines: htmlLines,
         conversionMethod: 'Custom Deterministic Converter',
+        conversionMode: config.mode,
         aiGenerationEnabled: !skippedOpenAI,
         openaiSkipped: skippedOpenAI,
-        openaiSkipReason: skippedOpenAI ? 'Content exceeds 1500 lines - 2 minute wait applied' : null,
+        openaiSkipReason: skippedOpenAI ? openaiResult.reason : null,
         openaiTokensUsed: openaiResult?.metadata?.totalTokens || 0,
-        processingSequence: skippedOpenAI ? 'Custom-Only-After-Wait' : 'OpenAI-First-Then-Custom',
-        waitTimeApplied: skippedOpenAI ? '2 minutes' : null
+        processingSequence: skippedOpenAI ?
+          (config.mode === 'CUSTOM_ONLY' ? 'Custom-Only-By-Config' : 'Custom-Only-After-Wait') :
+          'OpenAI-First-Then-Custom',
+        waitTimeApplied: (skippedOpenAI && config.mode === 'OPENAI_FIRST') ? `${config.WAIT_TIME / 1000} seconds` : null,
+        configurationUsed: config
       }
     });
 
