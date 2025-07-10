@@ -60,7 +60,7 @@ export async function POST(request) {
     const validationInfo = {
       hasSchema: openaiResult.liquidContent && openaiResult.liquidContent.includes('{% schema %}'),
       hasStylesheet: openaiResult.liquidContent && openaiResult.liquidContent.includes('{% stylesheet %}'),
-      hasJavascript: openaiResult.liquidContent && openaiResult.liquidContent.includes('{% javascript %}'),
+      hasJavascript: openaiResult.liquidContent && openaiResult.liquidContent.includes('<script>'),
       liquidLineCount: openaiResult.liquidContent ? openaiResult.liquidContent.split('\n').length : 0,
       jsonLineCount: openaiResult.jsonTemplate.split('\n').length,
       conversionMethod: 'openai-gpt4o'

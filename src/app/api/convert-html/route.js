@@ -226,7 +226,7 @@ export async function POST(request) {
     const validationInfo = {
       hasSchema: liquidContent && liquidContent.includes('{% schema %}'),
       hasStylesheet: liquidContent && liquidContent.includes('{% stylesheet %}'),
-      hasJavascript: liquidContent && liquidContent.includes('{% javascript %}'),
+      hasJavascript: liquidContent && liquidContent.includes('<script>'),
       liquidLineCount: liquidContent ? liquidContent.split('\n').length : 0,
       jsonLineCount: jsonTemplate.split('\n').length,
       conversionMethod: 'custom-deterministic',

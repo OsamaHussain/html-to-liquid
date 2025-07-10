@@ -1100,15 +1100,24 @@ export function convertHtmlToLiquid(html, fileName) {
                         }).each((i, socialDiv) => {
                             if (i === 0) {
                                 $(socialDiv).html(`
+                                    {% assign social_count = 0 %}
                                     {% assign social_platforms = 'facebook,instagram,twitter,youtube,pinterest' | split: ',' %}
                                     {% for platform in social_platforms %}
                                       {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
                                       {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
+                                        {% assign social_count = social_count | plus: 1 %}
+                                      {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% comment %} Show all social icons only if all platforms have URLs {% endcomment %}
+                                    {% if social_count == 5 %}
+                                      {% for platform in social_platforms %}
+                                        {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
                                         <a href="{{ block.settings[social_url_id] }}" class="hover:text-white text-2xl transition" title="{{ platform | capitalize }}">
                                           <i class="fab fa-{{ platform }}"></i>
                                         </a>
-                                      {% endif %}
-                                    {% endfor %}
+                                      {% endfor %}
+                                    {% endif %}
                                 `);
                             }
                         });
@@ -1344,24 +1353,23 @@ export function convertHtmlToLiquid(html, fileName) {
         
         {%- comment -%} Individual Social Link Settings {%- endcomment -%}
         {% assign has_social = false %}
+        {% assign social_count = 0 %}
         {% assign social_platforms = 'facebook,instagram,twitter,youtube,pinterest' | split: ',' %}
         {% for platform in social_platforms %}
           {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
           {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
-            {% assign has_social = true %}
-            {% break %}
+            {% assign social_count = social_count | plus: 1 %}
           {% endif %}
         {% endfor %}
         
-        {% if has_social %}
+        {%- comment -%} Show all social icons only if all platforms have URLs {%- endcomment -%}
+        {% if social_count == 5 %}
           <div class="flex space-x-5 mt-2">
             {% for platform in social_platforms %}
               {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
-              {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
-                <a href="{{ block.settings[social_url_id] }}" class="hover:text-white text-2xl transition" title="{{ platform | capitalize }}">
-                  <i class="fab fa-{{ platform }}"></i>
-                </a>
-              {% endif %}
+              <a href="{{ block.settings[social_url_id] }}" class="hover:text-white text-2xl transition" title="{{ platform | capitalize }}">
+                <i class="fab fa-{{ platform }}"></i>
+              </a>
             {% endfor %}
           </div>
         {% endif %}
@@ -1602,6 +1610,23 @@ ${blockHtml}
         }
     });
 
+    $('footer a, .footer a').each((i, el) => {
+        const $el = $(el);
+        const text = $el.text().trim().toLowerCase();
+        const href = $el.attr('href') || '';
+
+        if (text.includes('privacy') && !href.includes('{{')) {
+            $el.text('{{ section.settings.privacy_policy_text }}');
+            $el.attr('href', '{{ section.settings.privacy_policy_url }}');
+        } else if (text.includes('terms') && !href.includes('{{')) {
+            $el.text('{{ section.settings.terms_service_text }}');
+            $el.attr('href', '{{ section.settings.terms_service_url }}');
+        } else if (text.includes('cookie') && !href.includes('{{')) {
+            $el.text('{{ section.settings.cookie_policy_text }}');
+            $el.attr('href', '{{ section.settings.cookie_policy_url }}');
+        }
+    });
+
     let imageCounter = 1;
 
     $('header img, nav img, .navbar img, .logo img, .brand img, img[alt*="logo"], img[src*="logo"], .header img').each((i, el) => {
@@ -1732,6 +1757,54 @@ ${blockHtml}
         label: 'Footer Copyright Text',
         default: '© 2025 Mäertin. All rights reserved.',
         info: 'Footer copyright text'
+    });
+
+    sectionGroups.content.settings.push({
+        type: 'text',
+        id: 'privacy_policy_text',
+        label: 'Privacy Policy Link Text',
+        default: 'Privacy Policy',
+        info: 'Text for privacy policy link'
+    });
+
+    sectionGroups.content.settings.push({
+        type: 'url',
+        id: 'privacy_policy_url',
+        label: 'Privacy Policy URL',
+        default: '/',
+        info: 'URL for privacy policy page'
+    });
+
+    sectionGroups.content.settings.push({
+        type: 'text',
+        id: 'terms_service_text',
+        label: 'Terms of Service Link Text',
+        default: 'Terms of Service',
+        info: 'Text for terms of service link'
+    });
+
+    sectionGroups.content.settings.push({
+        type: 'url',
+        id: 'terms_service_url',
+        label: 'Terms of Service URL',
+        default: '/',
+        info: 'URL for terms of service page'
+    });
+
+    sectionGroups.content.settings.push({
+        type: 'text',
+        id: 'cookie_policy_text',
+        label: 'Cookie Policy Link Text',
+        default: 'Cookie Policy',
+        info: 'Text for cookie policy link'
+    });
+
+    sectionGroups.content.settings.push({
+        type: 'url',
+        id: 'cookie_policy_url',
+        label: 'Cookie Policy URL',
+        default: '/',
+        info: 'URL for cookie policy page'
     });
 
     sectionGroups.styling.settings.push(
@@ -1900,6 +1973,13 @@ export function generateLiquidTemplate(html, fileName) {
   • Fully responsive design
   • Theme editor compatible
   • Professional conversion by HTML-to-Liquid Converter
+  
+  Updates Applied:
+  • Fixed {% javascript %} tags to use standard <script> tags
+  • Improved footer CSS scoping for better Shopify compatibility
+  • Made policy links (Privacy, Terms, Cookies) editable
+  • Limited footer column blocks to 2 samples to reduce bloat
+  • Ensured consistent Font Awesome version (6.5.1)
 {%- endcomment -%}
 
 {%- comment -%} Section Variables {%- endcomment -%}
@@ -1943,7 +2023,7 @@ ${css}
 {% endstylesheet %}
 
 {%- comment -%} Section Scripts {%- endcomment -%}
-{% javascript %}
+<script>
 // Original JavaScript from HTML
 ${js}
 
@@ -1969,7 +2049,7 @@ document.addEventListener('shopify:section:load', function(event) {
     }
   }
 });
-{% endjavascript %}`;
+</script>`;
 
     const pageTemplate = {
         sections: {

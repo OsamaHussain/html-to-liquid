@@ -79,7 +79,7 @@ DETAILED REQUIREMENTS:
 9. Include spacing/padding controls where applicable
 10. Add toggle settings for show/hide functionality
 11. Ensure responsive design preservation
-12. Include proper section structure with {% stylesheet %} and {% javascript %} if needed
+12. Include proper section structure with {% stylesheet %} and <script> tags if needed
 13. Add comprehensive presets with realistic default content
 14. Section name should be: ${fileName}
 15. Use semantic and descriptive setting IDs and labels

@@ -94,8 +94,11 @@ export async function POST(request) {
         const hrefMatch = cleanTag.match(/href\s*=\s*["']([^"']*)["']/i);
         if (hrefMatch && hrefMatch[1]) {
           let href = hrefMatch[1].replace(/\s+/g, '');
-          if (href.includes('@fortawesome') && !href.includes('fontawesome-free@')) {
-            href = href.replace('@fortawesome/', '@fortawesome/fontawesome-free@6.5.1/');
+          if (href.includes('@fortawesome')) {
+            href = href.replace(/@fortawesome\/[^\/]*@[\d\.]+/g, '@fortawesome/fontawesome-free@6.5.1');
+            if (!href.includes('fontawesome-free@')) {
+              href = href.replace('@fortawesome/', '@fortawesome/fontawesome-free@6.5.1/');
+            }
           }
           cleanTag = cleanTag.replace(/href\s*=\s*["'][^"']*["']/i, `href="${href}"`);
         }
