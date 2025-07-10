@@ -20,7 +20,7 @@ export const validateAndExtractHtml = (text, fileName = '') => {
       "attr-value-double-quotes": true,
       "doctype-first": false,
       "tag-pair": true,
-      "spec-char-escape": true,
+      "spec-char-escape": false,
       "id-unique": true,
       "src-not-empty": true,
       "attr-no-duplication": true,
