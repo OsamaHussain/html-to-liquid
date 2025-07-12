@@ -1326,21 +1326,22 @@ export function convertHtmlToLiquid(html, fileName) {
 
                         if (isGridContainer) {
                             const footerWrapper = `
-{%- comment -%} Footer Grid Container {%- endcomment -%}
-<div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+{%- comment -%} Footer Container with Grid Layout {%- endcomment -%}
+<div class="footer-grid">
   {% for block in section.blocks %}
     {% case block.type %}
-      {% when 'footer_column' %}                <div>
-                  {% if block.settings.column_title != blank %}
-                    {% if block.settings.column_title == "Mäertin" %}
-                      <h3 class="text-2xl font-semibold mb-4">{{ block.settings.column_title }}</h3>
-                    {% else %}
-                      <h4 class="font-semibold mb-4 border-b border-[#a13f4f] pb-1">{{ block.settings.column_title }}</h4>
-                    {% endif %}
-                  {% endif %}
-                  {% if block.settings.column_description != blank %}
-                    <p class="mb-4 text-[#ecd7de]">{{ block.settings.column_description }}</p>
-                  {% endif %}
+      {% when 'footer_column' %}
+        <div class="footer-section">
+          {% if block.settings.column_title != blank %}
+            {% if block.settings.column_title == "Mäertin" %}
+              <h3 class="text-2xl font-semibold mb-4">{{ block.settings.column_title }}</h3>
+            {% else %}
+              <h4 class="font-semibold mb-4 border-b border-[#a13f4f] pb-1">{{ block.settings.column_title }}</h4>
+            {% endif %}
+          {% endif %}
+          {% if block.settings.column_description != blank %}
+            <p class="mb-4 text-[#ecd7de]">{{ block.settings.column_description }}</p>
+          {% endif %}
           
           {%- comment -%} Individual Link Settings {%- endcomment -%}
           {% assign has_links = false %}
@@ -1365,18 +1366,18 @@ export function convertHtmlToLiquid(html, fileName) {
             </ul>
           {% endif %}
           
-          {%- comment -%} Social Links - Show individual icons if any platform has URL {%- endcomment -%}
-          {% assign has_social = false %}
+          {%- comment -%} Social Links - More flexible display {%- endcomment -%}
           {% assign social_platforms = 'facebook,instagram,twitter,youtube,pinterest' | split: ',' %}
+          {% assign social_links_exist = false %}
           {% for platform in social_platforms %}
             {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
             {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
-              {% assign has_social = true %}
+              {% assign social_links_exist = true %}
               {% break %}
             {% endif %}
           {% endfor %}
           
-          {% if has_social %}
+          {% if social_links_exist %}
             <div class="flex space-x-5 mt-2">
               {% for platform in social_platforms %}
                 {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
@@ -1396,71 +1397,96 @@ export function convertHtmlToLiquid(html, fileName) {
                             gridContainer.replaceWith(footerWrapper);
                         } else {
                             const footerWrapper = `
-{%- comment -%} Footer Column Blocks {%- endcomment -%}
-{% for block in section.blocks %}
-  {% case block.type %}
-    {% when 'footer_column' %}
-      <div class="footer-section">
-        {% if block.settings.column_title != blank %}
-          {% if block.settings.column_title == "Mäertin" %}
-            <h3 class="text-2xl font-semibold mb-4">{{ block.settings.column_title }}</h3>
-          {% else %}
-            <h4 class="font-semibold mb-4 border-b border-[#a13f4f] pb-1">{{ block.settings.column_title }}</h4>
+{%- comment -%} Footer Column Blocks with Proper Structure {%- endcomment -%}
+<div class="footer-grid">
+  {% for block in section.blocks %}
+    {% case block.type %}
+      {% when 'footer_column' %}
+        <div class="footer-section">
+          {% if block.settings.column_title != blank %}
+            {% if block.settings.column_title == "Mäertin" %}
+              <h3 class="text-2xl font-semibold mb-4">{{ block.settings.column_title }}</h3>
+            {% else %}
+              <h4 class="font-semibold mb-4 border-b border-[#a13f4f] pb-1">{{ block.settings.column_title }}</h4>
+            {% endif %}
           {% endif %}
-        {% endif %}
-        {% if block.settings.column_description != blank %}
-          <p class="mb-4 text-[#ecd7de]">{{ block.settings.column_description }}</p>
-        {% endif %}
-        
-        {%- comment -%} Individual Link Settings {%- endcomment -%}
-        {% assign has_links = false %}
-        {% for i in (1..6) %}
-          {% assign link_text_id = 'link_' | append: i | append: '_text' %}
-          {% assign link_url_id = 'link_' | append: i | append: '_url' %}
-          {% if block.settings[link_text_id] != blank and block.settings[link_url_id] != blank and block.settings[link_url_id] != "/" %}
-            {% assign has_links = true %}
-            {% break %}
+          {% if block.settings.column_description != blank %}
+            <p class="mb-4 text-[#ecd7de]">{{ block.settings.column_description }}</p>
           {% endif %}
-        {% endfor %}
-        
-        {% if has_links %}
-          <ul class="space-y-1">
-            {% for i in (1..6) %}
-              {% assign link_text_id = 'link_' | append: i | append: '_text' %}
-              {% assign link_url_id = 'link_' | append: i | append: '_url' %}
-              {% if block.settings[link_text_id] != blank and block.settings[link_url_id] != blank and block.settings[link_url_id] != "/" %}
-                <li><a href="{{ block.settings[link_url_id] }}">{{ block.settings[link_text_id] }}</a></li>
-              {% endif %}
-            {% endfor %}
-          </ul>
-        {% endif %}
-        
-        {%- comment -%} Social Links - Show individual icons if any platform has URL {%- endcomment -%}
-        {% assign has_social = false %}
-        {% assign social_platforms = 'facebook,instagram,twitter,youtube,pinterest' | split: ',' %}
-        {% for platform in social_platforms %}
-          {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
-          {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
-            {% assign has_social = true %}
-            {% break %}
+          
+          {%- comment -%} Individual Link Settings {%- endcomment -%}
+          {% assign has_links = false %}
+          {% for i in (1..6) %}
+            {% assign link_text_id = 'link_' | append: i | append: '_text' %}
+            {% assign link_url_id = 'link_' | append: i | append: '_url' %}
+            {% if block.settings[link_text_id] != blank and block.settings[link_url_id] != blank and block.settings[link_url_id] != "/" %}
+              {% assign has_links = true %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+          
+          {% if has_links %}
+            <ul class="space-y-1">
+              {% for i in (1..6) %}
+                {% assign link_text_id = 'link_' | append: i | append: '_text' %}
+                {% assign link_url_id = 'link_' | append: i | append: '_url' %}
+                {% if block.settings[link_text_id] != blank and block.settings[link_url_id] != blank and block.settings[link_url_id] != "/" %}
+                  <li><a href="{{ block.settings[link_url_id] }}">{{ block.settings[link_text_id] }}</a></li>
+                {% endif %}
+              {% endfor %}
+            </ul>
           {% endif %}
-        {% endfor %}
-        
-        {% if has_social %}
-          <div class="flex space-x-5 mt-2">
-            {% for platform in social_platforms %}
-              {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
-              {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
-                <a href="{{ block.settings[social_url_id] }}" class="hover:text-white text-2xl transition" title="{{ platform | capitalize }}">
-                  <i class="fab fa-{{ platform }}"></i>
-                </a>
-              {% endif %}
-            {% endfor %}
-          </div>
-        {% endif %}
+          
+          {%- comment -%} Social Links - More flexible display {%- endcomment -%}
+          {% assign social_platforms = 'facebook,instagram,twitter,youtube,pinterest' | split: ',' %}
+          {% assign social_links_exist = false %}
+          {% for platform in social_platforms %}
+            {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
+            {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
+              {% assign social_links_exist = true %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+          
+          {% if social_links_exist %}
+            <div class="flex space-x-5 mt-2">
+              {% for platform in social_platforms %}
+                {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
+                {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
+                  <a href="{{ block.settings[social_url_id] }}" class="hover:text-white text-2xl transition" title="{{ platform | capitalize }}">
+                    <i class="fab fa-{{ platform }}"></i>
+                  </a>
+                {% endif %}
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      {% endcase %}
+    {% endfor %}
+</div>
+
+{%- comment -%} Footer Bottom Section for Copyright and Policies {%- endcomment -%}
+<div class="footer-bottom">
+  <div class="footer-bottom-content">
+    {% if section.settings.footer_copyright != blank %}
+      <div class="footer-copyright">
+        {{ section.settings.footer_copyright }}
       </div>
-    {% endcase %}
-{% endfor %}`;
+    {% endif %}
+    
+    <div class="footer-policies">
+      {% if section.settings.privacy_policy_text != blank and section.settings.privacy_policy_url != blank and section.settings.privacy_policy_url != "/" %}
+        <a href="{{ section.settings.privacy_policy_url }}">{{ section.settings.privacy_policy_text }}</a>
+      {% endif %}
+      {% if section.settings.terms_service_text != blank and section.settings.terms_service_url != blank and section.settings.terms_service_url != "/" %}
+        <a href="{{ section.settings.terms_service_url }}">{{ section.settings.terms_service_text }}</a>
+      {% endif %}
+      {% if section.settings.cookie_policy_text != blank and section.settings.cookie_policy_url != blank and section.settings.cookie_policy_url != "/" %}
+        <a href="{{ section.settings.cookie_policy_url }}">{{ section.settings.cookie_policy_text }}</a>
+      {% endif %}
+    </div>
+  </div>
+</div>`;
 
                             gridContainer.html(footerWrapper);
                         }

@@ -349,7 +349,7 @@ export default function HtmlEditor({
                     value={localFileName}
                     onChange={(e) => handleFileNameChange(e.target.value)}
                     placeholder="Enter section name (e.g., homepage, about, contact)"
-                    maxLength={25}
+                    maxLength={50}
                     style={{
                         width: '100%',
                         padding: '12px 16px',
