@@ -349,7 +349,7 @@ export default function HtmlEditor({
                     value={localFileName}
                     onChange={(e) => handleFileNameChange(e.target.value)}
                     placeholder="Enter section name (e.g., homepage, about, contact)"
-                    maxLength={50}
+                    maxLength={25}
                     style={{
                         width: '100%',
                         padding: '12px 16px',
@@ -395,7 +395,7 @@ export default function HtmlEditor({
                     marginTop: '8px',
                     lineHeight: '1.4'
                 }}>
-                    💡 Use only lowercase letters, numbers, hyphens, and underscores. This will be your Shopify section filename.
+                    💡 Use only lowercase letters, numbers, hyphens, and underscores. Max 25 characters for Shopify compatibility.
                 </div>
             </div>
 
