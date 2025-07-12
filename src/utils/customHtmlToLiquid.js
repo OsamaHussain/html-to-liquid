@@ -1100,23 +1100,28 @@ export function convertHtmlToLiquid(html, fileName) {
                         }).each((i, socialDiv) => {
                             if (i === 0) {
                                 $(socialDiv).html(`
-                                    {% assign social_count = 0 %}
+                                    {% assign has_social = false %}
                                     {% assign social_platforms = 'facebook,instagram,twitter,youtube,pinterest' | split: ',' %}
                                     {% for platform in social_platforms %}
                                       {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
                                       {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
-                                        {% assign social_count = social_count | plus: 1 %}
+                                        {% assign has_social = true %}
+                                        {% break %}
                                       {% endif %}
                                     {% endfor %}
                                     
-                                    {% comment %} Show all social icons only if all platforms have URLs {% endcomment %}
-                                    {% if social_count == 5 %}
-                                      {% for platform in social_platforms %}
-                                        {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
-                                        <a href="{{ block.settings[social_url_id] }}" class="hover:text-white text-2xl transition" title="{{ platform | capitalize }}">
-                                          <i class="fab fa-{{ platform }}"></i>
-                                        </a>
-                                      {% endfor %}
+                                    {% comment %} Show individual social icons if any platform has URL {% endcomment %}
+                                    {% if has_social %}
+                                      <div class="flex space-x-3">
+                                        {% for platform in social_platforms %}
+                                          {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
+                                          {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
+                                            <a href="{{ block.settings[social_url_id] }}" class="hover:text-white text-xl transition" title="{{ platform | capitalize }}">
+                                              <i class="fab fa-{{ platform }}"></i>
+                                            </a>
+                                          {% endif %}
+                                        {% endfor %}
+                                      </div>
                                     {% endif %}
                                 `);
                             }
@@ -1315,17 +1320,96 @@ export function convertHtmlToLiquid(html, fileName) {
                     if (footerContainer.length > 0) {
                         const gridContainer = $(elements[0]).parent();
 
-                        const footerWrapper = `
+                        const isGridContainer = gridContainer.hasClass('grid') ||
+                            gridContainer.css('display') === 'grid' ||
+                            gridContainer.children().length > 1;
+
+                        if (isGridContainer) {
+                            const footerWrapper = `
+{%- comment -%} Footer Grid Container {%- endcomment -%}
+<div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+  {% for block in section.blocks %}
+    {% case block.type %}
+      {% when 'footer_column' %}                <div>
+                  {% if block.settings.column_title != blank %}
+                    {% if block.settings.column_title == "Mäertin" %}
+                      <h3 class="text-2xl font-semibold mb-4">{{ block.settings.column_title }}</h3>
+                    {% else %}
+                      <h4 class="font-semibold mb-4 border-b border-[#a13f4f] pb-1">{{ block.settings.column_title }}</h4>
+                    {% endif %}
+                  {% endif %}
+                  {% if block.settings.column_description != blank %}
+                    <p class="mb-4 text-[#ecd7de]">{{ block.settings.column_description }}</p>
+                  {% endif %}
+          
+          {%- comment -%} Individual Link Settings {%- endcomment -%}
+          {% assign has_links = false %}
+          {% for i in (1..6) %}
+            {% assign link_text_id = 'link_' | append: i | append: '_text' %}
+            {% assign link_url_id = 'link_' | append: i | append: '_url' %}
+            {% if block.settings[link_text_id] != blank and block.settings[link_url_id] != blank and block.settings[link_url_id] != "/" %}
+              {% assign has_links = true %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+          
+          {% if has_links %}
+            <ul class="space-y-1">
+              {% for i in (1..6) %}
+                {% assign link_text_id = 'link_' | append: i | append: '_text' %}
+                {% assign link_url_id = 'link_' | append: i | append: '_url' %}
+                {% if block.settings[link_text_id] != blank and block.settings[link_url_id] != blank and block.settings[link_url_id] != "/" %}
+                  <li><a href="{{ block.settings[link_url_id] }}">{{ block.settings[link_text_id] }}</a></li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+          {% endif %}
+          
+          {%- comment -%} Social Links - Show individual icons if any platform has URL {%- endcomment -%}
+          {% assign has_social = false %}
+          {% assign social_platforms = 'facebook,instagram,twitter,youtube,pinterest' | split: ',' %}
+          {% for platform in social_platforms %}
+            {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
+            {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
+              {% assign has_social = true %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+          
+          {% if has_social %}
+            <div class="flex space-x-5 mt-2">
+              {% for platform in social_platforms %}
+                {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
+                {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
+                  <a href="{{ block.settings[social_url_id] }}" class="hover:text-white text-2xl transition" title="{{ platform | capitalize }}">
+                    <i class="fab fa-{{ platform }}"></i>
+                  </a>
+                {% endif %}
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      {% endcase %}
+  {% endfor %}
+</div>`;
+
+                            gridContainer.replaceWith(footerWrapper);
+                        } else {
+                            const footerWrapper = `
 {%- comment -%} Footer Column Blocks {%- endcomment -%}
 {% for block in section.blocks %}
   {% case block.type %}
     {% when 'footer_column' %}
-      <div>
+      <div class="footer-section">
         {% if block.settings.column_title != blank %}
-          <h3 class="text-2xl font-semibold mb-4">{{ block.settings.column_title }}</h3>
+          {% if block.settings.column_title == "Mäertin" %}
+            <h3 class="text-2xl font-semibold mb-4">{{ block.settings.column_title }}</h3>
+          {% else %}
+            <h4 class="font-semibold mb-4 border-b border-[#a13f4f] pb-1">{{ block.settings.column_title }}</h4>
+          {% endif %}
         {% endif %}
         {% if block.settings.column_description != blank %}
-          {{ block.settings.column_description }}
+          <p class="mb-4 text-[#ecd7de]">{{ block.settings.column_description }}</p>
         {% endif %}
         
         {%- comment -%} Individual Link Settings {%- endcomment -%}
@@ -1351,25 +1435,26 @@ export function convertHtmlToLiquid(html, fileName) {
           </ul>
         {% endif %}
         
-        {%- comment -%} Individual Social Link Settings {%- endcomment -%}
+        {%- comment -%} Social Links - Show individual icons if any platform has URL {%- endcomment -%}
         {% assign has_social = false %}
-        {% assign social_count = 0 %}
         {% assign social_platforms = 'facebook,instagram,twitter,youtube,pinterest' | split: ',' %}
         {% for platform in social_platforms %}
           {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
           {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
-            {% assign social_count = social_count | plus: 1 %}
+            {% assign has_social = true %}
+            {% break %}
           {% endif %}
         {% endfor %}
         
-        {%- comment -%} Show all social icons only if all platforms have URLs {%- endcomment -%}
-        {% if social_count == 5 %}
+        {% if has_social %}
           <div class="flex space-x-5 mt-2">
             {% for platform in social_platforms %}
               {% assign social_url_id = 'social_' | append: platform | append: '_url' %}
-              <a href="{{ block.settings[social_url_id] }}" class="hover:text-white text-2xl transition" title="{{ platform | capitalize }}">
-                <i class="fab fa-{{ platform }}"></i>
-              </a>
+              {% if block.settings[social_url_id] != blank and block.settings[social_url_id] != "/" %}
+                <a href="{{ block.settings[social_url_id] }}" class="hover:text-white text-2xl transition" title="{{ platform | capitalize }}">
+                  <i class="fab fa-{{ platform }}"></i>
+                </a>
+              {% endif %}
             {% endfor %}
           </div>
         {% endif %}
@@ -1377,7 +1462,8 @@ export function convertHtmlToLiquid(html, fileName) {
     {% endcase %}
 {% endfor %}`;
 
-                        gridContainer.html(footerWrapper);
+                            gridContainer.html(footerWrapper);
+                        }
                     } else {
                         const firstElementHtml = $.html($(elements[0]));
                         const blockHtml = formatBlockHtml(firstElementHtml);
@@ -2019,6 +2105,70 @@ ${css}
 
 .${normalizedFileName}-content {
   /* No additional styling - maintain original HTML layout exactly */
+}
+
+/* Footer Layout Fixes */
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.footer-section {
+  padding: 1rem;
+}
+
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1.5rem;
+  margin-top: 2rem;
+}
+
+.footer-bottom-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.footer-copyright {
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+.footer-policies {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.footer-policies a {
+  font-size: 0.875rem;
+  opacity: 0.8;
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+}
+
+.footer-policies a:hover {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .footer-bottom-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .footer-policies {
+    justify-content: center;
+  }
 }
 {% endstylesheet %}
 

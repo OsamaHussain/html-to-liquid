@@ -40,7 +40,7 @@ export function validateShopifyFilename(filename) {
 
     const tooShort = baseName.length < 2;
 
-    const tooLong = baseName.length > 50;
+    const tooLong = baseName.length > 25;
 
     const errors = [];
 
@@ -73,7 +73,7 @@ export function validateShopifyFilename(filename) {
     }
 
     if (tooLong) {
-        errors.push("Filename must be 50 characters or less");
+        errors.push("Filename must be 25 characters or less");
     }
 
     let sanitized = baseName
@@ -87,8 +87,8 @@ export function validateShopifyFilename(filename) {
         sanitized = `page-${Date.now().toString(36).slice(-4)}`;
     }
 
-    if (sanitized.length > 50) {
-        sanitized = sanitized.substring(0, 50).replace(/-+$/, '');
+    if (sanitized.length > 25) {
+        sanitized = sanitized.substring(0, 25).replace(/-+$/, '');
     }
 
     const isValid = errors.length === 0;
