@@ -216,15 +216,12 @@ export function convertHtmlToLiquid(html, fileName) {
     const blockPatterns = [
         { selector: '.feature, .feature-item, .feature-card', name: 'Feature', type: 'feature', max: 12 },
         { selector: '.card, .info-card', name: 'Card', type: 'card', max: 8 },
-        { selector: '.testimonial, .review', name: 'Testimonial', type: 'testimonial', max: 6 },
         { selector: '.faq-item, .faq', name: 'FAQ', type: 'faq', max: 20 },
         { selector: '.team-member, .team, .team-card', name: 'Team Member', type: 'team_member', max: 8 },
         { selector: '.service, .service-item', name: 'Service', type: 'service', max: 10 },
         { selector: '.benefit, .benefit-item', name: 'Benefit', type: 'benefit', max: 8 },
         { selector: '.step, .process-step', name: 'Step', type: 'step', max: 6 },
-        { selector: '.product, .product-card', name: 'Product', type: 'product', max: 12 },
-        { selector: '.gallery-item, .image-item', name: 'Gallery Item', type: 'gallery_item', max: 20 },
-        { selector: '.guide-card', name: 'Guide', type: 'guide', max: 10 }
+        { selector: '.gallery-item, .image-item', name: 'Gallery Item', type: 'gallery_item', max: 20 }
     ];
 
     const contentBlocks = [];
@@ -300,9 +297,39 @@ export function convertHtmlToLiquid(html, fileName) {
         contentBlocks.push({
             elements: productCards,
             selector: 'product-card-detected',
-            name: 'Product Card',
-            type: 'product_card',
+            name: 'Product',
+            type: 'product',
             max: 12
+        });
+    }
+
+    const blogCards = $('article, .blog-card, .blog-post, .post-card').filter((i, el) => {
+        const $el = $(el);
+        const hasImage = $el.find('img').length > 0;
+        const hasHeading = $el.find('h1, h2, h3, h4, h5, h6').length > 0;
+        const hasDescription = $el.find('p').length > 0;
+        const buttonText = ($el.find('a, button, .btn').text() || '').toLowerCase();
+        const hasReadMore = buttonText.includes('read') ||
+            buttonText.includes('more') ||
+            buttonText.includes('→') ||
+            buttonText.includes('continue') ||
+            buttonText.includes('view');
+        const hasMeta = $el.find('.blog-meta, .post-meta, .date').length > 0 ||
+            $el.text().match(/\d{4}/) ||
+            $el.text().match(/(january|february|march|april|may|june|july|august|september|october|november|december)/i);
+
+        const isContainer = $el.find('article, .blog-card, .blog-post').length > 1;
+
+        return hasImage && hasHeading && hasDescription && (hasReadMore || hasMeta) && !isContainer;
+    });
+
+    if (blogCards.length >= 2) {
+        contentBlocks.push({
+            elements: blogCards,
+            selector: 'blog-card-detected',
+            name: 'Blog Post',
+            type: 'blog_post',
+            max: 20
         });
     }
 
@@ -436,12 +463,20 @@ export function convertHtmlToLiquid(html, fileName) {
     const allBlockPatterns = [...blockPatterns, ...contentBlocks];
 
     const seenTypes = new Set();
+    const seenNames = new Set();
     const uniqueBlockPatterns = allBlockPatterns.filter(pattern => {
         if (seenTypes.has(pattern.type)) {
             console.warn(`Duplicate block type detected: ${pattern.type}, skipping...`);
             return false;
         }
+
+        if (seenNames.has(pattern.name)) {
+            console.warn(`Duplicate block name detected: ${pattern.name}, skipping...`);
+            return false;
+        }
+
         seenTypes.add(pattern.type);
+        seenNames.add(pattern.name);
         return true;
     });
 
@@ -481,7 +516,8 @@ export function convertHtmlToLiquid(html, fileName) {
                     imageSrc: imageEl.length ? imageEl.attr('src') : '',
                     icon: iconEl.length ? iconEl.attr('class') : '',
                     price: $el.find('.price, [class*="price"], span:contains("$")').first().text().trim(),
-                    rating: $el.find('.rating, [class*="rating"]').first().text().trim()
+                    rating: $el.find('.rating, [class*="rating"]').first().text().trim(),
+                    rating_count: $el.find('.rating span, .rating .text-sm, [class*="rating"] span').last().text().trim() || '(128)'
                 };
 
                 if (pattern.type === 'footer_column') {
@@ -540,6 +576,21 @@ export function convertHtmlToLiquid(html, fileName) {
                             });
                         }
                     });
+                } else if (pattern.type === 'blog_post') {
+                    data.heading = headingEl.length ? headingEl.text().trim() : '';
+                    data.description = descriptionEl.length ? descriptionEl.text().trim() : '';
+                    data.richtext = descriptionEl.length ? descriptionEl.html() : '';
+
+                    const metaEl = $el.find('.blog-meta, .post-meta, .date').first();
+                    data.meta = metaEl.length ? metaEl.text().trim() : 'January 1, 2024 • Category';
+
+                    const readMoreEl = $el.find('a, .read-more, .btn').filter((i, link) => {
+                        const text = $(link).text().toLowerCase();
+                        return text.includes('read') || text.includes('more') || text.includes('→');
+                    }).first();
+
+                    data.buttonText = readMoreEl.length ? readMoreEl.text().trim() : 'Read More →';
+                    data.buttonUrl = readMoreEl.length ? readMoreEl.attr('href') : '/';
                 }
 
                 if (!data.heading) {
@@ -560,7 +611,7 @@ export function convertHtmlToLiquid(html, fileName) {
 
             const firstData = originalData[0];
 
-            if (pattern.type !== 'footer_column') {
+            if (pattern.type !== 'footer_column' && pattern.type !== 'blog_post') {
                 if (firstData.heading) {
                     blockSettings.push({
                         type: 'text',
@@ -695,7 +746,7 @@ export function convertHtmlToLiquid(html, fileName) {
                     });
                 }
 
-                if (pattern.type === 'product_card') {
+                if (pattern.type === 'product' || pattern.type === 'testimonial_card') {
                     blockSettings.push({
                         type: 'text',
                         id: 'rating_count',
@@ -847,6 +898,61 @@ export function convertHtmlToLiquid(html, fileName) {
                         info: 'Social link text or title'
                     });
                 }
+            } else if (pattern.type === 'blog_post') {
+                blockSettings.push({
+                    type: 'image_picker',
+                    id: 'blog_image',
+                    label: 'Blog Post Image',
+                    info: 'Blog post featured image'
+                });
+
+                blockSettings.push({
+                    type: 'text',
+                    id: 'blog_image_alt',
+                    label: 'Blog Image Alt Text',
+                    default: validateSettingDefault(firstData.imageAlt, 'text', 'Blog post image'),
+                    info: 'Alt text for blog post image'
+                });
+
+                blockSettings.push({
+                    type: 'text',
+                    id: 'blog_title',
+                    label: 'Blog Post Title',
+                    default: validateSettingDefault(firstData.heading, 'text', 'Blog Post Title'),
+                    info: 'Blog post headline'
+                });
+
+                blockSettings.push({
+                    type: 'richtext',
+                    id: 'blog_excerpt',
+                    label: 'Blog Post Excerpt',
+                    default: formatAsRichtext(firstData.description),
+                    info: 'Blog post preview text'
+                });
+
+                blockSettings.push({
+                    type: 'text',
+                    id: 'blog_meta',
+                    label: 'Blog Meta Info',
+                    default: validateSettingDefault(firstData.meta, 'text', 'January 1, 2024 • Category'),
+                    info: 'Date and category information'
+                });
+
+                blockSettings.push({
+                    type: 'text',
+                    id: 'blog_button_text',
+                    label: 'Read More Button Text',
+                    default: validateSettingDefault(firstData.buttonText, 'text', 'Read More →'),
+                    info: 'Button text for reading full post'
+                });
+
+                blockSettings.push({
+                    type: 'url',
+                    id: 'blog_button_url',
+                    label: 'Blog Post URL',
+                    default: validateSettingDefault(firstData.buttonUrl, 'url', '/'),
+                    info: 'Link to full blog post'
+                });
             } else if (pattern.type === 'team_member') {
                 blockSettings.push({
                     type: 'image_picker',
@@ -956,6 +1062,9 @@ export function convertHtmlToLiquid(html, fileName) {
                             case 'rating':
                                 settingValue = parseFloat(data.rating) || setting.default;
                                 break;
+                            case 'rating_count':
+                                settingValue = data.rating_count || setting.default;
+                                break;
                             case 'url':
                                 settingValue = data.url || setting.default;
                                 break;
@@ -973,6 +1082,24 @@ export function convertHtmlToLiquid(html, fileName) {
                                 break;
                             case 'member_image_alt':
                                 settingValue = data.imageAlt || (data.name ? `Photo of ${data.name}` : setting.default);
+                                break;
+                            case 'blog_title':
+                                settingValue = data.heading || setting.default;
+                                break;
+                            case 'blog_excerpt':
+                                settingValue = formatAsRichtext(data.richtext || data.description) || setting.default;
+                                break;
+                            case 'blog_meta':
+                                settingValue = data.meta || setting.default;
+                                break;
+                            case 'blog_image_alt':
+                                settingValue = data.imageAlt || setting.default;
+                                break;
+                            case 'blog_button_text':
+                                settingValue = data.buttonText || setting.default;
+                                break;
+                            case 'blog_button_url':
+                                settingValue = (data.buttonUrl && data.buttonUrl !== '#') ? data.buttonUrl : setting.default;
                                 break;
                             default:
                                 if (setting.id.startsWith('nav_link_') && setting.id.endsWith('_text')) {
@@ -1221,6 +1348,40 @@ export function convertHtmlToLiquid(html, fileName) {
                                 $link.html('{% if block.settings.facebook_url != blank and block.settings.facebook_url != "/" %}<i class="fab fa-facebook"></i>{% endif %}');
                             }
                         });
+                    } else if (pattern.type === 'blog_post') {
+                        $el.find('img').each((i, img) => {
+                            if ($(img).attr('src') && i === 0) {
+                                $(img).attr('src', '{{ block.settings.blog_image | img_url: \'master\' }}');
+                                $(img).attr('alt', '{{ block.settings.blog_image_alt }}');
+                            }
+                        });
+
+                        $el.find('h1, h2, h3, h4, h5, h6').each((i, heading) => {
+                            if ($(heading).text().trim() && i === 0) {
+                                $(heading).text('{{ block.settings.blog_title }}');
+                            }
+                        });
+
+                        $el.find('.blog-meta, .post-meta, .date').each((i, meta) => {
+                            if ($(meta).text().trim() && i === 0) {
+                                $(meta).text('{{ block.settings.blog_meta }}');
+                            }
+                        });
+
+                        $el.find('p').each((i, p) => {
+                            if ($(p).text().trim() && i === 0 && !$(p).hasClass('blog-meta')) {
+                                $(p).html('{{ block.settings.blog_excerpt }}');
+                            }
+                        });
+
+                        $el.find('a, .read-more, .btn').each((i, link) => {
+                            const $link = $(link);
+                            const text = $link.text().toLowerCase();
+                            if ((text.includes('read') || text.includes('more') || text.includes('→')) && i === 0) {
+                                $link.text('{{ block.settings.blog_button_text }}');
+                                $link.attr('href', '{{ block.settings.blog_button_url }}');
+                            }
+                        });
                     } else {
                         $el.find('h1, h2, h3, h4, h5, h6').each((i, heading) => {
                             if ($(heading).text().trim()) {
@@ -1304,7 +1465,7 @@ export function convertHtmlToLiquid(html, fileName) {
                         }
                     });
 
-                    if (pattern.type === 'product_card') {
+                    if (pattern.type === 'product' || pattern.type === 'testimonial_card') {
                         $el.find('span').each((i, span) => {
                             const text = $(span).text().trim();
                             if (text.includes('(') && text.includes(')') && /\d/.test(text)) {
