@@ -22,10 +22,10 @@ export const CONVERSION_MODE = "OPENAI_FIRST";
 export const CONFIG = {
   // Size limit for OpenAI conversion (lines)
   SIZE_LIMIT: 1500,
-  
+
   // Wait time when content exceeds size limit (milliseconds)
   WAIT_TIME: 120000, // 2 minutes
-  
+
   // Enable/disable console logs
   ENABLE_LOGS: true
 };

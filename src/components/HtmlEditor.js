@@ -48,12 +48,14 @@ export default function HtmlEditor({
 
                 const baseFileName = file.name.replace(/\.html?$/i, '');
                 setLocalFileName(baseFileName);
+                setFileNameError('');
                 onFileNameChange && onFileNameChange(index, baseFileName);
                 onFileUpload(index, baseFileName, result.content);
             };
 
             reader.onerror = () => {
                 onValidationError('Error reading file. Please try again.');
+                event.target.value = '';
             };
 
             reader.readAsText(file);
@@ -79,6 +81,14 @@ export default function HtmlEditor({
     };
 
     const clearContent = () => {
+        const fileInput = document.getElementById(`fileInput-${index}`);
+        if (fileInput) {
+            fileInput.value = '';
+        }
+
+        setLocalFileName('');
+        setFileNameError('');
+
         onClearContent(index);
     };
 
@@ -347,7 +357,12 @@ export default function HtmlEditor({
                 <input
                     type="text"
                     value={localFileName}
-                    onChange={(e) => handleFileNameChange(e.target.value)}
+                    onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.length <= 25) {
+                            handleFileNameChange(value);
+                        }
+                    }}
                     placeholder="Enter section name (e.g., homepage, about, contact)"
                     maxLength={25}
                     style={{
@@ -396,6 +411,10 @@ export default function HtmlEditor({
                     lineHeight: '1.4'
                 }}>
                     💡 Use only lowercase letters, numbers, hyphens, and underscores. Max 25 characters for Shopify compatibility.
+                    <br />
+                    <span style={{ color: localFileName.length > 20 ? '#ff4757' : '#00ff88' }}>
+                        {localFileName.length}/25 characters
+                    </span>
                 </div>
             </div>
 
@@ -468,7 +487,15 @@ export default function HtmlEditor({
                                 height="100%"
                                 language="html"
                                 value={fileContent || ''}
-                                onChange={(value) => handleManualInput(value || '')}
+                                onChange={(value) => {
+                                    handleManualInput(value || '');
+                                    if (!value || value.trim() === '') {
+                                        const fileInput = document.getElementById(`fileInput-${index}`);
+                                        if (fileInput) {
+                                            fileInput.value = '';
+                                        }
+                                    }
+                                }}
                                 theme="vs-dark"
                                 options={{
                                     readOnly: false,

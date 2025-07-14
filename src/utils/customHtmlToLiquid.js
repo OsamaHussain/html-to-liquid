@@ -4,6 +4,7 @@
  */
 
 import * as cheerio from 'cheerio';
+import { detectPageType, generateTemplateStructure } from './pageTypeDetection';
 
 /**
  * Validates and sanitizes setting defaults to ensure Shopify compatibility
@@ -190,7 +191,7 @@ export function extractJavaScript(html) {
 /**
  * Converts HTML content to professional Shopify Liquid following client requirements
  */
-export function convertHtmlToLiquid(html, fileName) {
+export function convertHtmlToLiquid(html, fileName, pageType = null) {
     if (!html || typeof html !== 'string') {
         return {
             settings: [],
@@ -2117,7 +2118,7 @@ ${blockHtml}
         ...sectionGroups.styling.settings
     ];
 
-    const liquidBody = $('body').html() || $(':root').html() || '';
+    let liquidBody = $('body').html() || $(':root').html() || '';
 
     return {
         settings: allSettings,
@@ -2126,7 +2127,9 @@ ${blockHtml}
         jsonBlocks,
         jsonBlockOrder,
         sectionGroups,
-        extractedJS: extractedJS || ''
+        extractedJS: extractedJS || '',
+        pageType: pageType,
+        templateStructure: pageType ? generateTemplateStructure(pageType, fileName) : null
     };
 }
 
@@ -2202,11 +2205,14 @@ export function generateLiquidTemplate(html, fileName) {
         throw new Error('Invalid fileName input: fileName must be a non-empty string');
     }
 
+    const pageType = detectPageType(html, fileName);
+    const templateStructure = generateTemplateStructure(pageType, fileName);
+
     const normalizedFileName = fileName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
 
     const headContent = extractHeadContent(html);
     const css = extractCSS(html);
-    const { settings, blocks, liquidBody, jsonBlocks, jsonBlockOrder, extractedJS } = convertHtmlToLiquid(html, fileName);
+    const { settings, blocks, liquidBody, jsonBlocks, jsonBlockOrder, extractedJS } = convertHtmlToLiquid(html, fileName, pageType);
     const js = extractedJS;
 
     const schema = {

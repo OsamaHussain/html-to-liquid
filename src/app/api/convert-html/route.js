@@ -155,24 +155,29 @@ export async function POST(request) {
 
     if (config.ENABLE_LOGS) {
       console.log('🎯 [STEP 2] Now starting custom HTML-to-Liquid conversion...');
-    }
-
-    const conversionResult = generateLiquidTemplate(htmlContent, finalFileName);
+    } const conversionResult = generateLiquidTemplate(htmlContent, finalFileName);
 
     let liquidContent = conversionResult.liquidContent;
     let jsonTemplate = conversionResult.jsonTemplate;
     let injectedBlocks = conversionResult.schema.blocks || [];
     let usedBlockTypes = injectedBlocks.map(block => block.type);
 
+    const pageType = conversionResult.pageType;
+    const templateStructure = conversionResult.templateStructure;
+
     if (skippedOpenAI) {
       if (config.ENABLE_LOGS) {
         console.log('✅ [STEP 2] Custom conversion completed successfully for:', finalFileName);
+        console.log('🎯 [PAGE TYPE] Detected page type:', pageType?.type || 'page');
+        console.log('📁 [TEMPLATE] Template structure:', templateStructure?.templateType || 'page');
         console.log('🎉 [COMPLETE] Custom conversion finished (OpenAI skipped:', openaiResult.reason + ')');
       }
     } else {
       if (config.ENABLE_LOGS) {
         console.log('✅ [STEP 2] Custom conversion completed successfully for:', finalFileName);
-        console.log('🎉 [COMPLETE] Both OpenAI and Custom conversions finished - returning Custom results');
+        console.log('� [PAGE TYPE] Detected page type:', pageType?.type || 'page');
+        console.log('📁 [TEMPLATE] Template structure:', templateStructure?.templateType || 'page');
+        console.log('�🎉 [COMPLETE] Both OpenAI and Custom conversions finished - returning Custom results');
       }
     }
 
@@ -208,19 +213,26 @@ export async function POST(request) {
     } catch (consistencyError) {
       console.error('Consistency validation error:', consistencyError);
       processingErrors.push(`Consistency validation failed: ${consistencyError.message}`);
-    }
-
-    const liquidWithComments = addFileComment(liquidContent || '', {
+    } const liquidWithComments = addFileComment(liquidContent || '', {
       fileName: `${finalFileName}.liquid`,
       generatedAt: new Date().toISOString(),
       converter: 'Custom HTML-to-Liquid Converter',
-      note: 'Deterministic conversion - consistent output every time'
+      note: 'Deterministic conversion - consistent output every time',
+      pageType: pageType?.type || 'page',
+      templateType: templateStructure?.templateType || 'page',
+      hasLoop: pageType?.hasLoop || false
     });
 
+    const jsonTemplateFileName = templateStructure ?
+      templateStructure.json.split('/').pop() :
+      `page.${finalFileName}.json`;
+
     const jsonWithComments = addFileComment(jsonTemplate || '{}', {
-      fileName: `page.${finalFileName}.json`,
+      fileName: jsonTemplateFileName,
       generatedAt: new Date().toISOString(),
-      converter: 'Custom HTML-to-Liquid Converter'
+      converter: 'Custom HTML-to-Liquid Converter',
+      pageType: pageType?.type || 'page',
+      templateType: templateStructure?.templateType || 'page'
     });
 
     const validationInfo = {
@@ -260,8 +272,13 @@ export async function POST(request) {
       },
       metadata: {
         liquidFileName: `${finalFileName}.liquid`,
-        jsonFileName: `${finalFileName}.json`,
+        jsonFileName: jsonTemplateFileName,
         sectionType: finalFileName,
+        pageType: pageType?.type || 'page',
+        templateType: templateStructure?.templateType || 'page',
+        hasLoop: pageType?.hasLoop || false,
+        loopType: pageType?.loopType || null,
+        detectionReason: pageType?.reason || 'Default page template',
         htmlSize: htmlContent.length,
         htmlLines: htmlLines,
         conversionMethod: 'Custom Deterministic Converter',
