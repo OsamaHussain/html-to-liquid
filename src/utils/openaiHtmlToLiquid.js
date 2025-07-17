@@ -1,68 +1,67 @@
-import OpenAI from 'openai';
+import OpenAI from "openai";
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export async function checkOpenAIConnection() {
-    try {
-        if (!process.env.OPENAI_API_KEY) {
-            return {
-                isWorking: false,
-                error: 'OpenAI API key is not configured',
-                status: 'no_api_key'
-            };
-        }
-
-        console.log('🔍 Checking OpenAI API connection...');
-
-        const testCompletion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                {
-                    role: "user",
-                    content: "Hello"
-                }
-            ],
-            max_tokens: 5,
-            temperature: 0
-        });
-
-        if (testCompletion && testCompletion.choices && testCompletion.choices[0]) {
-            console.log('✅ OpenAI API is working properly');
-            return {
-                isWorking: true,
-                status: 'connected',
-                model: 'gpt-4o',
-                timestamp: new Date().toISOString()
-            };
-        } else {
-            console.log('❌ OpenAI API returned invalid response');
-            return {
-                isWorking: false,
-                error: 'Invalid response from OpenAI API',
-                status: 'invalid_response'
-            };
-        }
-
-    } catch (error) {
-        console.log('❌ OpenAI API connection failed:', error.message);
-        return {
-            isWorking: false,
-            error: error.message,
-            status: 'connection_failed',
-            errorCode: error.code || 'unknown'
-        };
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return {
+        isWorking: false,
+        error: "OpenAI API key is not configured",
+        status: "no_api_key",
+      };
     }
+
+    console.log("🔍 Checking OpenAI API connection...");
+
+    const testCompletion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "user",
+          content: "Hello",
+        },
+      ],
+      max_tokens: 5,
+      temperature: 0,
+    });
+
+    if (testCompletion && testCompletion.choices && testCompletion.choices[0]) {
+      console.log("✅ OpenAI API is working properly");
+      return {
+        isWorking: true,
+        status: "connected",
+        model: "gpt-4o",
+        timestamp: new Date().toISOString(),
+      };
+    } else {
+      console.log("❌ OpenAI API returned invalid response");
+      return {
+        isWorking: false,
+        error: "Invalid response from OpenAI API",
+        status: "invalid_response",
+      };
+    }
+  } catch (error) {
+    console.log("❌ OpenAI API connection failed:", error.message);
+    return {
+      isWorking: false,
+      error: error.message,
+      status: "connection_failed",
+      errorCode: error.code || "unknown",
+    };
+  }
 }
 
 export async function generateLiquidWithOpenAI(htmlContent, fileName) {
-    try {
-        if (!process.env.OPENAI_API_KEY) {
-            throw new Error('OpenAI API key is not configured');
-        }
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OpenAI API key is not configured");
+    }
 
-        const prompt = `You are an expert Shopify Liquid developer with deep knowledge of Shopify's theming system, Liquid syntax, and schema structure. Convert the following HTML into a comprehensive Shopify section with advanced schema configuration:
+    const prompt = `You are an expert Shopify Liquid developer with deep knowledge of Shopify's theming system, Liquid syntax, and schema structure. Convert the following HTML into a comprehensive Shopify section with advanced schema configuration:
 
 HTML Content:
 ${htmlContent}
@@ -101,111 +100,142 @@ SCHEMA STRUCTURE REQUIREMENTS:
 OUTPUT FORMAT:
 Return ONLY the complete Shopify Liquid template code with schema. No explanations, no markdown formatting, just clean Liquid code ready for production use.`;
 
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                {
-                    role: "system",
-                    content: "You are a world-class Shopify Liquid developer and theme expert. You have extensive experience building production-ready Shopify themes and understand all nuances of Liquid syntax, schema configuration, and Shopify's theming best practices. Generate only the highest quality, most comprehensive Liquid templates with advanced schema structures."
-                },
-                {
-                    role: "user",
-                    content: prompt
-                }
-            ],
-            max_tokens: 16384,
-            temperature: 0.1,
-        });
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a world-class Shopify Liquid developer and theme expert. You have extensive experience building production-ready Shopify themes and understand all nuances of Liquid syntax, schema configuration, and Shopify's theming best practices. Generate only the highest quality, most comprehensive Liquid templates with advanced schema structures.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      max_tokens: 16384,
+      temperature: 0.1,
+    });
 
-        const liquidContent = completion.choices[0]?.message?.content?.trim();
+    const liquidContent = completion.choices[0]?.message?.content?.trim();
 
-        if (!liquidContent) {
-            throw new Error('No content generated by OpenAI');
-        }
-
-        const schemaMatch = liquidContent.match(/\{\%\s*schema\s*\%\}([\s\S]*?)\{\%\s*endschema\s*\%\}/);
-        let jsonSchema = {};
-
-        if (schemaMatch) {
-            try {
-                jsonSchema = JSON.parse(schemaMatch[1].trim());
-            } catch (e) {
-                console.warn('Could not parse schema from OpenAI response:', e.message);
-            }
-        }
-
-        return {
-            success: true,
-            liquidContent: liquidContent,
-            jsonTemplate: JSON.stringify(jsonSchema, null, 2),
-            metadata: {
-                generatedAt: new Date().toISOString(),
-                model: "gpt-4o",
-                promptTokens: completion.usage?.prompt_tokens || 0,
-                completionTokens: completion.usage?.completion_tokens || 0,
-                totalTokens: completion.usage?.total_tokens || 0
-            }
-        };
-
-    } catch (error) {
-        console.error('OpenAI conversion error:', error);
-        return {
-            success: false,
-            error: error.message,
-            liquidContent: '',
-            jsonTemplate: '{}',
-            metadata: {
-                generatedAt: new Date().toISOString(),
-                error: error.message
-            }
-        };
+    if (!liquidContent) {
+      throw new Error("No content generated by OpenAI");
     }
+
+    const schemaMatch = liquidContent.match(
+      /\{\%\s*schema\s*\%\}([\s\S]*?)\{\%\s*endschema\s*\%\}/
+    );
+    let jsonSchema = {};
+
+    if (schemaMatch) {
+      try {
+        jsonSchema = JSON.parse(schemaMatch[1].trim());
+      } catch (e) {
+        console.warn("Could not parse schema from OpenAI response:", e.message);
+      }
+    }
+
+    console.log(
+      `🧮 OpenAI Token Usage: Prompt = ${
+        completion.usage?.prompt_tokens || 0
+      }, Completion = ${completion.usage?.completion_tokens || 0}, Total = ${
+        completion.usage?.total_tokens || 0
+      }`
+    );
+
+    return {
+      success: true,
+      liquidContent: liquidContent,
+      jsonTemplate: JSON.stringify(jsonSchema, null, 2),
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        model: "gpt-4o",
+        promptTokens: completion.usage?.prompt_tokens || 0,
+        completionTokens: completion.usage?.completion_tokens || 0,
+        totalTokens: completion.usage?.total_tokens || 0,
+      },
+    };
+  } catch (error) {
+    console.error("OpenAI conversion error:", error);
+    return {
+      success: false,
+      error: error.message,
+      liquidContent: "",
+      jsonTemplate: "{}",
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        error: error.message,
+      },
+    };
+  }
 }
 
-export async function generateLiquidWithOpenAIBackground(htmlContent, fileName) {
-    try {
-        if (!process.env.OPENAI_API_KEY) {
-            console.log(`⚠️ [BACKGROUND] OpenAI API key not configured - skipping AI generation for: ${fileName}`);
-            return {
-                success: false,
-                error: 'OpenAI API key not configured',
-                fileName: fileName,
-                skipped: true
-            };
-        }
-
-        console.log(`🤖 [BACKGROUND] Starting OpenAI conversion for: ${fileName}`);
-        const startTime = Date.now();
-
-        generateLiquidWithOpenAI(htmlContent, fileName)
-            .then((result) => {
-                const duration = Date.now() - startTime;
-                if (result.success) {
-                    console.log(`✅ [BACKGROUND] OpenAI conversion completed for: ${fileName} (${duration}ms)`);
-                    console.log(`📊 [BACKGROUND] OpenAI Usage - Tokens: ${result.metadata.totalTokens}, Model: ${result.metadata.model}`);
-                    console.log(`📏 [BACKGROUND] Generated ${result.liquidContent.split('\n').length} lines of Liquid code`);
-                } else {
-                    console.log(`❌ [BACKGROUND] OpenAI conversion failed for: ${fileName} (${duration}ms):`, result.error);
-                }
-            })
-            .catch((error) => {
-                const duration = Date.now() - startTime;
-                console.log(`❌ [BACKGROUND] OpenAI conversion error for: ${fileName} (${duration}ms):`, error.message);
-            });
-
-        return {
-            success: true,
-            message: 'OpenAI conversion started in background',
-            timestamp: new Date().toISOString(),
-            fileName: fileName
-        };
-
-    } catch (error) {
-        console.error('Background OpenAI conversion setup error:', error);
-        return {
-            success: false,
-            error: error.message,
-            fileName: fileName
-        };
+export async function generateLiquidWithOpenAIBackground(
+  htmlContent,
+  fileName
+) {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      console.log(
+        `⚠️ [BACKGROUND] OpenAI API key not configured - skipping AI generation for: ${fileName}`
+      );
+      return {
+        success: false,
+        error: "OpenAI API key not configured",
+        fileName: fileName,
+        skipped: true,
+      };
     }
+
+    console.log(`🤖 [BACKGROUND] Starting OpenAI conversion for: ${fileName}`);
+    const startTime = Date.now();
+
+    generateLiquidWithOpenAI(htmlContent, fileName)
+      .then((result) => {
+        const duration = Date.now() - startTime;
+        if (result.success) {
+          console.log(
+            `✅ [BACKGROUND] OpenAI conversion completed for: ${fileName} (${duration}ms)`
+          );
+          console.log(
+            `📊 [BACKGROUND] OpenAI Usage - Tokens: ${result.metadata.totalTokens}, Model: ${result.metadata.model}`
+          );
+          console.log(
+            `📏 [BACKGROUND] Generated ${
+              result.liquidContent.split("\n").length
+            } lines of Liquid code`
+          );
+          console.log(
+            `[TOKENS] Prompt: ${result.metadata.promptTokens}, Completion: ${result.metadata.completionTokens}, Total: ${result.metadata.totalTokens}`
+          );
+        } else {
+          console.log(
+            `❌ [BACKGROUND] OpenAI conversion failed for: ${fileName} (${duration}ms):`,
+            result.error
+          );
+        }
+      })
+      .catch((error) => {
+        const duration = Date.now() - startTime;
+        console.log(
+          `❌ [BACKGROUND] OpenAI conversion error for: ${fileName} (${duration}ms):`,
+          error.message
+        );
+      });
+
+    return {
+      success: true,
+      message: "OpenAI conversion started in background",
+      timestamp: new Date().toISOString(),
+      fileName: fileName,
+    };
+  } catch (error) {
+    console.error("Background OpenAI conversion setup error:", error);
+    return {
+      success: false,
+      error: error.message,
+      fileName: fileName,
+    };
+  }
 }
