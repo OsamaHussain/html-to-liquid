@@ -55,13 +55,17 @@ export async function checkOpenAIConnection() {
   }
 }
 
-export async function generateLiquidWithOpenAI(htmlContent, fileName) {
+export async function generateLiquidWithOpenAI(
+  htmlContent,
+  fileName,
+  repeatPrompt = 6
+) {
   try {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error("OpenAI API key is not configured");
     }
 
-    const prompt = `You are an expert Shopify Liquid developer with deep knowledge of Shopify's theming system, Liquid syntax, and schema structure. Convert the following HTML into a comprehensive Shopify section with advanced schema configuration:
+    let promptBase = `You are an expert Shopify Liquid developer with deep knowledge of Shopify's theming system, Liquid syntax, and schema structure. Convert the following HTML into a comprehensive Shopify section with advanced schema configuration:
 
 HTML Content:
 ${htmlContent}
@@ -99,6 +103,12 @@ SCHEMA STRUCTURE REQUIREMENTS:
 
 OUTPUT FORMAT:
 Return ONLY the complete Shopify Liquid template code with schema. No explanations, no markdown formatting, just clean Liquid code ready for production use.`;
+
+    // Repeat the prompt as many times as specified
+    let prompt = "";
+    for (let i = 0; i < repeatPrompt; i++) {
+      prompt += promptBase + "\n";
+    }
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
