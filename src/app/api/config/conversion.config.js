@@ -1,8 +1,8 @@
 /**
  * HTML to Liquid Conversion Configuration
- * 
+ *
  * Simple ON/OFF control for conversion behavior:
- * 
+ *
  * CONVERSION_MODE:
  * - "OPENAI_FIRST": OpenAI API first, then custom conversion (current behavior)
  * - "CUSTOM_ONLY": Skip OpenAI, direct custom conversion only
@@ -27,7 +27,7 @@ export const CONFIG = {
   WAIT_TIME: 120000, // 2 minutes
 
   // Enable/disable console logs
-  ENABLE_LOGS: true
+  ENABLE_LOGS: true,
 };
 
 // ===============================================
@@ -47,6 +47,6 @@ export function getConfig() {
     mode: CONVERSION_MODE,
     useOpenAI: shouldUseOpenAI(),
     customOnly: isCustomOnlyMode(),
-    ...CONFIG
+    ...CONFIG,
   };
 }
