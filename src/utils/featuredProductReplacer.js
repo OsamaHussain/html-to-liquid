@@ -261,7 +261,7 @@ function generateFeaturedProductLiquid(originalData, index = 0) {
     </a>
   </div>
 {% else %}
-  <div class="product-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div class="product-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto px-4">
     {%- comment -%} Loop through 6 featured product slots {%- endcomment -%}
     {% for i in (1..6) %}
       {%- liquid
