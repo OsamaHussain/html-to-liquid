@@ -58,7 +58,7 @@ export async function checkOpenAIConnection() {
 export async function generateLiquidWithOpenAI(
   htmlContent,
   fileName,
-  repeatPrompt = 6
+  repeatPrompt = 5
 ) {
   try {
     if (!process.env.OPENAI_API_KEY) {
