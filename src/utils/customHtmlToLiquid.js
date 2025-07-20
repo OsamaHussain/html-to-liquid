@@ -544,21 +544,52 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
 
   const footerColumns = $("footer div").filter((i, el) => {
     const $el = $(el);
+
+    const directHeading = $el.children("h3, h4, h5, h6").length > 0;
     const hasHeading = $el.find("h3, h4, h5, h6").length > 0;
+
     const hasList = $el.find("ul, ol").length > 0;
-    const hasLinks = $el.find("a").length >= 2;
-    const hasContent = $el.find("p").length > 0 || hasList || hasLinks;
+    const hasLinks = $el.find("a").length >= 1;
+    const hasText = $el.find("p").length > 0;
+    const hasContent = hasText || hasList || hasLinks;
 
-    const isLayoutContainer =
-      $el.hasClass("grid") && $el.children("div").length > 2;
-    const isMainContainer = $el.hasClass("max-w") && $el.hasClass("mx-auto");
+    const isLayoutGrid =
+      $el.hasClass("grid") ||
+      $el.hasClass("footer-grid") ||
+      ($el.children("div").length > 3 && $el.css("display") === "grid");
+    const isMainContainer =
+      $el.hasClass("max-w") ||
+      $el.hasClass("mx-auto") ||
+      $el.hasClass("footer-content");
     const isWrapperContainer =
-      $el.hasClass("px-4") && $el.children("div").length > 0;
+      $el.hasClass("px-4") ||
+      $el.hasClass("container") ||
+      $el.hasClass("footer-container");
+    const isBottomSection =
+      $el.hasClass("footer-bottom") || $el.find(".footer-bottom").length > 0;
 
-    const isNotMainContainer =
-      !isLayoutContainer && !isMainContainer && !isWrapperContainer;
+    const containsMultipleSections =
+      $el.find("div").filter((j, child) => {
+        const $child = $(child);
+        return (
+          $child.find("h3, h4, h5, h6").length > 0 &&
+          ($child.find("ul, ol").length > 0 || $child.find("a").length >= 1)
+        );
+      }).length > 2;
 
-    return hasHeading && hasContent && isNotMainContainer;
+    const isNotLayoutContainer =
+      !isLayoutGrid &&
+      !isMainContainer &&
+      !isWrapperContainer &&
+      !isBottomSection &&
+      !containsMultipleSections;
+
+    const isGoodColumn =
+      (directHeading || hasHeading) && hasContent && isNotLayoutContainer;
+
+    const hasReasonableStructure = $el.children("div").length <= 2;
+
+    return isGoodColumn && hasReasonableStructure;
   });
 
   if (footerColumns.length >= 1) {
@@ -1301,7 +1332,12 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
           settings: blockSettings,
         });
 
-        originalData.forEach((data, index) => {
+        const dataToProcess =
+          pattern.type === "footer_column"
+            ? originalData.slice(0, 4)
+            : originalData;
+
+        dataToProcess.forEach((data, index) => {
           const blockId = `${blockType}_${Date.now()}_${index}`;
           const blockData = {
             type: blockType,
