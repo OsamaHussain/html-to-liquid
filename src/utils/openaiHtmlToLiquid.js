@@ -74,32 +74,7 @@ DETAILED REQUIREMENTS:
 1. Convert ALL HTML elements to proper Shopify Liquid syntax
 2. Create comprehensive schema with BOTH settings and blocks
 3. Make ALL text content editable through schema settings
-4. Convert ALL images to image picker fields with alt text options
-5. Convert ALL links to URL picker fields with text customization
-6. Create reusable blocks for repeated content (testimonials, features, FAQs, etc.)
-7. Add color picker settings for all color values
-8. Add font picker settings for typography
-9. Include spacing/padding controls where applicable
-10. Add toggle settings for show/hide functionality
-11. Ensure responsive design preservation
-12. Include proper section structure with {% stylesheet %} and <script> tags if needed
-13. Add comprehensive presets with realistic default content
 14. Section name should be: ${fileName}
-15. Use semantic and descriptive setting IDs and labels
-16. Include helpful setting descriptions for theme editor users
-17. Optimize for performance and SEO
-18. Follow Shopify's latest best practices and conventions
-19. Include proper error handling for missing content
-20. Add conditional rendering where appropriate
-
-SCHEMA STRUCTURE REQUIREMENTS:
-- Detailed section settings for global options
-- Multiple block types for different content sections
-- Proper setting types: text, textarea, richtext, image_picker, url, color, font_picker, checkbox, select, range
-- Meaningful setting groups and info fields
-- Comprehensive presets with multiple variations
-- Proper limit settings for blocks
-- Semantic setting IDs following kebab-case convention
 
 OUTPUT FORMAT:
 Return ONLY the complete Shopify Liquid template code with schema. No explanations, no markdown formatting, just clean Liquid code ready for production use.`;
