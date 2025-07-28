@@ -291,7 +291,13 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
       max: 12,
     },
     { selector: ".card, .info-card", name: "Card", type: "card", max: 8 },
-    { selector: ".faq-item, .faq", name: "FAQ", type: "faq", max: 20 },
+    {
+      selector:
+        ".faq-item, .faq, .faq-question, .accordion-item, .question, .qa-item",
+      name: "FAQ",
+      type: "faq",
+      max: 20,
+    },
     {
       selector: ".team-member, .team, .team-card",
       name: "Team Member",
@@ -815,6 +821,45 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
             ? readMoreEl.text().trim()
             : "Read More →";
           data.buttonUrl = readMoreEl.length ? readMoreEl.attr("href") : "/";
+        } else if (pattern.type === "faq") {
+          let questionText = "";
+          let answerText = "";
+
+          const faqQuestionDiv = $el.find(".faq-question").first();
+          const faqAnswerDiv = $el.find(".faq-answer").first();
+
+          if (faqQuestionDiv.length && faqAnswerDiv.length) {
+            const questionSpan = faqQuestionDiv.find("span").first();
+            questionText = questionSpan.length
+              ? questionSpan.text().trim()
+              : faqQuestionDiv.text().trim();
+
+            answerText = faqAnswerDiv.html().trim();
+          } else {
+            const questionEl = $el
+              .find("h3, h4, h5, .question, .accordion-header, span")
+              .first();
+            const answerEl = $el.find("p, .answer, .accordion-content").first();
+
+            questionText = questionEl.length ? questionEl.text().trim() : "";
+            answerText = answerEl.length ? answerEl.html().trim() : "";
+          }
+
+          if (!questionText && headingEl.length) {
+            questionText = headingEl.text().trim();
+          }
+          if (!answerText && descriptionEl.length) {
+            answerText = descriptionEl.html();
+          }
+
+          questionText = questionText.replace(/^\s*[+\-]\s*/, "").trim();
+
+          data.question = questionText || "What is your question?";
+          data.answer =
+            answerText ||
+            "<p>This is the answer to the frequently asked question.</p>";
+          data.originalQuestion = questionText;
+          data.originalAnswer = answerText;
         }
 
         if (!data.heading) {
@@ -835,7 +880,27 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
 
       const firstData = originalData[0];
 
-      if (pattern.type !== "footer_column" && pattern.type !== "blog_post") {
+      if (pattern.type === "faq") {
+        blockSettings.push({
+          type: "text",
+          id: "question",
+          label: "FAQ Question",
+          default: "What is your question?",
+          info: "The question text that users will click to expand",
+        });
+
+        blockSettings.push({
+          type: "richtext",
+          id: "answer",
+          label: "FAQ Answer",
+          default:
+            "<p>This is the answer to the frequently asked question.</p>",
+          info: "The answer that will be revealed when question is clicked",
+        });
+      } else if (
+        pattern.type !== "footer_column" &&
+        pattern.type !== "blog_post"
+      ) {
         if (firstData.heading) {
           blockSettings.push({
             type: "text",
@@ -1324,7 +1389,7 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
         });
       }
 
-      if (blockSettings.length > 0) {
+      if (blockSettings.length > 0 || pattern.type === "faq") {
         blocks.push({
           type: blockType,
           name: pattern.name,
@@ -1337,7 +1402,20 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
             ? originalData.slice(0, 4)
             : originalData;
 
-        dataToProcess.forEach((data, index) => {
+        let processedData = dataToProcess;
+        if (pattern.type === "faq") {
+          const uniqueQuestions = new Set();
+          processedData = dataToProcess.filter((data) => {
+            const questionKey = data.question || data.heading || "";
+            if (uniqueQuestions.has(questionKey)) {
+              return false;
+            }
+            uniqueQuestions.add(questionKey);
+            return true;
+          });
+        }
+
+        processedData.forEach((data, index) => {
           const blockId = `${blockType}_${Date.now()}_${index}`;
           const blockData = {
             type: blockType,
@@ -1433,6 +1511,12 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
                   data.buttonUrl && data.buttonUrl !== "#"
                     ? data.buttonUrl
                     : setting.default;
+                break;
+              case "question":
+                settingValue = data.question || setting.default;
+                break;
+              case "answer":
+                settingValue = data.answer || setting.default;
                 break;
               default:
                 if (
@@ -1576,6 +1660,7 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
 
         elements.each((index, element) => {
           const $el = $(element);
+          const currentData = processedData[index] || processedData[0];
 
           if (pattern.type === "footer_column") {
             $el.find("h1, h2, h3, h4, h5, h6").each((i, heading) => {
@@ -1657,6 +1742,35 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
               }
             });
 
+            $el.find("a, button").each((i, link) => {
+              const $link = $(link);
+              const text = $link.text().trim().toLowerCase();
+              const icon = $link.find("i").attr("class") || "";
+              const href = $link.attr("href") || "";
+
+              if (
+                text.includes("search") ||
+                icon.includes("search") ||
+                icon.includes("fa-search") ||
+                icon.includes("magnifying")
+              ) {
+                $link.remove();
+                return;
+              }
+
+              if (
+                text.includes("cart") ||
+                icon.includes("cart") ||
+                icon.includes("shopping") ||
+                href.includes("cart")
+              ) {
+                $link.attr("href", "/cart");
+                if ($link.find("i").length > 0) {
+                  $link.html($link.html());
+                }
+              }
+            });
+
             let navLinkIndex = 1;
             $el.find("a").each((i, link) => {
               const $link = $(link);
@@ -1665,8 +1779,14 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
               const isMobileMenu =
                 $link.closest(".mobile-menu, #mobile-menu").length > 0;
               const isIcon = $link.find("i").length > 0 && !text;
+              const href = $link.attr("href") || "";
 
-              if (text && !isLogo && !isIcon && navLinkIndex <= 8) {
+              const isCart =
+                text.toLowerCase().includes("cart") ||
+                ($link.find("i").attr("class") || "").includes("cart") ||
+                href.includes("cart");
+
+              if (text && !isLogo && !isIcon && !isCart && navLinkIndex <= 8) {
                 $link.text(
                   `{{ block.settings.nav_link_${navLinkIndex}_text }}`
                 );
@@ -1804,6 +1924,75 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
                 $link.attr("href", "{{ block.settings.blog_button_url }}");
               }
             });
+          } else if (pattern.type === "faq") {
+            const faqQuestionDiv = $el.find(".faq-question").first();
+            const faqAnswerDiv = $el.find(".faq-answer").first();
+
+            if (faqQuestionDiv.length && faqAnswerDiv.length) {
+              const questionSpan = faqQuestionDiv.find("span").first();
+              if (questionSpan.length) {
+                questionSpan.text("{{ block.settings.question }}");
+              } else {
+                const icon = faqQuestionDiv.find("i").first();
+                if (icon.length) {
+                  faqQuestionDiv.html(
+                    '<span>{{ block.settings.question }}</span><i class="fas fa-plus"></i>'
+                  );
+                } else {
+                  faqQuestionDiv.html(
+                    "<span>{{ block.settings.question }}</span>"
+                  );
+                }
+              }
+
+              faqQuestionDiv.attr("onclick", "toggleFAQ(this)");
+              faqQuestionDiv.addClass("faq-question-clickable");
+
+              faqAnswerDiv.html("{{ block.settings.answer }}");
+              faqAnswerDiv.addClass("faq-answer-content");
+            } else {
+              $el
+                .find("h3, h4, h5, .question, .accordion-header")
+                .each((i, question) => {
+                  if ($(question).text().trim() && i === 0) {
+                    $(question).text("{{ block.settings.question }}");
+                    $(question).attr("onclick", "toggleFAQ(this)");
+                    $(question).addClass("faq-question-clickable");
+                  }
+                });
+
+              $el.find("p, .answer, .accordion-content").each((i, answer) => {
+                if ($(answer).text().trim() && i === 0) {
+                  $(answer).html("{{ block.settings.answer }}");
+                  $(answer).addClass("faq-answer-content");
+                }
+              });
+
+              if (
+                $el.find(".question, .faq-question, .accordion-header")
+                  .length === 0
+              ) {
+                $el.find("h1, h2, h3, h4, h5, h6").each((i, heading) => {
+                  if ($(heading).text().trim() && i === 0) {
+                    $(heading).text("{{ block.settings.question }}");
+                    $(heading).attr("onclick", "toggleFAQ(this)");
+                    $(heading).addClass("faq-question-clickable");
+                  }
+                });
+              }
+
+              if (
+                $el.find(".answer, .faq-answer, .accordion-content").length ===
+                0
+              ) {
+                $el.find("p").each((i, p) => {
+                  if ($(p).text().trim() && i === 0) {
+                    $(p).html("{{ block.settings.answer }}");
+                    $(p).addClass("faq-answer-content");
+                  }
+                });
+              }
+            }
           } else {
             $el.find("h1, h2, h3, h4, h5, h6").each((i, heading) => {
               if ($(heading).text().trim()) {
@@ -1828,16 +2017,62 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
             });
 
             $el.find("a, .btn, .button").each((i, btn) => {
-              if ($(btn).text().trim() && i === 0) {
-                $(btn).text("{{ block.settings.button_text }}");
-                if ($(btn).attr("href")) {
-                  $(btn).attr("href", "{{ block.settings.button_url }}");
+              const $btn = $(btn);
+              if ($btn.text().trim() && i === 0) {
+                const originalClasses = $btn.attr("class") || "";
+                const originalStyle = $btn.attr("style") || "";
+
+                $btn.text("{{ block.settings.button_text }}");
+                if ($btn.attr("href")) {
+                  $btn.attr("href", "{{ block.settings.button_url }}");
+                }
+
+                if (
+                  !originalClasses.includes("mt-") &&
+                  !originalClasses.includes("margin") &&
+                  !originalStyle.includes("margin")
+                ) {
+                  const currentClasses = $btn.attr("class") || "";
+                  if (!currentClasses.includes("mt-")) {
+                    $btn.addClass("mt-6");
+                  }
                 }
               }
             });
           }
 
           if (pattern.type === "transformation") {
+            $el.find("p, .text, .description").each((i, textEl) => {
+              const $textEl = $(textEl);
+              const text = $textEl.text().trim();
+
+              if (
+                text &&
+                !$textEl.closest(".experience-content, .transformation-content")
+                  .length
+              ) {
+                if (
+                  !$textEl.closest(
+                    ".before-image, .after-image, .before, .after"
+                  ).length
+                ) {
+                  $textEl.remove();
+                }
+              }
+            });
+
+            $el
+              .find(".dot, .dots, .pagination-dot, [class*='dot'], .slider-dot")
+              .each((i, dot) => {
+                $(dot).remove();
+              });
+
+            $el
+              .find(".slide-indicator, .carousel-indicator, .slider-nav")
+              .each((i, indicator) => {
+                $(indicator).remove();
+              });
+
             $el.find(".before-image, .before img").each((i, img) => {
               if ($(img).attr("src") && i === 0) {
                 $(img).attr(
@@ -1888,9 +2123,37 @@ export function convertHtmlToLiquid(html, fileName, pageType = null) {
           } else {
             $el.find("img").each((i, img) => {
               if ($(img).attr("src") && i === 0) {
-                $(img).attr("src", "LIQUID_BLOCK_IMAGE_SRC_PLACEHOLDER");
-                if ($(img).attr("alt")) {
-                  $(img).attr("alt", "LIQUID_BLOCK_IMAGE_ALT_PLACEHOLDER");
+                if (
+                  pattern.type === "feature" ||
+                  pattern.type === "card" ||
+                  pattern.type === "service"
+                ) {
+                  $(img).attr(
+                    "src",
+                    "{{ block.settings.image | img_url: 'master' }}"
+                  );
+                  if ($(img).attr("alt")) {
+                    $(img).attr("alt", "{{ block.settings.image_alt }}");
+                  }
+                } else if (pattern.type === "gallery_item") {
+                  $(img).attr(
+                    "src",
+                    "{{ block.settings.gallery_image | img_url: 'master' }}"
+                  );
+                  if ($(img).attr("alt")) {
+                    $(img).attr(
+                      "alt",
+                      "{{ block.settings.gallery_image_alt }}"
+                    );
+                  }
+                } else {
+                  $(img).attr(
+                    "src",
+                    "{{ block.settings.image | img_url: 'master' }}"
+                  );
+                  if ($(img).attr("alt")) {
+                    $(img).attr("alt", "{{ block.settings.image_alt }}");
+                  }
                 }
               }
             });
@@ -2930,6 +3193,79 @@ ${css}
   /* No additional styling - maintain original HTML layout exactly */
 }
 
+/* Enhanced Button Spacing - Fix for "Elevate your hair journey" section */
+.${normalizedFileName}-content .btn,
+.${normalizedFileName}-content .button,
+.${normalizedFileName}-content a[class*="btn"] {
+  margin-top: 1.5rem !important;
+  margin-bottom: 1rem !important;
+  display: inline-block;
+}
+
+/* FAQ Enhancements - Match FAQ-Example.html structure */
+.faq-item {
+  border-bottom: 1px solid rgba(161, 63, 79, 0.3);
+  overflow: hidden;
+}
+
+.faq-item:last-child {
+  border-bottom: none;
+}
+
+.faq-question {
+  padding: 1.5rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 1.25rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.faq-question:hover {
+  background-color: rgba(106, 26, 35, 0.1);
+}
+
+.faq-question i {
+  transition: transform 0.3s ease, color 0.3s ease;
+  font-size: 1rem;
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease, padding 0.5s ease;
+  padding: 0 1rem;
+}
+
+.faq-answer p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.faq-item.active .faq-question i {
+  transform: rotate(45deg);
+}
+
+.faq-item.active .faq-answer {
+  max-height: 500px;
+  padding: 0 1rem 1.5rem 1rem;
+}
+
+/* Additional FAQ styling for better compatibility */
+.faq-question-clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.faq-answer-content {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
 /* Footer Layout Fixes */
 .footer-grid {
   display: grid;
@@ -3000,6 +3336,39 @@ ${css}
 // Original JavaScript from HTML
 ${js}
 
+// FAQ Toggle Functionality - Enhanced for FAQ-Example.html structure
+function toggleFAQ(element) {
+  // Find the FAQ item container
+  const faqItem = element.closest('.faq-item');
+  if (!faqItem) return;
+  
+  // Check if this FAQ item is currently active
+  const isActive = faqItem.classList.contains('active');
+  
+  // Close all FAQ items first
+  const allFaqItems = document.querySelectorAll('.faq-item');
+  allFaqItems.forEach(item => {
+    item.classList.remove('active');
+  });
+  
+  // If the clicked item wasn't active, open it
+  if (!isActive) {
+    faqItem.classList.add('active');
+  }
+  
+  // Update icons for all FAQ questions
+  allFaqItems.forEach(item => {
+    const icon = item.querySelector('.faq-question i');
+    if (icon) {
+      if (item.classList.contains('active')) {
+        icon.className = 'fas fa-minus';
+      } else {
+        icon.className = 'fas fa-plus';
+      }
+    }
+  });
+}
+
 // Shopify-compatible initialization
 document.addEventListener('DOMContentLoaded', function() {
   // Re-run any initialization that might be needed for Shopify
@@ -3009,6 +3378,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof window.initCustomScripts === 'function') {
       window.initCustomScripts(section);
     }
+    
+    // Initialize FAQ functionality
+    const faqQuestions = section.querySelectorAll('.faq-question-clickable');
+    faqQuestions.forEach(question => {
+      question.addEventListener('click', function() {
+        toggleFAQ(this);
+      });
+    });
   }
 });
 
@@ -3020,6 +3397,14 @@ document.addEventListener('shopify:section:load', function(event) {
     if (section && typeof window.initCustomScripts === 'function') {
       window.initCustomScripts(section);
     }
+    
+    // Reinitialize FAQ functionality
+    const faqQuestions = section.querySelectorAll('.faq-question-clickable');
+    faqQuestions.forEach(question => {
+      question.addEventListener('click', function() {
+        toggleFAQ(this);
+      });
+    });
   }
 });
 </script>`;
