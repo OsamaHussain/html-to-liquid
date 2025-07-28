@@ -11,7 +11,11 @@ import {
   generateLiquidWithOpenAI,
   checkOpenAIConnection,
 } from "../../../utils/openaiHtmlToLiquid";
-import { shouldUseOpenAI, getConfig } from "../config/conversion.config.js";
+import {
+  generateLiquidWithClaude,
+  checkClaudeConnection,
+} from "../../../utils/claudeHtmlToLiquid";
+import { shouldUseOpenAI, shouldUseClaude, getConfig } from "../config/conversion.config.js";
 
 export async function POST(request) {
   try {
@@ -64,6 +68,7 @@ export async function POST(request) {
 
     const config = getConfig();
     const useOpenAI = shouldUseOpenAI();
+    const useClaude = shouldUseClaude();
 
     const htmlLines = htmlContent.split("\n").length;
     if (config.ENABLE_LOGS) {
@@ -71,19 +76,19 @@ export async function POST(request) {
       console.log(`⚙️ [CONFIG] Conversion mode: ${config.mode}`);
     }
 
-    let openaiResult = null;
-    let skippedOpenAI = false;
+    let aiResult = null;
+    let skippedAI = false;
 
-    if (!useOpenAI) {
+    if (!useOpenAI && !useClaude) {
       if (config.ENABLE_LOGS) {
         console.log(
-          "⚙️ [CONFIG] CUSTOM_ONLY mode enabled - skipping OpenAI conversion"
+          "⚙️ [CONFIG] CUSTOM_ONLY mode enabled - skipping AI conversion"
         );
         console.log("🎯 [CUSTOM ONLY] Converting with custom algorithm only");
       }
 
-      skippedOpenAI = true;
-      openaiResult = {
+      skippedAI = true;
+      aiResult = {
         success: false,
         skipped: true,
         reason: "CUSTOM_ONLY mode enabled in configuration",
@@ -95,7 +100,7 @@ export async function POST(request) {
     } else if (htmlLines > config.SIZE_LIMIT) {
       if (config.ENABLE_LOGS) {
         console.log(
-          `⚠️ [SIZE LIMIT] HTML content exceeds ${config.SIZE_LIMIT} lines - skipping OpenAI conversion`
+          `⚠️ [SIZE LIMIT] HTML content exceeds ${config.SIZE_LIMIT} lines - skipping AI conversion`
         );
         console.log(
           `⏰ [WAIT] Waiting ${
@@ -115,41 +120,49 @@ export async function POST(request) {
         console.log("🎯 [CUSTOM ONLY] Converting with custom algorithm only");
       }
 
-      skippedOpenAI = true;
-      openaiResult = {
+      skippedAI = true;
+      aiResult = {
         success: false,
         skipped: true,
         reason: `Content exceeds ${config.SIZE_LIMIT} lines`,
         metadata: { skippedAt: new Date().toISOString() },
       };
     } else {
+      const aiProvider = useOpenAI ? "OpenAI" : "Claude";
+      const aiModel = useOpenAI ? "GPT-4o" : "Claude-3.5-Sonnet";
+      
       if (config.ENABLE_LOGS) {
         console.log(
-          "✅ [SIZE CHECK] HTML content within limits - proceeding with OpenAI conversion"
+          `✅ [SIZE CHECK] HTML content within limits - proceeding with ${aiProvider} conversion`
         );
         console.log(
-          "🔍 [PRECHECK] Checking OpenAI API status before conversion..."
+          `🔍 [PRECHECK] Checking ${aiProvider} API status before conversion...`
         );
       }
 
-      const openaiStatus = await checkOpenAIConnection();
+      let apiStatus;
+      if (useOpenAI) {
+        apiStatus = await checkOpenAIConnection();
+      } else {
+        apiStatus = await checkClaudeConnection();
+      }
 
-      if (!openaiStatus.isWorking) {
+      if (!apiStatus.isWorking) {
         if (config.ENABLE_LOGS) {
           console.log(
-            "❌ [PRECHECK] OpenAI API not working:",
-            openaiStatus.error
+            `❌ [PRECHECK] ${aiProvider} API not working:`,
+            apiStatus.error
           );
           console.log(
-            "🚫 [BLOCKED] Custom conversion blocked - OpenAI API must be working"
+            `🚫 [BLOCKED] Custom conversion blocked - ${aiProvider} API must be working`
           );
         }
 
         return NextResponse.json(
           {
-            error: `Conversion blocked: OpenAI API is required but not working`,
-            details: openaiStatus.error,
-            status: openaiStatus.status,
+            error: `Conversion blocked: ${aiProvider} API is required but not working`,
+            details: apiStatus.error,
+            status: apiStatus.status,
             apiStatus: "failed",
           },
           { status: 503 }
@@ -158,31 +171,35 @@ export async function POST(request) {
 
       if (config.ENABLE_LOGS) {
         console.log(
-          "✅ [PRECHECK] OpenAI API is working - proceeding with conversion"
+          `✅ [PRECHECK] ${aiProvider} API is working - proceeding with conversion`
         );
         console.log(
-          "🤖 [STEP 1] Starting OpenAI HTML-to-Liquid conversion first..."
+          `🤖 [STEP 1] Starting ${aiProvider} HTML-to-Liquid conversion first...`
         );
       }
 
-      openaiResult = await generateLiquidWithOpenAI(htmlContent, finalFileName);
+      if (useOpenAI) {
+        aiResult = await generateLiquidWithOpenAI(htmlContent, finalFileName);
+      } else {
+        aiResult = await generateLiquidWithClaude(htmlContent, finalFileName);
+      }
 
-      if (!openaiResult.success) {
+      if (!aiResult.success) {
         if (config.ENABLE_LOGS) {
           console.log(
-            "❌ [STEP 1] OpenAI conversion failed:",
-            openaiResult.error
+            `❌ [STEP 1] ${aiProvider} conversion failed:`,
+            aiResult.error
           );
           console.log(
-            "🚫 [BLOCKED] Custom conversion blocked - OpenAI conversion must complete first"
+            `🚫 [BLOCKED] Custom conversion blocked - ${aiProvider} conversion must complete first`
           );
         }
 
         return NextResponse.json(
           {
-            error: `Conversion blocked: OpenAI conversion failed`,
-            details: openaiResult.error,
-            step: "openai_conversion",
+            error: `Conversion blocked: ${aiProvider} conversion failed`,
+            details: aiResult.error,
+            step: `${aiProvider.toLowerCase()}_conversion`,
             apiStatus: "conversion_failed",
           },
           { status: 500 }
@@ -190,10 +207,10 @@ export async function POST(request) {
       }
 
       if (config.ENABLE_LOGS) {
-        console.log("✅ [STEP 1] OpenAI conversion completed successfully");
+        console.log(`✅ [STEP 1] ${aiProvider} conversion completed successfully`);
         console.log(
-          "📊 [STEP 1] OpenAI Usage - Tokens:",
-          openaiResult.metadata.totalTokens
+          `📊 [STEP 1] ${aiProvider} Usage - Tokens:`,
+          aiResult.metadata.totalTokens
         );
       }
     }
@@ -213,7 +230,9 @@ export async function POST(request) {
     const pageType = conversionResult.pageType;
     const templateStructure = conversionResult.templateStructure;
 
-    if (skippedOpenAI) {
+    const aiProvider = useOpenAI ? "OpenAI" : useClaude ? "Claude" : "None";
+    
+    if (skippedAI) {
       if (config.ENABLE_LOGS) {
         console.log(
           "✅ [STEP 2] Custom conversion completed successfully for:",
@@ -228,8 +247,8 @@ export async function POST(request) {
           templateStructure?.templateType || "page"
         );
         console.log(
-          "🎉 [COMPLETE] Custom conversion finished (OpenAI skipped:",
-          openaiResult.reason + ")"
+          "🎉 [COMPLETE] Custom conversion finished (AI skipped:",
+          aiResult.reason + ")"
         );
       }
     } else {
@@ -239,7 +258,7 @@ export async function POST(request) {
           finalFileName
         );
         console.log(
-          "� [PAGE TYPE] Detected page type:",
+          "🎯 [PAGE TYPE] Detected page type:",
           pageType?.type || "page"
         );
         console.log(
@@ -247,7 +266,7 @@ export async function POST(request) {
           templateStructure?.templateType || "page"
         );
         console.log(
-          "�🎉 [COMPLETE] Both OpenAI and Custom conversions finished - returning Custom results"
+          `🎉 [COMPLETE] Both ${aiProvider} and Custom conversions finished - returning Custom results`
         );
       }
     }
@@ -326,12 +345,13 @@ export async function POST(request) {
       jsonLineCount: jsonTemplate.split("\n").length,
       conversionMethod: "custom-deterministic",
       conversionMode: config.mode,
-      openaiGenerationCompleted: openaiResult?.success || false,
-      openaiSkipped: skippedOpenAI,
-      openaiSkipReason: skippedOpenAI ? openaiResult.reason : null,
-      openaiMetadata: openaiResult?.metadata || null,
-      apiValidated: !skippedOpenAI,
-      sequentialProcessing: !skippedOpenAI,
+      aiGenerationCompleted: aiResult?.success || false,
+      aiSkipped: skippedAI,
+      aiSkipReason: skippedAI ? aiResult.reason : null,
+      aiMetadata: aiResult?.metadata || null,
+      aiProvider: aiProvider,
+      apiValidated: !skippedAI,
+      sequentialProcessing: !skippedAI,
       inputLines: htmlLines,
       sizeLimitApplied: htmlLines > config.SIZE_LIMIT,
       configUsed: config,
@@ -369,17 +389,18 @@ export async function POST(request) {
         htmlLines: htmlLines,
         conversionMethod: "Custom Deterministic Converter",
         conversionMode: config.mode,
-        aiGenerationEnabled: !skippedOpenAI,
-        openaiSkipped: skippedOpenAI,
-        openaiSkipReason: skippedOpenAI ? openaiResult.reason : null,
-        openaiTokensUsed: openaiResult?.metadata?.totalTokens || 0,
-        processingSequence: skippedOpenAI
+        aiGenerationEnabled: !skippedAI,
+        aiSkipped: skippedAI,
+        aiSkipReason: skippedAI ? aiResult.reason : null,
+        aiTokensUsed: aiResult?.metadata?.totalTokens || 0,
+        aiProvider: aiProvider,
+        processingSequence: skippedAI
           ? config.mode === "CUSTOM_ONLY"
             ? "Custom-Only-By-Config"
             : "Custom-Only-After-Wait"
-          : "OpenAI-First-Then-Custom",
+          : `${aiProvider}-First-Then-Custom`,
         waitTimeApplied:
-          skippedOpenAI && config.mode === "OPENAI_FIRST"
+          skippedAI && (config.mode === "OPENAI_FIRST" || config.mode === "CLAUDE_FIRST")
             ? `${config.WAIT_TIME / 1000} seconds`
             : null,
         configurationUsed: config,

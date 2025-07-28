@@ -5,14 +5,16 @@
  *
  * CONVERSION_MODE:
  * - "OPENAI_FIRST": OpenAI API first, then custom conversion (current behavior)
- * - "CUSTOM_ONLY": Skip OpenAI, direct custom conversion only
+ * - "CLAUDE_FIRST": Claude API first, then custom conversion
+ * - "CUSTOM_ONLY": Skip AI, direct custom conversion only
  */
 
 // ===============================================
 // MAIN CONFIGURATION - Change this to control behavior
 // ===============================================
 
-export const CONVERSION_MODE = "OPENAI_FIRST";
+// export const CONVERSION_MODE = "OPENAI_FIRST";
+export const CONVERSION_MODE = "CLAUDE_FIRST";
 // export const CONVERSION_MODE = "CUSTOM_ONLY";
 
 // ===============================================
@@ -38,6 +40,10 @@ export function shouldUseOpenAI() {
   return CONVERSION_MODE === "OPENAI_FIRST";
 }
 
+export function shouldUseClaude() {
+  return CONVERSION_MODE === "CLAUDE_FIRST";
+}
+
 export function isCustomOnlyMode() {
   return CONVERSION_MODE === "CUSTOM_ONLY";
 }
@@ -46,6 +52,7 @@ export function getConfig() {
   return {
     mode: CONVERSION_MODE,
     useOpenAI: shouldUseOpenAI(),
+    useClaude: shouldUseClaude(),
     customOnly: isCustomOnlyMode(),
     ...CONFIG,
   };
