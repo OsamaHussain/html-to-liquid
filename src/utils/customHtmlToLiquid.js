@@ -2526,21 +2526,33 @@ ${blockHtml}
       $(el).closest(
         ".feature, .card, .product, .product-card, .testimonial, .team-member, .service, .benefit, .step, .faq, .gallery-item, .sustainability-slide, .transformation-slide, .guide, footer"
       ).length > 0;
+    
+    const hasTextCenter = $(el).hasClass('text-center') || 
+                         $(el).attr('class')?.includes('text-center');
 
     if (text && text.length > 10 && !text.includes("{{") && !isInsideBlock) {
       const settingId = `section_text_${settingCounter++}`;
 
       sectionGroups.content.settings.push({
-        type: "richtext",
+        type: "richtext", 
         id: settingId,
         label: `Section Text: ${text.substring(0, 40)}${
           text.length > 40 ? "..." : ""
         }`,
+        // Always use formatAsRichtext to ensure proper Shopify richtext format
         default: formatAsRichtext(text),
         info: "Section description with rich formatting",
       });
 
-      $(el).html(`{{ section.settings.${settingId} }}`);
+      // For centered paragraphs, replace the entire paragraph with the liquid variable
+      // This prevents nested <p> tags since formatAsRichtext already provides <p> tags
+      if (hasTextCenter) {
+        // Get the existing classes for the wrapper div
+        const existingClasses = $(el).attr('class') || '';
+        $(el).replaceWith(`<div class="${existingClasses}">{{ section.settings.${settingId} }}</div>`);
+      } else {
+        $(el).html(`{{ section.settings.${settingId} }}`);
+      }
     }
   });
 
@@ -3202,6 +3214,32 @@ ${css}
   display: inline-block;
 }
 
+/* Centered Text Sections - Fix for nested paragraph issues */
+.${normalizedFileName}-content .text-center.mb-10.max-w-2xl.mx-auto,
+.${normalizedFileName}-content div.text-center.mb-10.max-w-2xl.mx-auto {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  max-width: 42rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.${normalizedFileName}-content .text-center.mb-10.max-w-2xl.mx-auto > p:first-child,
+.${normalizedFileName}-content div.text-center.mb-10.max-w-2xl.mx-auto > p:first-child {
+  margin-top: 0;
+}
+
+.${normalizedFileName}-content .text-center.mb-10.max-w-2xl.mx-auto > p:last-child,
+.${normalizedFileName}-content div.text-center.mb-10.max-w-2xl.mx-auto > p:last-child {
+  margin-bottom: 0;
+}
+
+/* Additional centered text wrapper support */
+.${normalizedFileName}-content div[class*="text-center"] > p {
+  text-align: inherit;
+  margin-bottom: inherit;
+}
+
 /* FAQ Enhancements - Match FAQ-Example.html structure */
 .faq-item {
   border-bottom: 1px solid rgba(161, 63, 79, 0.3);
@@ -3338,25 +3376,20 @@ ${js}
 
 // FAQ Toggle Functionality - Enhanced for FAQ-Example.html structure
 function toggleFAQ(element) {
-  // Find the FAQ item container
   const faqItem = element.closest('.faq-item');
   if (!faqItem) return;
   
-  // Check if this FAQ item is currently active
   const isActive = faqItem.classList.contains('active');
   
-  // Close all FAQ items first
   const allFaqItems = document.querySelectorAll('.faq-item');
   allFaqItems.forEach(item => {
     item.classList.remove('active');
   });
   
-  // If the clicked item wasn't active, open it
   if (!isActive) {
     faqItem.classList.add('active');
   }
   
-  // Update icons for all FAQ questions
   allFaqItems.forEach(item => {
     const icon = item.querySelector('.faq-question i');
     if (icon) {
@@ -3369,17 +3402,13 @@ function toggleFAQ(element) {
   });
 }
 
-// Shopify-compatible initialization
 document.addEventListener('DOMContentLoaded', function() {
-  // Re-run any initialization that might be needed for Shopify
   const section = document.getElementById('{{ section.id }}');
   if (section) {
-    // Trigger any custom events that might have been set up
     if (typeof window.initCustomScripts === 'function') {
       window.initCustomScripts(section);
     }
     
-    // Initialize FAQ functionality
     const faqQuestions = section.querySelectorAll('.faq-question-clickable');
     faqQuestions.forEach(question => {
       question.addEventListener('click', function() {
@@ -3389,16 +3418,13 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// Theme editor support - reinitialize when section is reloaded
 document.addEventListener('shopify:section:load', function(event) {
   if (event.detail.sectionId === '{{ section.id }}') {
-    // Re-run initialization for this section
     const section = document.getElementById('{{ section.id }}');
     if (section && typeof window.initCustomScripts === 'function') {
       window.initCustomScripts(section);
     }
     
-    // Reinitialize FAQ functionality
     const faqQuestions = section.querySelectorAll('.faq-question-clickable');
     faqQuestions.forEach(question => {
       question.addEventListener('click', function() {
@@ -3500,6 +3526,27 @@ export function processMultipleFiles(files) {
     files: results,
     combinedHeadContent: combinedHead,
   };
+}
+
+/**
+ * Formats text as inline content for use within existing HTML elements  
+ * Does not wrap in paragraph tags - for inline usage
+ */
+function formatAsInlineText(text) {
+  if (!text || typeof text !== "string") return "";
+
+  const cleanText = text.trim();
+  if (cleanText.length === 0) return "";
+
+  // If text contains newlines, join with <br> tags
+  if (cleanText.includes("\n")) {
+    const lines = cleanText
+      .split("\n")
+      .filter((line) => line.trim().length > 0);
+    return lines.join("<br>");
+  }
+
+  return cleanText;
 }
 
 /**
