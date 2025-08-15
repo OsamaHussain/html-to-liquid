@@ -13,8 +13,8 @@
 // MAIN CONFIGURATION - Change this to control behavior
 // ===============================================
 
-// export const CONVERSION_MODE = "OPENAI_FIRST";
-export const CONVERSION_MODE = "CLAUDE_FIRST";
+export const CONVERSION_MODE = "OPENAI_FIRST";
+// export const CONVERSION_MODE = "CLAUDE_FIRST";
 // export const CONVERSION_MODE = "CUSTOM_ONLY";
 
 // ===============================================

@@ -44,7 +44,7 @@ export async function POST(request) {
     finalFileName = filenameValidation.sanitized;
     const shopifyPaths = generateShopifyPaths(finalFileName);
 
-    console.log('🤖 Starting OpenAI HTML-to-Liquid conversion with GPT-4o for:', finalFileName);
+    console.log('🤖 Starting OpenAI HTML-to-Liquid conversion with GPT-5 for:', finalFileName);
 
     const openaiResult = await generateLiquidWithOpenAI(htmlContent, finalFileName);
 
@@ -63,7 +63,7 @@ export async function POST(request) {
       hasJavascript: openaiResult.liquidContent && openaiResult.liquidContent.includes('<script>'),
       liquidLineCount: openaiResult.liquidContent ? openaiResult.liquidContent.split('\n').length : 0,
       jsonLineCount: openaiResult.jsonTemplate.split('\n').length,
-      conversionMethod: 'openai-gpt4o'
+      conversionMethod: 'openai-gpt5'
     };
 
     return NextResponse.json({
@@ -77,7 +77,7 @@ export async function POST(request) {
         liquidPath: shopifyPaths.liquid,
         jsonPath: shopifyPaths.json,
         snippetPath: shopifyPaths.snippet,
-        conversionMethod: 'OpenAI GPT-4o'
+        conversionMethod: 'OpenAI GPT-5'
       },
       metadata: {
         liquidFileName: `${finalFileName}.liquid`,
@@ -85,7 +85,7 @@ export async function POST(request) {
         sectionType: finalFileName,
         htmlSize: htmlContent.length,
         htmlLines: htmlContent.split('\n').length,
-        conversionMethod: 'OpenAI GPT-4o Converter',
+        conversionMethod: 'OpenAI GPT-5 Converter',
         tokensUsed: openaiResult.metadata.totalTokens
       }
     });

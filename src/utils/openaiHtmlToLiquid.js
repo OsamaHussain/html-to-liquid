@@ -17,15 +17,14 @@ export async function checkOpenAIConnection() {
     console.log("🔍 Checking OpenAI API connection...");
 
     const testCompletion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5",
       messages: [
         {
           role: "user",
           content: "Hello",
         },
       ],
-      max_tokens: 5,
-      temperature: 0,
+      max_completion_tokens: 5,
     });
 
     if (testCompletion && testCompletion.choices && testCompletion.choices[0]) {
@@ -33,7 +32,7 @@ export async function checkOpenAIConnection() {
       return {
         isWorking: true,
         status: "connected",
-        model: "gpt-4o",
+        model: "gpt-5",
         timestamp: new Date().toISOString(),
       };
     } else {
@@ -86,7 +85,7 @@ Return ONLY the complete Shopify Liquid template code with schema. No explanatio
     }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5",
       messages: [
         {
           role: "system",
@@ -98,8 +97,7 @@ Return ONLY the complete Shopify Liquid template code with schema. No explanatio
           content: prompt,
         },
       ],
-      max_tokens: 16384,
-      temperature: 0.1,
+      max_completion_tokens: 128000,
     });
 
     const liquidContent = completion.choices[0]?.message?.content?.trim();
@@ -135,7 +133,7 @@ Return ONLY the complete Shopify Liquid template code with schema. No explanatio
       jsonTemplate: JSON.stringify(jsonSchema, null, 2),
       metadata: {
         generatedAt: new Date().toISOString(),
-        model: "gpt-4o",
+        model: "gpt-5",
         promptTokens: completion.usage?.prompt_tokens || 0,
         completionTokens: completion.usage?.completion_tokens || 0,
         totalTokens: completion.usage?.total_tokens || 0,
